@@ -37,11 +37,11 @@ Filters before either tier: no-reply addresses, `List-Unsubscribe` headers, auto
 
 ## Security model
 
-Supabase's anon key is public by design and is safe on its own — **the row-level security policies are the entire security model**. Every table carries a user id and a policy that scopes reads and writes to the authenticated user.
+Supabase's publishable key (`sb_publishable_...`, the replacement for the legacy `anon` key) is public by design and is safe on its own — **the row-level security policies are the entire security model**. Every table carries a user id and a policy that scopes reads and writes to the authenticated user.
 
 The test that matters: two accounts, and one must not be able to read the other's rows. That test gets written before the feature it protects.
 
-`SUPABASE_SERVICE_ROLE_KEY` bypasses every policy. Server-side only, never behind `NEXT_PUBLIC_`, never imported into a client component.
+`SUPABASE_SECRET_KEY` (`sb_secret_...`, the replacement for the legacy `service_role` key) bypasses every policy. Server-side only, never behind `NEXT_PUBLIC_`, never imported into a client component.
 
 Gmail refresh tokens are long-lived keys to someone's mailbox, so they're encrypted at rest rather than stored as plain text.
 
