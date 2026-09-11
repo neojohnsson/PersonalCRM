@@ -1,0 +1,65 @@
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
+
+# Personal CRM
+
+A personal CRM that imports contacts from Gmail and tells you who's waiting on you.
+
+Full plan, slices and risks: `docs/plan.md`. Read it before starting a slice.
+Architecture: `docs/architecture.md`. Decisions and their reasons: `docs/decisions.md`.
+
+## Core premise
+
+- The product is the *timing*, not the storage. The default view answers
+  "who needs me today" — never "here are your contacts, A-Z".
+- It must be useful with the AI switched off. Whose-turn, warmth and
+  next-touch are plain computation, no LLM involved.
+
+## Hard rules — do not violate
+
+- **No send capability.** Drafts are written to Gmail and a human presses send.
+  No send endpoint, no send button, no scheduled send. Ever.
+- **No auto-merge** of duplicate contacts. Suggest only; a human approves.
+- **No open tracking, read receipts or tracking pixels.**
+- **No LinkedIn scraping, no data-broker enrichment.**
+- **Message bodies are not stored by default.** Metadata + editable summaries
+  only. Body retention is per-contact opt-in with a visible retention period.
+- `SUPABASE_SERVICE_ROLE_KEY` is server-only. Never in a client component,
+  never behind a `NEXT_PUBLIC_` prefix.
+- Every AI output lands in a pending state a human approves. Nothing
+  AI-generated writes straight to a contact record or a Gmail draft.
+- Every AI output about a person is dated, editable, and links to its source.
+
+## Stack
+
+- Next.js (App Router) + TypeScript
+- Supabase — Postgres with row-level security. The RLS policies ARE the
+  security model; the anon key is public by design.
+- Tailwind + shadcn/ui
+- Gmail API, OAuth 2.0, incremental sync via the History API
+
+## How I work on this
+
+- One slice per branch. Slices are in `docs/plan.md`. Don't cross boundaries.
+- Plan before code. Show me the plan, let me correct it, then build.
+- Small commits.
+- **I write these by hand — explain and review, don't generate:** the OAuth
+  flow and token refresh, RLS policies, the sync state machine, the warmth
+  calculation.
+- **Build these freely:** UI, forms, tables, styling, fixtures, config.
+- I'm a first-year systems science student. Java and Spring Boot are familiar;
+  React, TypeScript, OAuth and Postgres RLS are new. Explain the why, not just
+  the what, in those areas.
+
+## Testing
+
+- A slice isn't done when it renders. It's done when a test proves it.
+- RLS policies get tested with two users: one must not be able to see the
+  other's data.
