@@ -3,7 +3,29 @@ import { SignInButton } from "./sign-in-button";
 
 export const metadata = { title: `Sign in · ${APP_NAME}` };
 
-export default function LoginPage() {
+/**
+ * The error codes app/auth/callback/route.ts redirects here with.
+ *
+ * The page only ever shows these fixed messages, never the raw `?error=` text.
+ * Anyone can craft a link to /login?error=anything, so rendering the query
+ * string would let a stranger put their own words on your sign-in page.
+ */
+const ERROR_MESSAGES: Record<string, string> = {
+  missing_code:
+    "Google didn't send a sign-in code back. Try again from the button below.",
+  code_exchange:
+    "That sign-in link expired or was already used. Sign in again.",
+};
+
+const FALLBACK_ERROR = "Something went wrong signing in. Try again.";
+
+export default async function LoginPage({ searchParams }: PageProps<"/login">) {
+  const { error } = await searchParams;
+  const errorMessage =
+    typeof error === "string"
+      ? (ERROR_MESSAGES[error] ?? FALLBACK_ERROR)
+      : null;
+
   return (
     <main className="flex flex-1 items-center justify-center bg-paper px-6 py-16">
       <div className="w-full max-w-sm">
@@ -15,6 +37,15 @@ export default function LoginPage() {
             Imports the people you actually talk to, and tells you who is
             waiting on you.
           </p>
+
+          {errorMessage && (
+            <p
+              role="alert"
+              className="mt-6 rounded-lg border border-accent/20 bg-accent-tint px-4 py-3 text-[13px] leading-5 text-ink"
+            >
+              {errorMessage}
+            </p>
+          )}
 
           <div className="mt-7">
             <SignInButton />
