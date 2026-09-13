@@ -31,7 +31,7 @@ Architecture: `docs/architecture.md`. Decisions and their reasons: `docs/decisio
 - **No LinkedIn scraping, no data-broker enrichment.**
 - **Message bodies are not stored by default.** Metadata + editable summaries
   only. Body retention is per-contact opt-in with a visible retention period.
-- `SUPABASE_SERVICE_ROLE_KEY` is server-only. Never in a client component,
+- `SUPABASE_SECRET_KEY` is server-only. Never in a client component,
   never behind a `NEXT_PUBLIC_` prefix.
 - Every AI output lands in a pending state a human approves. Nothing
   AI-generated writes straight to a contact record or a Gmail draft.
@@ -41,7 +41,7 @@ Architecture: `docs/architecture.md`. Decisions and their reasons: `docs/decisio
 
 - Next.js (App Router) + TypeScript
 - Supabase — Postgres with row-level security. The RLS policies ARE the
-  security model; the anon key is public by design.
+  security model; the publishable key is public by design.
 - Tailwind + shadcn/ui
 - Gmail API, OAuth 2.0, incremental sync via the History API
 

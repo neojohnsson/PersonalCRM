@@ -1,0 +1,272 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #c2410c; text-decoration: none; }
+    a:hover { color: #9a3412; }
+    p { margin: 0; }
+    h1, h2, h3 { margin: 0; }
+    .row { display: grid; grid-template-columns: 1fr 186px 128px 118px 52px; align-items: center; gap: 16px; padding: 0 22px; height: 38px; border-top: 1px solid #f4f4f2; }
+    .nm { font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .co { font-size: 12.5px; color: #82848a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .turn-you { font-size: 10.5px; font-weight: 700; color: #c2410c; text-transform: uppercase; letter-spacing: 0.06em; }
+    .turn-them { font-size: 12px; font-weight: 500; color: #82848a; }
+    .turn-none { font-size: 12px; font-weight: 500; color: #b9bbc0; }
+    .age { font-size: 12px; font-weight: 600; color: #82848a; text-align: right; }
+    .av { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9.5px; font-weight: 700; flex-shrink: 0; }
+    .warm { display: flex; align-items: center; gap: 9px; }
+    .warmn { font-size: 12.5px; font-weight: 600; width: 20px; }
+    .bar { width: 52px; height: 3px; border-radius: 999px; background: #ecece9; overflow: hidden; }
+  </style>
+</helmet>
+<div style="width:1440px;height:900px;background:#f6f6f4;display:flex;color:#1a1b1e;overflow:hidden">
+
+  <aside style="width:56px;background:#17181a;display:flex;flex-direction:column;align-items:center;padding:14px 0 16px;gap:3px;flex-shrink:0">
+    <div style="width:30px;height:30px;border-radius:9px;background:#ffffff;display:flex;align-items:center;justify-content:center;margin-bottom:12px">
+      <span style="font-size:14px;font-weight:800;color:#17181a;letter-spacing:-0.03em">C</span>
+    </div>
+    <div style="width:34px;height:34px;border-radius:10px;background:#2e3035;display:flex;align-items:center;justify-content:center;color:#f6f6f4;margin-bottom:8px">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#75777e">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.4V20h13V9.4"></path></svg>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;background:#303237;display:flex;align-items:center;justify-content:center;color:#ffffff">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="8" r="3.3"></circle><path d="M3.5 20c0-3.4 2.7-5.6 6-5.6s6 2.2 6 5.6"></path><path d="M16.5 5.3a3.2 3.2 0 0 1 0 5.5"></path><path d="M18.4 14.9c1.9.7 2.9 2.5 2.9 5.1"></path></svg>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#75777e;position:relative">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13h4l1.4 2.4h5.2L16 13h4"></path><path d="M5.6 5h12.8l2.6 8v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5z"></path></svg>
+      <div style="position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:#e2703a"></div>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#75777e">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.6"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
+    </div>
+    <div style="flex-grow:1"></div>
+    <div style="width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#75777e">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17.5 7H20M4 17h3.5M12 17h8"></path><circle cx="15" cy="7" r="2.2"></circle><circle cx="9.5" cy="17" r="2.2"></circle></svg>
+    </div>
+    <div style="width:30px;height:30px;border-radius:50%;background:#4a4d54;margin-top:6px;display:flex;align-items:center;justify-content:center">
+      <span style="font-size:10.5px;font-weight:700;color:#ffffff">NJ</span>
+    </div>
+  </aside>
+
+  <div style="flex-grow:1;display:flex;flex-direction:column;min-width:0">
+
+    <header style="height:60px;display:flex;align-items:center;padding:0 26px;flex-shrink:0;position:relative">
+      <div style="position:absolute;left:50%;transform:translateX(-50%);display:flex;gap:2px;background:#ffffff;border-radius:999px;padding:4px;box-shadow:0 1px 2px rgba(20,20,25,.05), 0 4px 12px rgba(20,20,25,.06)">
+        <div style="width:34px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:#9c9ea4">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.4V20h13V9.4"></path></svg>
+        </div>
+        <div style="width:34px;height:30px;border-radius:999px;background:#f1f1ef;display:flex;align-items:center;justify-content:center;color:#1a1b1e">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="8" r="3.3"></circle><path d="M3.5 20c0-3.4 2.7-5.6 6-5.6s6 2.2 6 5.6"></path></svg>
+        </div>
+        <div style="width:34px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:#9c9ea4">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13h4l1.4 2.4h5.2L16 13h4"></path><path d="M5.6 5h12.8l2.6 8v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5z"></path></svg>
+        </div>
+        <div style="width:34px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:#9c9ea4">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2.4-6.6 4.8 13.2L16.8 12H21"></path></svg>
+        </div>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:4px">
+        <div style="width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#6f7177">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.4 15.4 4.1 4.1"></path></svg>
+        </div>
+        <div style="width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#6f7177;position:relative">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.8a6 6 0 1 0-12 0c0 5.8-2 7.3-2 7.3h16s-2-1.5-2-7.3"></path><path d="M13.7 19.4a2 2 0 0 1-3.4 0"></path></svg>
+          <div style="position:absolute;top:5px;right:5px;min-width:14px;height:14px;border-radius:999px;background:#c2410c;color:#ffffff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px">8</div>
+        </div>
+      </div>
+    </header>
+
+    <div style="flex-grow:1;padding:8px 30px 26px;display:flex;flex-direction:column;gap:16px;min-height:0">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:20px">
+        <div style="display:flex;align-items:center;gap:3px;background:#eaeae7;border-radius:999px;padding:3px">
+          <div style="display:flex;align-items:center;gap:7px;background:#ffffff;border-radius:999px;padding:7px 15px;box-shadow:0 1px 2px rgba(20,20,25,.06)">
+            <span style="font-size:13px;font-weight:600;letter-spacing:-0.01em">Contacts</span>
+            <span style="font-size:11.5px;font-weight:600;color:#9c9ea4">124</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;border-radius:999px;padding:7px 15px">
+            <span style="font-size:13px;font-weight:500;color:#6f7177">Seen once</span>
+            <span style="font-size:11.5px;font-weight:600;color:#b9bbc0">386</span>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px;background:#ffffff;border-radius:999px;padding:8px 15px;width:206px;box-shadow:0 1px 2px rgba(20,20,25,.04)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b9bbc0" stroke-width="1.9" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.4 15.4 4.1 4.1"></path></svg>
+            <span style="font-size:12.5px;color:#b9bbc0">Search name, company, tag</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;background:#ffffff;border-radius:999px;padding:8px 14px;box-shadow:0 1px 2px rgba(20,20,25,.04)">
+            <span style="font-size:12.5px;color:#9c9ea4">Sorted by</span>
+            <span style="font-size:12.5px;font-weight:600">Whose turn</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9c9ea4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+          </div>
+          <button style="background:#17181a;color:#ffffff;border:none;border-radius:999px;padding:9px 16px;font-family:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:7px;cursor:pointer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+            Add contact
+          </button>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:7px">
+        <div style="background:#17181a;color:#ffffff;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:600">All 124</div>
+        <div style="background:#ffffff;color:#4a4c52;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:500;box-shadow:0 1px 2px rgba(20,20,25,.04)">Your turn 23</div>
+        <div style="background:#ffffff;color:#4a4c52;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:500;box-shadow:0 1px 2px rgba(20,20,25,.04)">Their turn 41</div>
+        <div style="background:#ffffff;color:#4a4c52;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:500;box-shadow:0 1px 2px rgba(20,20,25,.04)">No open thread 60</div>
+        <div style="background:#ffffff;color:#4a4c52;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:500;box-shadow:0 1px 2px rgba(20,20,25,.04)">Going quiet 12</div>
+        <div style="width:1px;height:18px;background:#e2e2df;margin:0 3px"></div>
+        <div style="background:#ffffff;color:#4a4c52;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:500;box-shadow:0 1px 2px rgba(20,20,25,.04)">växjö 18</div>
+        <div style="background:#ffffff;color:#4a4c52;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:500;box-shadow:0 1px 2px rgba(20,20,25,.04)">recruiter 9</div>
+      </div>
+
+      <div style="background:#ffffff;border-radius:18px;box-shadow:0 1px 2px rgba(20,20,25,.04), 0 6px 16px rgba(20,20,25,.05);overflow:hidden">
+
+        <div style="display:grid;grid-template-columns:1fr 186px 128px 118px 52px;gap:16px;padding:11px 22px 9px;align-items:center">
+          <span style="font-size:10.5px;font-weight:700;color:#b0b2b8;text-transform:uppercase;letter-spacing:0.07em">Name</span>
+          <span style="font-size:10.5px;font-weight:700;color:#b0b2b8;text-transform:uppercase;letter-spacing:0.07em">Company</span>
+          <span style="font-size:10.5px;font-weight:700;color:#b0b2b8;text-transform:uppercase;letter-spacing:0.07em">Whose turn</span>
+          <span style="font-size:10.5px;font-weight:700;color:#b0b2b8;text-transform:uppercase;letter-spacing:0.07em">Warmth</span>
+          <span style="font-size:10.5px;font-weight:700;color:#b0b2b8;text-transform:uppercase;letter-spacing:0.07em;text-align:right">Last</span>
+        </div>
+
+        <div class="row">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0"><div class="av" style="background:#e8eef7;color:#2c5c96">JE</div><span class="nm">Johan Ekström</span></div>
+          <span class="co">Fortnox</span>
+          <span class="turn-you">Your turn</span>
+          <div class="warm"><span class="warmn" style="color:#15803d">78</span><div class="bar"><div style="width:78%;height:100%;background:#15803d"></div></div></div>
+          <span class="age" style="color:#c2410c">6d</span>
+        </div>
+
+        <div class="row">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0"><div class="av" style="background:#f9eaee;color:#9b405a">KL</div><span class="nm">Karin Lindqvist</span></div>
+          <span class="co">Combitech</span>
+          <span class="turn-you">Your turn</span>
+          <div class="warm"><span class="warmn" style="color:#15803d">64</span><div class="bar"><div style="width:64%;height:100%;background:#15803d"></div></div></div>
+          <span class="age" style="color:#c2410c">11d</span>
+        </div>
+
+        <div class="row" style="background:#faf9f7">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0"><div class="av" style="background:#e9f3ec;color:#2c6b47">TS</div><span class="nm">Tobias Sandberg</span></div>
+          <span class="co">Sigma IT</span>
+          <span class="turn-you">Your turn</span>
+          <div class="warm"><span class="warmn" style="color:#15803d">71</span><div class="bar"><div style="width:71%;height:100%;background:#15803d"></div></div></div>
+          <span class="age" style="color:#c2410c">4d</span>
+        </div>
+
+        <div class="row">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0"><div class="av" style="background:#eeeaf7;color:#58479b">EM</div><span class="nm">Elin Marklund</span></div>
+          <span class="co">Visma</span>
+          <span class="turn-you">Your turn</span>
+          <div class="warm"><span class="warmn" style="color:#a5811f">52</span><div class="bar"><div style="width:52%;height:100%;background:#a5811f"></div></div></div>
+          <span class="age" style="color:#c2410c">18d</span>
+        </div>
+
+        <div class="row">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0"><div class="av" style="background:#e5f2f1;color:#266b66">PA</div><span class="nm">Petter Ahlgren</span></div>
+          <span class="co">Linnéuniversitetet</span>
+          <span class="turn-you">Your turn</span>
+          <div class="warm"><span class="warmn" style="color:#15803d">83</span><div class="bar"><div style="width:83%;height:100%;background:#15803d"></div></div></div>
+          <span class="age" style="color:#c2410c">2d</span>
+        </div>
+
+        <div class="row">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0"><div class="av" style="background:#e8eef7;color:#2c5c96">NA</div><span class="nm">Nils Ahlberg</span></div>
+          <span class="co">Sigma IT</span>
+          <span class="turn-you">Your turn</span>
+          <div class="warm"><span class="warmn" style="color:#15803d">67</span><div class="bar"><div style="width:67%;height:100%;background:#15803d"></div></div></div>
+          <span class="age" style="color:#c2410c">7d</span>
+        </div>
+
+        <div class="row">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0"><div class="av" style="background:#faf0e4;color:#8a5a1e">SH</div><span class="nm">Sofia Hedlund</span></div>
+          <span class="co">Netlight</span>
+          <span class="turn-them">Their turn</span>
+          <div class="warm"><span class="warmn" style="color:#a5811f">46</span><div class="bar"><div style="width:46%;height:100%;background:#a5811f"></div></div></div>
+          <span class="age">24d</span>
+        </div>
+
+        <div class="row">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0"><div class="av" style="background:#e9f3ec;color:#2c6b47">LV</div><span class="nm">Lars Vikström</span></div>
+          <span class="co">Knightec</span>
+          <span class="turn-them">Their turn</span>
+          <div class="warm"><span class="warmn" style="color:#a5811f">55</span><div class="bar"><div style="width:55%;height:100%;background:#a5811f"></div></div></div>
+          <span class="age">9d</span>
+        </div>
+
+        <div class="row">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0"><div class="av" style="background:#eeeaf7;color:#58479b">OL</div><span class="nm">Oskar Lundgren</span></div>
+          <span class="co">Combitech</span>
+          <span class="turn-them">Their turn</span>
+          <div class="warm"><span class="warmn" style="color:#a5811f">44</span><div class="bar"><div style="width:44%;height:100%;background:#a5811f"></div></div></div>
+          <span class="age">13d</span>
+        </div>
+
+        <div class="row">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0"><div class="av" style="background:#e8eef7;color:#2c5c96">AK</div><span class="nm">Anders Kvist</span></div>
+          <span class="co">Softhouse</span>
+          <span class="turn-them">Their turn</span>
+          <div class="warm"><span class="warmn" style="color:#8a8c92">38</span><div class="bar"><div style="width:38%;height:100%;background:#b0b2b8"></div></div></div>
+          <span class="age">16d</span>
+        </div>
+
+        <div class="row">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0"><div class="av" style="background:#f9eaee;color:#9b405a">CN</div><span class="nm">Cecilia Norén</span></div>
+          <span class="co">Netlight</span>
+          <span class="turn-them">Their turn</span>
+          <div class="warm"><span class="warmn" style="color:#8a8c92">35</span><div class="bar"><div style="width:35%;height:100%;background:#b0b2b8"></div></div></div>
+          <span class="age">27d</span>
+        </div>
+
+        <div class="row">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0"><div class="av" style="background:#f9eaee;color:#9b405a">MÖ</div><span class="nm">Maja Öberg</span></div>
+          <span class="co">Tietoevry</span>
+          <span class="turn-them">Their turn</span>
+          <div class="warm"><span class="warmn" style="color:#8a8c92">29</span><div class="bar"><div style="width:29%;height:100%;background:#b0b2b8"></div></div></div>
+          <span class="age">31d</span>
+        </div>
+
+        <div class="row">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0"><div class="av" style="background:#e5f2f1;color:#266b66">IF</div><span class="nm">Ingrid Falk</span></div>
+          <span class="co">Fortnox</span>
+          <span class="turn-none">No open thread</span>
+          <div class="warm"><span class="warmn" style="color:#a5811f">61</span><div class="bar"><div style="width:61%;height:100%;background:#a5811f"></div></div></div>
+          <span class="age">42d</span>
+        </div>
+
+        <div class="row">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0"><div class="av" style="background:#faf0e4;color:#8a5a1e">HB</div><span class="nm">Hanna Bergqvist</span></div>
+          <span class="co">Visma</span>
+          <span class="turn-none">No open thread</span>
+          <div class="warm"><span class="warmn" style="color:#8a8c92">22</span><div class="bar"><div style="width:22%;height:100%;background:#b0b2b8"></div></div></div>
+          <span class="age">88d</span>
+        </div>
+
+        <div class="row" style="border-bottom:1px solid #f4f4f2">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0"><div class="av" style="background:#e8eef7;color:#2c5c96">GP</div><span class="nm">Gustav Palm</span></div>
+          <span class="co">Softhouse</span>
+          <span class="turn-none">No open thread</span>
+          <div class="warm"><span class="warmn" style="color:#8a8c92">18</span><div class="bar"><div style="width:18%;height:100%;background:#b0b2b8"></div></div></div>
+          <span class="age">120d</span>
+        </div>
+
+        <div style="padding:10px 22px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:11.5px;color:#b0b2b8;font-weight:500">Showing 15 of 124</span>
+          <span style="font-size:11.5px;color:#82848a;font-weight:600">Load more</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

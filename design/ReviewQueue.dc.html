@@ -1,0 +1,239 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #c2410c; text-decoration: none; }
+    a:hover { color: #9a3412; }
+    p { margin: 0; }
+    h1, h2, h3 { margin: 0; }
+    .qrow { display: flex; align-items: center; gap: 14px; padding: 13px 22px; border-top: 1px solid #f4f4f2; }
+    .box { width: 17px; height: 17px; border-radius: 5px; border: 1.5px solid #d8d8d4; flex-shrink: 0; }
+    .qav { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+    .qn { font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; }
+    .qe { font-size: 12px; color: #82848a; }
+    .dir { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+    .src { font-size: 11.5px; color: #82848a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ghost { background: #f4f4f2; color: #4a4c52; border: none; border-radius: 999px; padding: 8px 14px; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0; }
+    .solid { background: #17181a; color: #ffffff; border: none; border-radius: 999px; padding: 8px 15px; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0; }
+  </style>
+</helmet>
+<div style="width:1440px;height:900px;background:#f6f6f4;display:flex;color:#1a1b1e;overflow:hidden">
+
+  <aside style="width:56px;background:#17181a;display:flex;flex-direction:column;align-items:center;padding:14px 0 16px;gap:3px;flex-shrink:0">
+    <div style="width:30px;height:30px;border-radius:9px;background:#ffffff;display:flex;align-items:center;justify-content:center;margin-bottom:12px">
+      <span style="font-size:14px;font-weight:800;color:#17181a;letter-spacing:-0.03em">C</span>
+    </div>
+    <div style="width:34px;height:34px;border-radius:10px;background:#2e3035;display:flex;align-items:center;justify-content:center;color:#f6f6f4;margin-bottom:8px">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#75777e">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.4V20h13V9.4"></path></svg>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#75777e">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="8" r="3.3"></circle><path d="M3.5 20c0-3.4 2.7-5.6 6-5.6s6 2.2 6 5.6"></path><path d="M16.5 5.3a3.2 3.2 0 0 1 0 5.5"></path><path d="M18.4 14.9c1.9.7 2.9 2.5 2.9 5.1"></path></svg>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;background:#303237;display:flex;align-items:center;justify-content:center;color:#ffffff;position:relative">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13h4l1.4 2.4h5.2L16 13h4"></path><path d="M5.6 5h12.8l2.6 8v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5z"></path></svg>
+      <div style="position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:#e2703a"></div>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#75777e">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.6"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
+    </div>
+    <div style="flex-grow:1"></div>
+    <div style="width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#75777e">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17.5 7H20M4 17h3.5M12 17h8"></path><circle cx="15" cy="7" r="2.2"></circle><circle cx="9.5" cy="17" r="2.2"></circle></svg>
+    </div>
+    <div style="width:30px;height:30px;border-radius:50%;background:#4a4d54;margin-top:6px;display:flex;align-items:center;justify-content:center">
+      <span style="font-size:10.5px;font-weight:700;color:#ffffff">NJ</span>
+    </div>
+  </aside>
+
+  <div style="flex-grow:1;display:flex;flex-direction:column;min-width:0">
+
+    <header style="height:60px;display:flex;align-items:center;padding:0 26px;flex-shrink:0;position:relative">
+      <div style="position:absolute;left:50%;transform:translateX(-50%);display:flex;gap:2px;background:#ffffff;border-radius:999px;padding:4px;box-shadow:0 1px 2px rgba(20,20,25,.05), 0 4px 12px rgba(20,20,25,.06)">
+        <div style="width:34px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:#9c9ea4">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.4V20h13V9.4"></path></svg>
+        </div>
+        <div style="width:34px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:#9c9ea4">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="8" r="3.3"></circle><path d="M3.5 20c0-3.4 2.7-5.6 6-5.6s6 2.2 6 5.6"></path></svg>
+        </div>
+        <div style="width:34px;height:30px;border-radius:999px;background:#f1f1ef;display:flex;align-items:center;justify-content:center;color:#1a1b1e">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13h4l1.4 2.4h5.2L16 13h4"></path><path d="M5.6 5h12.8l2.6 8v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5z"></path></svg>
+        </div>
+        <div style="width:34px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:#9c9ea4">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2.4-6.6 4.8 13.2L16.8 12H21"></path></svg>
+        </div>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:4px">
+        <div style="width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#6f7177">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.4 15.4 4.1 4.1"></path></svg>
+        </div>
+        <div style="width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#6f7177;position:relative">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.8a6 6 0 1 0-12 0c0 5.8-2 7.3-2 7.3h16s-2-1.5-2-7.3"></path><path d="M13.7 19.4a2 2 0 0 1-3.4 0"></path></svg>
+          <div style="position:absolute;top:5px;right:5px;min-width:14px;height:14px;border-radius:999px;background:#c2410c;color:#ffffff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px">8</div>
+        </div>
+      </div>
+    </header>
+
+    <div style="flex-grow:1;padding:10px 30px 28px;display:flex;flex-direction:column;gap:16px;min-height:0">
+
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <h1 style="font-size:28px;font-weight:700;letter-spacing:-0.035em;line-height:1.1">Seen once</h1>
+          <p style="font-size:13.5px;color:#6f7177;line-height:1.5;max-width:640px">18 people wrote to you, or you wrote to them, but never both. They stay out of your contact list until you say otherwise — one exchange in each direction is what makes someone a contact.</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:#ffffff;border-radius:999px;padding:8px 15px;box-shadow:0 1px 2px rgba(20,20,25,.04);flex-shrink:0">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9c9ea4" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h14M8 12h8M10.5 18h3"></path></svg>
+          <span style="font-size:12.5px;color:#9c9ea4">Newest first</span>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;background:#ffffff;border-radius:14px;padding:11px 22px;box-shadow:0 1px 2px rgba(20,20,25,.04)">
+        <div style="display:flex;align-items:center;gap:13px">
+          <div style="width:17px;height:17px;border-radius:5px;background:#17181a;display:flex;align-items:center;justify-content:center">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"></path></svg>
+          </div>
+          <span style="font-size:12.5px;font-weight:600">3 selected</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px">
+          <span style="font-size:11.5px;color:#9c9ea4;margin-right:6px">412 automated senders were filtered out — receipts, newsletters, no-reply</span>
+          <button class="ghost">Dismiss selected</button>
+          <button class="solid">Add 3 as contacts</button>
+        </div>
+      </div>
+
+      <div style="background:#ffffff;border-radius:18px;box-shadow:0 1px 2px rgba(20,20,25,.04), 0 6px 16px rgba(20,20,25,.05);overflow:hidden">
+
+        <div class="qrow" style="border-top:none">
+          <div style="width:17px;height:17px;border-radius:5px;background:#17181a;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"></path></svg></div>
+          <div class="qav" style="background:#e8eef7;color:#2c5c96">MS</div>
+          <div style="display:flex;flex-direction:column;gap:2px;width:236px;flex-shrink:0">
+            <span class="qn">Mikael Sundqvist</span>
+            <span class="qe">mikael.sundqvist@knightec.se</span>
+          </div>
+          <span class="dir" style="background:#e8eef7;color:#2c5c96">1 from them · 0 from you</span>
+          <div style="display:flex;flex-direction:column;gap:2px;flex-grow:1;min-width:0">
+            <span class="src" style="font-weight:600;color:#4a4c52">Re: Praktikplats hösten 2026</span>
+            <span class="src">3 September · Knightec</span>
+          </div>
+          <button class="ghost">Dismiss</button>
+          <button class="solid">Add as contact</button>
+        </div>
+
+        <div class="qrow">
+          <div style="width:17px;height:17px;border-radius:5px;background:#17181a;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"></path></svg></div>
+          <div class="qav" style="background:#f9eaee;color:#9b405a">LF</div>
+          <div style="display:flex;flex-direction:column;gap:2px;width:236px;flex-shrink:0">
+            <span class="qn">Linnea Forsberg</span>
+            <span class="qe">linnea.forsberg@netlight.se</span>
+          </div>
+          <span class="dir" style="background:#f4f4f2;color:#82848a">0 from them · 1 from you</span>
+          <div style="display:flex;flex-direction:column;gap:2px;flex-grow:1;min-width:0">
+            <span class="src" style="font-weight:600;color:#4a4c52">Fråga om examensarbete</span>
+            <span class="src">28 August · Netlight</span>
+          </div>
+          <button class="ghost">Dismiss</button>
+          <button class="solid">Add as contact</button>
+        </div>
+
+        <div class="qrow">
+          <div style="width:17px;height:17px;border-radius:5px;background:#17181a;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"></path></svg></div>
+          <div class="qav" style="background:#e9f3ec;color:#2c6b47">HD</div>
+          <div style="display:flex;flex-direction:column;gap:2px;width:236px;flex-shrink:0">
+            <span class="qn">Henrik Dahl</span>
+            <span class="qe">h.dahl@tietoevry.com</span>
+          </div>
+          <span class="dir" style="background:#e8eef7;color:#2c5c96">1 from them · 0 from you</span>
+          <div style="display:flex;flex-direction:column;gap:2px;flex-grow:1;min-width:0">
+            <span class="src" style="font-weight:600;color:#4a4c52">Tack för visat intresse</span>
+            <span class="src">22 August · Tietoevry</span>
+          </div>
+          <button class="ghost">Dismiss</button>
+          <button class="solid">Add as contact</button>
+        </div>
+
+        <div class="qrow">
+          <div class="box"></div>
+          <div class="qav" style="background:#eeeaf7;color:#58479b">EW</div>
+          <div style="display:flex;flex-direction:column;gap:2px;width:236px;flex-shrink:0">
+            <span class="qn">Ebba Wikström</span>
+            <span class="qe">ebba@sigma.se</span>
+          </div>
+          <span class="dir" style="background:#f4f4f2;color:#82848a">0 from them · 1 from you</span>
+          <div style="display:flex;flex-direction:column;gap:2px;flex-grow:1;min-width:0">
+            <span class="src" style="font-weight:600;color:#4a4c52">Kontakt via LNU</span>
+            <span class="src">19 August · Sigma IT</span>
+          </div>
+          <button class="ghost">Dismiss</button>
+          <button class="solid">Add as contact</button>
+        </div>
+
+        <div class="qrow">
+          <div class="box"></div>
+          <div class="qav" style="background:#faf0e4;color:#8a5a1e">RH</div>
+          <div style="display:flex;flex-direction:column;gap:2px;width:236px;flex-shrink:0">
+            <span class="qn">Rasmus Holmberg</span>
+            <span class="qe">rasmus.holmberg@visma.com</span>
+          </div>
+          <span class="dir" style="background:#e8eef7;color:#2c5c96">1 from them · 0 from you</span>
+          <div style="display:flex;flex-direction:column;gap:2px;flex-grow:1;min-width:0">
+            <span class="src" style="font-weight:600;color:#4a4c52">Re: Sommarjobb 2027</span>
+            <span class="src">14 August · Visma</span>
+          </div>
+          <button class="ghost">Dismiss</button>
+          <button class="solid">Add as contact</button>
+        </div>
+
+        <div class="qrow">
+          <div class="box"></div>
+          <div class="qav" style="background:#e5f2f1;color:#266b66">KS</div>
+          <div style="display:flex;flex-direction:column;gap:2px;width:236px;flex-shrink:0">
+            <span class="qn">Klara Sjöberg</span>
+            <span class="qe">klara.sjoberg@combitech.se</span>
+          </div>
+          <span class="dir" style="background:#e8eef7;color:#2c5c96">1 from them · 0 from you</span>
+          <div style="display:flex;flex-direction:column;gap:2px;flex-grow:1;min-width:0">
+            <span class="src" style="font-weight:600;color:#4a4c52">Inbjudan till event i Växjö</span>
+            <span class="src">9 August · Combitech</span>
+          </div>
+          <button class="ghost">Dismiss</button>
+          <button class="solid">Add as contact</button>
+        </div>
+
+        <div class="qrow">
+          <div class="box"></div>
+          <div class="qav" style="background:#e8eef7;color:#2c5c96">VL</div>
+          <div style="display:flex;flex-direction:column;gap:2px;width:236px;flex-shrink:0">
+            <span class="qn">Viktor Lund</span>
+            <span class="qe">viktor.lund@fortnox.se</span>
+          </div>
+          <span class="dir" style="background:#f4f4f2;color:#82848a">0 from them · 1 from you</span>
+          <div style="display:flex;flex-direction:column;gap:2px;flex-grow:1;min-width:0">
+            <span class="src" style="font-weight:600;color:#4a4c52">Fråga om er plattform</span>
+            <span class="src">2 August · Fortnox</span>
+          </div>
+          <button class="ghost">Dismiss</button>
+          <button class="solid">Add as contact</button>
+        </div>
+
+        <div style="padding:11px 22px;border-top:1px solid #f4f4f2;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:11.5px;color:#b0b2b8;font-weight:500">Showing 7 of 18</span>
+          <span style="font-size:11.5px;color:#82848a;font-weight:600">Load more</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

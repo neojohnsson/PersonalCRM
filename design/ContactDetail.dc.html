@@ -1,0 +1,261 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #c2410c; text-decoration: none; }
+    a:hover { color: #9a3412; }
+    p { margin: 0; }
+    h1, h2, h3 { margin: 0; }
+    .meta { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: #82848a; }
+    .stat { background: #ffffff; border-radius: 16px; padding: 15px 17px 14px; box-shadow: 0 1px 2px rgba(20,20,25,.04), 0 6px 16px rgba(20,20,25,.05); display: flex; flex-direction: column; gap: 7px; flex-grow: 1; }
+    .stat-l { font-size: 10px; font-weight: 700; color: #b0b2b8; text-transform: uppercase; letter-spacing: 0.07em; }
+    .stat-v { font-size: 21px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+    .stat-c { font-size: 11.5px; color: #9c9ea4; font-weight: 500; }
+    .chip { position: absolute; display: flex; align-items: center; gap: 8px; background: #ffffff; border-radius: 999px; padding: 5px 13px 5px 5px; box-shadow: 0 1px 2px rgba(20,20,25,.05), 0 4px 12px rgba(20,20,25,.06); white-space: nowrap; }
+    .chip-i { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .chip-t { font-size: 11.5px; font-weight: 600; letter-spacing: -0.01em; }
+    .chip-s { font-size: 10.5px; color: #9c9ea4; font-weight: 500; }
+  </style>
+</helmet>
+<div style="width:1440px;height:900px;background:#f6f6f4;display:flex;color:#1a1b1e;overflow:hidden">
+
+  <aside style="width:56px;background:#17181a;display:flex;flex-direction:column;align-items:center;padding:14px 0 16px;gap:3px;flex-shrink:0">
+    <div style="width:30px;height:30px;border-radius:9px;background:#ffffff;display:flex;align-items:center;justify-content:center;margin-bottom:12px">
+      <span style="font-size:14px;font-weight:800;color:#17181a;letter-spacing:-0.03em">C</span>
+    </div>
+    <div style="width:34px;height:34px;border-radius:10px;background:#2e3035;display:flex;align-items:center;justify-content:center;color:#f6f6f4;margin-bottom:8px">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#75777e">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.4V20h13V9.4"></path></svg>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;background:#303237;display:flex;align-items:center;justify-content:center;color:#ffffff">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="8" r="3.3"></circle><path d="M3.5 20c0-3.4 2.7-5.6 6-5.6s6 2.2 6 5.6"></path><path d="M16.5 5.3a3.2 3.2 0 0 1 0 5.5"></path><path d="M18.4 14.9c1.9.7 2.9 2.5 2.9 5.1"></path></svg>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#75777e;position:relative">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13h4l1.4 2.4h5.2L16 13h4"></path><path d="M5.6 5h12.8l2.6 8v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5z"></path></svg>
+      <div style="position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:#e2703a"></div>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#75777e">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.6"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
+    </div>
+    <div style="flex-grow:1"></div>
+    <div style="width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#75777e">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17.5 7H20M4 17h3.5M12 17h8"></path><circle cx="15" cy="7" r="2.2"></circle><circle cx="9.5" cy="17" r="2.2"></circle></svg>
+    </div>
+    <div style="width:30px;height:30px;border-radius:50%;background:#4a4d54;margin-top:6px;display:flex;align-items:center;justify-content:center">
+      <span style="font-size:10.5px;font-weight:700;color:#ffffff">NJ</span>
+    </div>
+  </aside>
+
+  <div style="flex-grow:1;display:flex;flex-direction:column;min-width:0">
+
+    <header style="height:60px;display:flex;align-items:center;padding:0 26px;flex-shrink:0;position:relative">
+      <div style="width:34px;height:34px;border-radius:11px;background:#ffffff;display:flex;align-items:center;justify-content:center;color:#4a4c52;box-shadow:0 1px 2px rgba(20,20,25,.05)">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>
+      </div>
+      <div style="position:absolute;left:50%;transform:translateX(-50%);display:flex;gap:2px;background:#ffffff;border-radius:999px;padding:4px;box-shadow:0 1px 2px rgba(20,20,25,.05), 0 4px 12px rgba(20,20,25,.06)">
+        <div style="border-radius:999px;background:#f1f1ef;padding:6px 15px;font-size:12.5px;font-weight:600;color:#1a1b1e">Overview</div>
+        <div style="border-radius:999px;padding:6px 15px;font-size:12.5px;font-weight:500;color:#9c9ea4">Timeline</div>
+        <div style="border-radius:999px;padding:6px 15px;font-size:12.5px;font-weight:500;color:#9c9ea4">Threads</div>
+        <div style="border-radius:999px;padding:6px 15px;font-size:12.5px;font-weight:500;color:#9c9ea4">Notes</div>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:4px">
+        <div style="width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#6f7177">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.4 15.4 4.1 4.1"></path></svg>
+        </div>
+        <div style="width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#6f7177;position:relative">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.8a6 6 0 1 0-12 0c0 5.8-2 7.3-2 7.3h16s-2-1.5-2-7.3"></path><path d="M13.7 19.4a2 2 0 0 1-3.4 0"></path></svg>
+          <div style="position:absolute;top:5px;right:5px;min-width:14px;height:14px;border-radius:999px;background:#c2410c;color:#ffffff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px">8</div>
+        </div>
+      </div>
+    </header>
+
+    <div style="flex-grow:1;padding:10px 30px 28px;display:flex;flex-direction:column;gap:20px;min-height:0">
+
+      <div style="display:flex;align-items:flex-start;gap:20px">
+        <div style="width:64px;height:64px;border-radius:50%;background:#e8eef7;color:#2c5c96;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:700;flex-shrink:0">JE</div>
+        <div style="display:flex;flex-direction:column;gap:9px;flex-grow:1;min-width:0;padding-top:2px">
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <h1 style="font-size:27px;font-weight:700;letter-spacing:-0.035em;line-height:1.1">Johan Ekström</h1>
+            <p style="font-size:14px;color:#82848a;font-weight:500">Utvecklingschef · Fortnox</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+            <div class="meta"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b0b2b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="2.5"></rect><path d="m3.8 7.2 7.3 5.3a1.5 1.5 0 0 0 1.8 0l7.3-5.3"></path></svg>johan.ekstrom@fortnox.se</div>
+            <div class="meta"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b0b2b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2z"></path></svg>+46 70 123 45 67</div>
+            <div class="meta"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b0b2b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M3.5 12h17M12 3.5c2.2 2.5 3.3 5.4 3.3 8.5s-1.1 6-3.3 8.5c-2.2-2.5-3.3-5.4-3.3-8.5S9.8 6 12 3.5z"></path></svg>fortnox.se</div>
+            <div class="meta"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b0b2b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s6.5-5.6 6.5-10.2a6.5 6.5 0 0 0-13 0C5.5 15.4 12 21 12 21z"></path><circle cx="12" cy="10.6" r="2.3"></circle></svg>Växjö</div>
+            <div style="display:flex;gap:5px">
+              <span style="background:#f1f1ef;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:600;color:#6f7177">växjö</span>
+              <span style="background:#f1f1ef;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:600;color:#6f7177">thesis</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px;flex-shrink:0;padding-top:4px">
+          <div style="display:flex;align-items:center;gap:8px;background:#fdf1ea;border-radius:999px;padding:8px 15px">
+            <div style="width:7px;height:7px;border-radius:50%;background:#c2410c"></div>
+            <span style="font-size:12.5px;font-weight:700;color:#c2410c">Your turn · 6 days</span>
+          </div>
+          <div style="width:34px;height:34px;border-radius:11px;background:#ffffff;display:flex;align-items:center;justify-content:center;color:#6f7177;box-shadow:0 1px 2px rgba(20,20,25,.05)">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="#6f7177" stroke="none"><circle cx="5.5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="18.5" cy="12" r="1.5"></circle></svg>
+          </div>
+          <button style="background:#17181a;color:#ffffff;border:none;border-radius:999px;padding:10px 18px;font-family:inherit;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;cursor:pointer">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.6 9.4a2.1 2.1 0 0 0-3-3L5 17v3z"></path></svg>
+            Draft reply
+          </button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div style="display:flex;gap:14px">
+          <div class="stat">
+            <span class="stat-l">Warmth</span>
+            <span class="stat-v" style="color:#15803d">78</span>
+            <div style="width:100%;height:3px;border-radius:999px;background:#ecece9;overflow:hidden"><div style="width:78%;height:100%;background:#15803d"></div></div>
+          </div>
+          <div class="stat">
+            <span class="stat-l">Reply rate</span>
+            <span class="stat-v">3 of 4</span>
+            <span class="stat-c">they answered 3 of your last 4</span>
+          </div>
+          <div class="stat">
+            <span class="stat-l">Usually replies</span>
+            <span class="stat-v">within a day</span>
+            <span class="stat-c">median across 6 replies</span>
+          </div>
+          <div class="stat">
+            <span class="stat-l">Last contact</span>
+            <span class="stat-v">6 days ago</span>
+            <span class="stat-c">they wrote, you didn't</span>
+          </div>
+          <div class="stat">
+            <span class="stat-l">Exchanges</span>
+            <span class="stat-v">14</span>
+            <span class="stat-c">since 4 March 2026</span>
+          </div>
+        </div>
+        <p style="font-size:11.5px;color:#9c9ea4;font-weight:500;padding-left:2px">The 78 is these four numbers and nothing else — no AI opinion about how the relationship is going.</p>
+      </div>
+
+      <div style="background:#ffffff;border-radius:18px;padding:18px 22px 22px;box-shadow:0 1px 2px rgba(20,20,25,.04), 0 6px 16px rgba(20,20,25,.05);display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <h2 style="font-size:14.5px;font-weight:700;letter-spacing:-0.015em">Every touch</h2>
+            <span style="font-size:11.5px;color:#9c9ea4;font-weight:500">14 messages on record</span>
+          </div>
+          <div style="display:flex;gap:2px;background:#f4f4f2;border-radius:999px;padding:3px">
+            <div style="border-radius:999px;background:#ffffff;padding:5px 13px;font-size:11.5px;font-weight:600;box-shadow:0 1px 2px rgba(20,20,25,.06)">Timeline</div>
+            <div style="border-radius:999px;padding:5px 13px;font-size:11.5px;font-weight:500;color:#9c9ea4">Month</div>
+            <div style="border-radius:999px;padding:5px 13px;font-size:11.5px;font-weight:500;color:#9c9ea4">List</div>
+          </div>
+        </div>
+
+        <div style="position:relative;height:142px;margin-top:6px">
+          <div style="position:absolute;top:26px;left:0;right:0;height:1px;background:#ecece9"></div>
+          <div style="position:absolute;top:6px;left:2%;font-size:10.5px;font-weight:700;color:#b0b2b8;text-transform:uppercase;letter-spacing:0.06em">Jul</div>
+          <div style="position:absolute;top:6px;left:35%;font-size:10.5px;font-weight:700;color:#b0b2b8;text-transform:uppercase;letter-spacing:0.06em">Aug</div>
+          <div style="position:absolute;top:6px;left:70%;font-size:10.5px;font-weight:700;color:#b0b2b8;text-transform:uppercase;letter-spacing:0.06em">Sep</div>
+
+          <div style="position:absolute;top:23px;left:6%;width:6px;height:6px;border-radius:50%;background:#2c5c96"></div>
+          <div style="position:absolute;top:23px;left:13%;width:6px;height:6px;border-radius:50%;background:#a5a7ad"></div>
+          <div style="position:absolute;top:23px;left:41%;width:6px;height:6px;border-radius:50%;background:#2c5c96"></div>
+          <div style="position:absolute;top:23px;left:62%;width:6px;height:6px;border-radius:50%;background:#a5a7ad"></div>
+          <div style="position:absolute;top:23px;left:78%;width:6px;height:6px;border-radius:50%;background:#c2410c"></div>
+          <div style="position:absolute;top:19px;left:88.5%;width:14px;height:14px;border-radius:50%;background:#17181a;display:flex;align-items:center;justify-content:center"><div style="width:4px;height:4px;border-radius:50%;background:#ffffff"></div></div>
+          <div style="position:absolute;top:38px;left:87.5%;font-size:10px;font-weight:700;color:#17181a">TODAY</div>
+
+          <div class="chip" style="top:46px;left:3%">
+            <div class="chip-i" style="background:#e8eef7"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2c5c96" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.6 9.4a2.1 2.1 0 0 0-3-3L5 17v3z"></path></svg></div>
+            <div style="display:flex;flex-direction:column"><span class="chip-t">You wrote first</span><span class="chip-s">3 Jul · intro after the lecture</span></div>
+          </div>
+
+          <div class="chip" style="top:96px;left:11%">
+            <div class="chip-i" style="background:#f1f1ef"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6f7177" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"></path></svg></div>
+            <div style="display:flex;flex-direction:column"><span class="chip-t">They replied</span><span class="chip-s">5 Jul · within a day</span></div>
+          </div>
+
+          <div class="chip" style="top:46px;left:38%">
+            <div class="chip-i" style="background:#e8eef7"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2c5c96" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.6 9.4a2.1 2.1 0 0 0-3-3L5 17v3z"></path></svg></div>
+            <div style="display:flex;flex-direction:column"><span class="chip-t">You sent your CV</span><span class="chip-s">14 Aug</span></div>
+          </div>
+
+          <div class="chip" style="top:96px;left:58%">
+            <div class="chip-i" style="background:#f1f1ef"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6f7177" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"></path></svg></div>
+            <div style="display:flex;flex-direction:column"><span class="chip-t">They replied</span><span class="chip-s">28 Aug · after 5 days</span></div>
+          </div>
+
+          <div class="chip" style="top:46px;left:73%">
+            <div class="chip-i" style="background:#fdf1ea"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c2410c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16h.01"></path><circle cx="12" cy="12" r="8.5"></circle></svg></div>
+            <div style="display:flex;flex-direction:column"><span class="chip-t" style="color:#c2410c">They asked you a question</span><span class="chip-s">5 Sep · still unanswered</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:18px;flex-grow:1;min-height:0">
+
+        <div style="flex-grow:1;background:#ffffff;border-radius:18px;padding:18px 22px;box-shadow:0 1px 2px rgba(20,20,25,.04), 0 6px 16px rgba(20,20,25,.05);display:flex;flex-direction:column;gap:11px;min-width:0">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <h2 style="font-size:14.5px;font-weight:700;letter-spacing:-0.015em">Your notes</h2>
+            <span style="font-size:11.5px;font-weight:600;color:#9c9ea4">Edited 2 Sep</span>
+          </div>
+          <p style="font-size:13.5px;line-height:1.6;color:#4a4c52">Met after the guest lecture at LNU in March. Runs the platform team — mentioned they take two thesis students a year and that decisions land in October. Prefers email over LinkedIn. Knows Petter at Linnéuniversitetet.</p>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:6px">
+            <div style="display:flex;align-items:center;gap:7px;background:#f4f4f2;border-radius:999px;padding:7px 13px">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#82848a" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.6 9.4a2.1 2.1 0 0 0-3-3L5 17v3z"></path></svg>
+              <span style="font-size:12px;font-weight:600;color:#4a4c52">Edit note</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;background:#f4f4f2;border-radius:999px;padding:7px 13px">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#82848a" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+              <span style="font-size:12px;font-weight:600;color:#4a4c52">Add tag</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="width:392px;flex-shrink:0;display:flex;flex-direction:column;gap:14px">
+
+          <div style="background:#ffffff;border-radius:18px;padding:17px 20px;box-shadow:0 1px 2px rgba(20,20,25,.04), 0 6px 16px rgba(20,20,25,.05);display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <h2 style="font-size:14.5px;font-weight:700;letter-spacing:-0.015em">Next touch</h2>
+                <span style="font-size:12.5px;color:#6f7177;line-height:1.45">“said the budget lands in October”</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;background:#f1f1ef;border-radius:11px;padding:6px 11px;flex-shrink:0">
+                <span style="font-size:15px;font-weight:700;line-height:1.1">20</span>
+                <span style="font-size:9.5px;font-weight:600;color:#8a8c92;text-transform:uppercase;letter-spacing:0.05em">Sep</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:7px">
+              <div style="background:#f4f4f2;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:600;color:#4a4c52">Snooze</div>
+              <div style="background:#f4f4f2;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:600;color:#4a4c52">Skip</div>
+              <div style="background:#f4f4f2;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:600;color:#4a4c52">Mark done</div>
+            </div>
+          </div>
+
+          <div style="background:#ffffff;border-radius:18px;padding:17px 20px;box-shadow:0 1px 2px rgba(20,20,25,.04), 0 6px 16px rgba(20,20,25,.05);display:flex;flex-direction:column;gap:11px;flex-grow:1">
+            <h2 style="font-size:14.5px;font-weight:700;letter-spacing:-0.015em">Open thread</h2>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:13px;font-weight:600;letter-spacing:-0.01em">Re: Examensarbete VT26</span>
+              <span style="font-size:12px;color:#82848a;line-height:1.45">7 messages · they wrote last on 5 September</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;background:#f4f4f2;border-radius:999px;padding:7px 13px;align-self:flex-start;margin-top:auto">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#82848a" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"></path><path d="M20 4 11 13"></path><path d="M18 14v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"></path></svg>
+              <span style="font-size:12px;font-weight:600;color:#4a4c52">Open in Gmail</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

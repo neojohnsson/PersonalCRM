@@ -87,7 +87,7 @@ npm run dev
 Two things worth knowing before you touch `.env.local`:
 
 - `NEXT_PUBLIC_` values are compiled into the browser bundle. Never prefix a secret.
-- `SUPABASE_SERVICE_ROLE_KEY` bypasses every row-level security policy. Server-side only.
+- `SUPABASE_SECRET_KEY` bypasses every row-level security policy. Server-side only.
 
 Google setup, including the OAuth consent screen: [`docs/architecture.md`](docs/architecture.md)
 
