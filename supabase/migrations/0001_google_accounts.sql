@@ -66,3 +66,28 @@ revoke all on public.google_accounts from anon;
 --
 -- Then: npm test. Twelve passing means user B genuinely cannot read, change or
 -- delete user A's Gmail token.
+
+create policy "Users can view their own Gmail connection"
+on public.google_accounts
+for select
+to authenticated
+using ((select auth.uid()) = user_id);
+
+create policy "Users can create their own Gmail connection"
+on public.google_accounts
+for insert
+to authenticated
+with check ((select auth.uid()) = user_id);
+
+create policy "Users can update their own Gmail connection"
+on public.google_accounts
+for update
+to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+create policy "Users can delete their own Gmail connection"
+on public.google_accounts
+for delete
+to authenticated
+using ((select auth.uid()) = user_id);
