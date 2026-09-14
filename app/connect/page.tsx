@@ -15,6 +15,8 @@ const ERROR_MESSAGES: Record<string, string> = {
     "That connection attempt couldn't be verified, so it was stopped. If you started it, try again from the button below.",
   denied:
     "Gmail wasn't connected — the permission was cancelled on Google's screen. You can try again whenever you like.",
+  token_exchange:
+    "Google approved the connection, but finishing it failed. Try again from the button below.",
 };
 
 const FALLBACK_ERROR = "Something went wrong connecting Gmail. Try again.";
