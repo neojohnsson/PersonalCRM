@@ -5,14 +5,37 @@ import { requireUser } from "@/lib/auth";
 export const metadata = { title: `Connect Gmail · ${APP_NAME}` };
 
 /**
+ * The error codes app/api/auth/google/callback/route.ts redirects here with.
+ *
+ * Fixed messages only, never the raw `?error=` text — same reason as the
+ * login page: anyone can craft a link to /connect?error=anything.
+ */
+const ERROR_MESSAGES: Record<string, string> = {
+  state_mismatch:
+    "That connection attempt couldn't be verified, so it was stopped. If you started it, try again from the button below.",
+  denied:
+    "Gmail wasn't connected — the permission was cancelled on Google's screen. You can try again whenever you like.",
+};
+
+const FALLBACK_ERROR = "Something went wrong connecting Gmail. Try again.";
+
+/**
  * The screen that runs before Google's consent screen.
  *
  * Content is from design/Connect.dc.html. The point of it is in
  * docs/plan.md §3.1: a plain-English explanation of what is read and what is
  * stored, shown *before* the consent screen rather than buried in a policy.
  */
-export default async function ConnectPage() {
+export default async function ConnectPage({
+  searchParams,
+}: PageProps<"/connect">) {
   await requireUser();
+
+  const { error } = await searchParams;
+  const errorMessage =
+    typeof error === "string"
+      ? (ERROR_MESSAGES[error] ?? FALLBACK_ERROR)
+      : null;
 
   return (
     <main className="flex flex-1 justify-center bg-paper px-6 py-14">
@@ -25,6 +48,15 @@ export default async function ConnectPage() {
           lawyers. This one is written by the person who built the app. Read
           this one first.
         </p>
+
+        {errorMessage && (
+          <p
+            role="alert"
+            className="mt-6 rounded-xl border border-accent/20 bg-accent-tint px-5 py-4 text-[14px] leading-6 text-ink"
+          >
+            {errorMessage}
+          </p>
+        )}
 
         <Section title="What it reads">
           <Item>
