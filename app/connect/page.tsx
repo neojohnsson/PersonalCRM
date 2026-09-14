@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { APP_NAME } from "@/lib/app-config";
+import { requireUser } from "@/lib/auth";
 
 export const metadata = { title: `Connect Gmail · ${APP_NAME}` };
 
@@ -10,7 +11,9 @@ export const metadata = { title: `Connect Gmail · ${APP_NAME}` };
  * docs/plan.md §3.1: a plain-English explanation of what is read and what is
  * stored, shown *before* the consent screen rather than buried in a policy.
  */
-export default function ConnectPage() {
+export default async function ConnectPage() {
+  await requireUser();
+
   return (
     <main className="flex flex-1 justify-center bg-paper px-6 py-14">
       <div className="w-full max-w-xl">
@@ -25,56 +28,51 @@ export default function ConnectPage() {
 
         <Section title="What it reads">
           <Item>
-            Message headers — who wrote, when, and the subject line
-          </Item>
-          <Item>
-            Message bodies — only for the one thread you ask to summarise or
-            reply to
+            Message headers — who wrote, who received it, and when
           </Item>
         </Section>
 
         <Section title="What it keeps">
           <Item>
-            Contact details, your notes, and message metadata — sender, date,
-            subject, direction
-          </Item>
-          <Item>
-            Summaries you write or generate — every one editable and deletable
+            Message metadata — sender, recipients, date, and whether you sent
+            it or received it
           </Item>
           <Item emphasis>
-            Not message bodies. Those stay in Gmail unless you opt in, one
-            contact at a time.
+            Not message bodies, subject lines or attachments. Those stay in
+            Gmail.
           </Item>
         </Section>
 
         <Section title="What it will never do">
           <Item>
-            Send an email. Drafts land in Gmail and you press send.
+            Send an email. The permission it asks for is read-only.
           </Item>
           <Item>Track whether anyone opened or read a message</Item>
         </Section>
 
         <p className="mt-8 rounded-xl border border-accent/20 bg-accent-tint px-5 py-4 text-[14px] leading-6 text-ink">
           <strong className="font-semibold">Worth knowing:</strong>{" "}
-          Google&rsquo;s draft permission also technically permits sending.
-          There is no send endpoint anywhere in this app — but you are granting
-          the ability, so you should hear it from me rather than notice it on
-          the next screen.
+          Google&rsquo;s read-only permission covers whole messages, not just
+          headers. This app only ever asks Gmail for headers — but you are
+          granting more than that, so you should hear it from me rather than
+          notice it on the next screen.
         </p>
 
         <div className="mt-8 flex flex-col items-start gap-4">
           {/*
-            A plain link, not a fetch: this hands the browser to your route,
-            which builds the Google consent URL and redirects. A form POST
-            would be the stricter choice (it can't be triggered by someone
-            else's page), and is worth doing when you write the route.
+            A form POST, not a link: a link can be triggered by any other
+            site (an <img> or a redirect pointing at /api/auth/google), a
+            cross-site POST is much harder to forge. The route answers with a
+            303 redirect to Google's consent screen.
           */}
-          <Link
-            href="/api/auth/google"
-            className="rounded-lg bg-ink px-5 py-3 text-[15px] font-medium text-white transition hover:bg-[#17181a]"
-          >
-            Continue to Google
-          </Link>
+          <form action="/api/auth/google" method="post">
+            <button
+              type="submit"
+              className="rounded-lg bg-ink px-5 py-3 text-[15px] font-medium text-white transition hover:bg-[#17181a]"
+            >
+              Continue to Google
+            </button>
+          </form>
 
           <Link
             href="/privacy"
