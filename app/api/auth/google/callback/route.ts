@@ -20,11 +20,11 @@ export async function GET(request: NextRequest) {
     const savedState = request.cookies.get("google_oauth_state")?.value;
     
     if (!state || !savedState || state !== savedState) {
-        return NextResponse.redirect(new URL("/connect?error=state_mismatch", request.url));
+        return clearState(NextResponse.redirect(new URL("/connect?error=state_mismatch", request.url)));
     }
 
     if (error || !code) {
-        return NextResponse.redirect(new URL("/connect?error=denied", request.url));
+        return clearState(NextResponse.redirect(new URL("/connect?error=denied", request.url)));
     }
 
     const response = await fetch("https://oauth2.googleapis.com/token", {
@@ -38,14 +38,19 @@ export async function GET(request: NextRequest) {
         }),
     });
     if (!response.ok) {
-        return NextResponse.redirect(new URL("/connect?error=token_exchange", request.url));
+        return clearState(NextResponse.redirect(new URL("/connect?error=token_exchange", request.url)));
     }
 
     const tokens: GoogleTokens = await response.json();
 
-    return Response.json({
+    return clearState(NextResponse.json({
         hasRefreshToken: Boolean(tokens.refresh_token),
         scope: tokens.scope,
         expiresIn: tokens.expires_in,
-    });
+    }));
+}
+
+function clearState(response: NextResponse) {
+    response.cookies.delete({ name: "google_oauth_state", path: "/api/auth/google" });
+    return response;
 }

@@ -30,7 +30,7 @@ export async function POST() {
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         path: "/api/auth/google",
-        maxAge: 60 * 10, // 10 minutes
+        maxAge: 60 * 10,
     });
     return response;
 }
