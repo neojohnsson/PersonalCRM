@@ -28,7 +28,6 @@ export async function proxy(request: NextRequest) {
     );
 
     const { data } = await supabase.auth.getClaims();
-    console.log("proxy:", request.nextUrl.pathname, "user:", data?.claims?.email);
 
     return response;
 };
