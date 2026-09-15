@@ -4,6 +4,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { decrypt } from "@/lib/crypto";
 
+export class GmailReconnectRequired extends Error {}
+
 export async function getAccessToken(db: SupabaseClient, userId: string): Promise<string> {
     const { data, error } = await db
     .from("google_accounts")
@@ -28,6 +30,10 @@ export async function getAccessToken(db: SupabaseClient, userId: string): Promis
     });
 
     if (!response.ok) {
+        const body: { error?: string } = await response.json().catch(() => ({}));
+        if (body.error === "invalid_grant") {
+            throw new GmailReconnectRequired("Gmail access expired or was revoked");
+        }
         throw new Error("Google refused the token refresh");
     }
 
