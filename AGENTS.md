@@ -50,10 +50,14 @@ Architecture: `docs/architecture.md`. Decisions and their reasons: `docs/decisio
 - One slice per branch. Slices are in `docs/plan.md`. Don't cross boundaries.
 - Plan before code. Show me the plan, let me correct it, then build.
 - Small commits.
-- **I write these by hand — explain and review, don't generate:** the OAuth
-  flow and token refresh, RLS policies, the sync state machine, the warmth
-  calculation.
-- **Build these freely:** UI, forms, tables, styling, fixtures, config.
+- **You write the code; I need to understand it.** Changed 2026-09-15 — the
+  OAuth flow, token refresh and the first RLS policies were hand-written, and
+  that stopped there. Before each piece: say what it does and why, in plain
+  words. After: walk me through it. Nothing gets committed that I haven't
+  understood.
+- **Explain these in the most depth:** the sync state machine, RLS policies,
+  anything touching OAuth tokens, the warmth calculation. These are the
+  security model and the core logic — I must be able to explain them myself.
 - I'm a first-year systems science student. Java and Spring Boot are familiar;
   React, TypeScript, OAuth and Postgres RLS are new. Explain the why, not just
   the what, in those areas.

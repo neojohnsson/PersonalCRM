@@ -14,13 +14,11 @@ message metadata, show a list of people with message counts. No AI. Deployed.
 
 **Who writes what** (from `AGENTS.md`):
 
-| You write by hand | I build, you review |
-|---|---|
-| Sign-in call + callback route | Pages, list UI, sync status bar |
-| Gmail OAuth flow (consent + callback) | Table definitions (`create table`) |
-| Google token refresh | Gmail API fetch helpers + header parsing |
-| RLS policies for new tables | Tests (written first, like `0001`) |
-| The sync state machine | Fixtures, sign-out, config |
+Parts 1–2, the RLS policies for `0001` and `0002`, and token refresh were written by
+hand. **From 2026-09-15 on, Claude writes the code and you review it**: every piece is
+explained first — what it does and why — and nothing is committed until you've
+understood and approved it. The security-critical pieces (the sync state machine, and
+later the warmth calculation) get the most explanation, not less.
 
 ---
 
@@ -118,7 +116,7 @@ message count, sent, received, last contact. Created `with (security_invoker = t
 Without that, a view runs with its owner's rights and **skips RLS** — Bob could read
 Alice's people. The test proves it doesn't.
 
-### The state machine — you write this
+### The state machine — Claude writes, explained step by step
 
 ```
   not_connected ──connect──▶ ready ──sync now──▶ backfilling ⟲ one page per step
