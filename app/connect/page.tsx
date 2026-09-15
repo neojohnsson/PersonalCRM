@@ -21,6 +21,8 @@ const ERROR_MESSAGES: Record<string, string> = {
     "Gmail wasn't connected — read access to Gmail wasn't granted on Google's screen. It's needed to find the people you talk to. Try again and leave the Gmail box ticked.",
   no_refresh_token:
     "Google didn't hand over the long-term access this app needs to sync while you're away. Try again from the button below.",
+  save_failed:
+    "Google approved the connection, but saving it failed. Nothing was stored. Try again from the button below.",
 };
 
 const FALLBACK_ERROR = "Something went wrong connecting Gmail. Try again.";

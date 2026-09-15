@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth";
+import { encrypt } from "@/lib/crypto";
+import { createClient } from "@/lib/supabase/server";
 
 type GoogleTokens = {
     access_token: string;
@@ -11,7 +13,7 @@ type GoogleTokens = {
 };
 
 export async function GET(request: NextRequest) {
-    await requireUser();
+    const user = await requireUser();
 
     const state = request.nextUrl.searchParams.get("state");
     const code = request.nextUrl.searchParams.get("code");
@@ -43,11 +45,45 @@ export async function GET(request: NextRequest) {
 
     const tokens: GoogleTokens = await response.json();
 
-    return clearState(NextResponse.json({
-        hasRefreshToken: Boolean(tokens.refresh_token),
-        scope: tokens.scope,
-        expiresIn: tokens.expires_in,
-    }));
+    if (!tokens.scope.split(" ").includes("https://www.googleapis.com/auth/gmail.readonly")) {
+        return clearState(NextResponse.redirect(new URL("/connect?error=scope_missing", request.url)));
+    }
+
+    if (!tokens.refresh_token) {
+        return clearState(NextResponse.redirect(new URL("/connect?error=no_refresh_token", request.url)));
+    }
+
+    const encryptedToken = encrypt(tokens.refresh_token);
+    const profileResponse = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/profile", {
+        headers: { 
+            Authorization: `Bearer ${tokens.access_token}`
+        },
+    });
+
+    if (!profileResponse.ok) {
+        return clearState(NextResponse.redirect(new URL("/connect?error=token_exchange", request.url)));
+    }
+
+    const profile: { emailAddress: string } = await profileResponse.json();
+    const supabase = await createClient();
+
+    const { error: saveError } = await supabase
+        .from("google_accounts")
+        .upsert(
+            {
+                user_id: user.id,
+                email: profile.emailAddress,
+                refresh_token_encrypted: encryptedToken,
+                updated_at: new Date().toISOString(),
+            },
+            { onConflict: "user_id" },
+        );
+
+    if (saveError) {
+        return clearState(NextResponse.redirect(new URL("/connect?error=save_failed", request.url)));
+    }
+
+    return clearState(NextResponse.redirect(new URL("/", request.url)));
 }
 
 function clearState(response: NextResponse) {
