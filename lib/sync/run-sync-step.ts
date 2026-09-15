@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   GmailApiError,
   GmailHistoryTooOld,
+  GmailRateLimited,
   getMailboxHistoryId,
   getMessageMetadata,
   listAddedSince,
@@ -9,6 +10,7 @@ import {
 } from "@/lib/google/gmail";
 import { toMessageRow } from "@/lib/google/parse";
 import { GmailReconnectRequired, getAccessToken } from "@/lib/google/tokens";
+import { GMAIL_UNITS, RATE_LIMIT_WAIT_MS, waitAfter } from "@/lib/sync/pace";
 
 /**
  * The Gmail sync, one small step per call.
@@ -16,7 +18,8 @@ import { GmailReconnectRequired, getAccessToken } from "@/lib/google/tokens";
  * Why steps: 90 days of mail can be thousands of messages, and Vercel stops a
  * request that runs too long. So each call does one page of work, saves where
  * it got to in gmail_sync_state, and returns. Whoever calls it — the "Sync
- * now" button today, a schedule later — calls again until `done`.
+ * now" button today, a schedule later — calls again until `done`, waiting
+ * `waitMs` in between so the sync stays inside Gmail's per-user quota.
  *
  *   status at start        this step                          status after
  *   ─────────────────────  ─────────────────────────────────  ───────────────────────
@@ -46,6 +49,8 @@ export type SyncStepResult = {
   status: SyncStatus | "not_connected";
   /** true when calling again now would do nothing useful. */
   done: boolean;
+  /** How long to wait before the next step. 0 when done. */
+  waitMs: number;
 };
 
 type SyncState = {
@@ -60,6 +65,12 @@ type Context = {
   ownEmail: string;
   lookbackDays: number;
 };
+
+/**
+ * Messages per step. Each costs 20 quota units to read, so a page of 50 is
+ * about 1,000 units — roughly 12 seconds of Gmail's per-user budget.
+ */
+const PAGE_SIZE = 50;
 
 /** How many messages' headers to fetch from Gmail at the same time. */
 const PARALLEL_FETCHES = 10;
@@ -76,7 +87,7 @@ export async function runSyncStep(
     .eq("user_id", userId)
     .maybeSingle();
   if (accountError) throw accountError;
-  if (!account) return { status: "not_connected", done: true };
+  if (!account) return { status: "not_connected", done: true, waitMs: 0 };
 
   const { data: state, error: stateError } = await db
     .from("gmail_sync_state")
@@ -131,12 +142,12 @@ async function startBackfill(context: Context, state: SyncState): Promise<SyncSt
   const accessToken = await getAccessToken(context.db, context.userId);
   const historyId = await getMailboxHistoryId(accessToken);
 
-  return saveIfUnchanged(context, state, {
-    status: "backfilling",
-    history_id: historyId,
-    page_token: null,
-    last_error: null,
-  });
+  return saveIfUnchanged(
+    context,
+    state,
+    { status: "backfilling", history_id: historyId, page_token: null, last_error: null },
+    GMAIL_UNITS.getProfile,
+  );
 }
 
 /** One page of the last N days of mail. */
@@ -145,24 +156,33 @@ async function backfillPage(context: Context, state: SyncState): Promise<SyncSte
   const page = await listMessageIds(accessToken, {
     lookbackDays: context.lookbackDays,
     pageToken: state.page_token ?? undefined,
+    pageSize: PAGE_SIZE,
   });
 
   const messageCount = await saveMessages(context, accessToken, page.ids);
+  const units = GMAIL_UNITS.messagesList + page.ids.length * GMAIL_UNITS.messagesGet;
 
   if (page.nextPageToken) {
-    return saveIfUnchanged(context, state, {
-      page_token: page.nextPageToken,
-      message_count: messageCount,
-    });
+    return saveIfUnchanged(
+      context,
+      state,
+      { page_token: page.nextPageToken, message_count: messageCount },
+      units,
+    );
   }
 
-  return saveIfUnchanged(context, state, {
-    status: "synced",
-    page_token: null,
-    message_count: messageCount,
-    last_synced_at: new Date().toISOString(),
-    last_error: null,
-  });
+  return saveIfUnchanged(
+    context,
+    state,
+    {
+      status: "synced",
+      page_token: null,
+      message_count: messageCount,
+      last_synced_at: new Date().toISOString(),
+      last_error: null,
+    },
+    units,
+  );
 }
 
 /**
@@ -175,33 +195,41 @@ async function backfillPage(context: Context, state: SyncState): Promise<SyncSte
 async function incrementalPage(context: Context, state: SyncState): Promise<SyncStepResult> {
   if (!state.history_id) {
     // Synced with no bookmark shouldn't happen; if it does, start over.
-    return saveIfUnchanged(context, state, { status: "ready", page_token: null });
+    return saveIfUnchanged(context, state, { status: "ready", page_token: null }, 0);
   }
 
   const accessToken = await getAccessToken(context.db, context.userId);
   const page = await listAddedSince(accessToken, {
     startHistoryId: state.history_id,
     pageToken: state.page_token ?? undefined,
+    pageSize: PAGE_SIZE,
   });
 
   const messageCount = await saveMessages(context, accessToken, page.ids);
+  const units = GMAIL_UNITS.historyList + page.ids.length * GMAIL_UNITS.messagesGet;
 
   if (page.nextPageToken) {
-    return saveIfUnchanged(context, state, {
-      status: "incremental",
-      page_token: page.nextPageToken,
-      message_count: messageCount,
-    });
+    return saveIfUnchanged(
+      context,
+      state,
+      { status: "incremental", page_token: page.nextPageToken, message_count: messageCount },
+      units,
+    );
   }
 
-  return saveIfUnchanged(context, state, {
-    status: "synced",
-    history_id: page.historyId,
-    page_token: null,
-    message_count: messageCount,
-    last_synced_at: new Date().toISOString(),
-    last_error: null,
-  });
+  return saveIfUnchanged(
+    context,
+    state,
+    {
+      status: "synced",
+      history_id: page.historyId,
+      page_token: null,
+      message_count: messageCount,
+      last_synced_at: new Date().toISOString(),
+      last_error: null,
+    },
+    units,
+  );
 }
 
 /**
@@ -265,11 +293,15 @@ async function saveMessages(
  * no row — the page token is no longer what it read — so it changes nothing
  * and reports where the sync actually is. No page is skipped or done twice
  * over in the saved state.
+ *
+ * `units` is what the step spent on Gmail's quota, whoever won the save: it
+ * decides how long the caller waits before the next step.
  */
 async function saveIfUnchanged(
   context: Context,
   readState: SyncState,
   changes: Record<string, unknown>,
+  units: number,
 ): Promise<SyncStepResult> {
   let update = context.db
     .from("gmail_sync_state")
@@ -287,10 +319,10 @@ async function saveIfUnchanged(
 
   if (data.length === 0) {
     // Another step got there first. Report what it left behind.
-    return result(await currentStatus(context));
+    return result(await currentStatus(context), units);
   }
 
-  return result(data[0].status as SyncStatus);
+  return result(data[0].status as SyncStatus, units);
 }
 
 async function currentStatus(context: Context): Promise<SyncStatus> {
@@ -307,30 +339,35 @@ async function currentStatus(context: Context): Promise<SyncStatus> {
 /**
  * Turn a failed step into a status the UI can show.
  *
- *   dead Gmail key        → needs_reconnect  (retrying can never work)
- *   bookmark too old      → ready            (start over with a new bookmark)
- *   anything else         → error            (shown, retry allowed)
+ *   Gmail rate limit      → no change, wait a minute  (nothing is wrong)
+ *   dead Gmail key        → needs_reconnect           (retrying can never work)
+ *   bookmark too old      → ready                     (start over with a new bookmark)
+ *   anything else         → error                     (shown, retry allowed)
  */
 async function recordFailure(
   context: Context,
   state: SyncState,
   error: unknown,
 ): Promise<SyncStepResult> {
+  if (error instanceof GmailRateLimited) {
+    // Keep the place: nothing is saved, so the same page is tried again.
+    return { status: state.status, done: false, waitMs: RATE_LIMIT_WAIT_MS };
+  }
+
   if (error instanceof GmailReconnectRequired) {
-    return saveIfUnchanged(context, state, {
-      status: "needs_reconnect",
-      last_error: error.message,
-    });
+    return saveIfUnchanged(
+      context,
+      state,
+      { status: "needs_reconnect", last_error: error.message },
+      0,
+    );
   }
 
   if (error instanceof GmailHistoryTooOld) {
-    return saveIfUnchanged(context, state, { status: "ready", page_token: null });
+    return saveIfUnchanged(context, state, { status: "ready", page_token: null }, 0);
   }
 
-  return saveIfUnchanged(context, state, {
-    status: "error",
-    last_error: describe(error),
-  });
+  return saveIfUnchanged(context, state, { status: "error", last_error: describe(error) }, 0);
 }
 
 function describe(error: unknown): string {
@@ -341,7 +378,7 @@ function describe(error: unknown): string {
   return String(error);
 }
 
-function result(status: SyncStatus): SyncStepResult {
+function result(status: SyncStatus, units = 0): SyncStepResult {
   const done = status === "synced" || status === "needs_reconnect" || status === "error";
-  return { status, done };
+  return { status, done, waitMs: done ? 0 : waitAfter(units) };
 }

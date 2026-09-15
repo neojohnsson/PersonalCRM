@@ -11,6 +11,8 @@
  *   - spam and trash are left out of messages.list unless asked for
  *   - history.list answers HTTP 404 when startHistoryId is too old, and the
  *     client must then do a full sync
+ *   - going over the per-user quota answers 403 (rateLimitExceeded /
+ *     userRateLimitExceeded) or 429, and the fix is to wait and retry
  *
  * Server-side only in practice: an access token is a live key to a mailbox.
  */
@@ -54,6 +56,17 @@ export class GmailApiError extends Error {
 }
 
 /**
+ * Gmail says "too many requests for this user right now". Nothing is wrong:
+ * the sync should keep its place, wait, and carry on.
+ */
+export class GmailRateLimited extends GmailApiError {
+  constructor(status: number, message: string) {
+    super(status, message);
+    this.name = "GmailRateLimited";
+  }
+}
+
+/**
  * The stored history_id is older than Gmail keeps history for (typically at
  * least a week). An incremental sync is impossible; start over with a backfill.
  */
@@ -62,6 +75,26 @@ export class GmailHistoryTooOld extends Error {
     super("Gmail no longer has history for this bookmark; a full sync is needed.");
     this.name = "GmailHistoryTooOld";
   }
+}
+
+type GoogleErrorBody = {
+  error?: {
+    message?: string;
+    errors?: { reason?: string }[];
+  };
+};
+
+const RATE_LIMIT_REASONS = new Set(["rateLimitExceeded", "userRateLimitExceeded"]);
+
+function isRateLimit(status: number, body: GoogleErrorBody): boolean {
+  if (status === 429) return true;
+  if (status !== 403) return false;
+
+  const error = body.error;
+  return (
+    Boolean(error?.errors?.some((e) => e.reason && RATE_LIMIT_REASONS.has(e.reason))) ||
+    /quota exceeded|rate limit/i.test(error?.message ?? "")
+  );
 }
 
 async function gmailGet<T>(
@@ -78,15 +111,18 @@ async function gmailGet<T>(
     // Keep Google's own explanation: "HTTP 403" alone could mean a missing
     // permission, a disabled API or a rate limit, and the status line should
     // say which. Only the error text is kept — never any message content.
-    const reason = await response
+    const body = await response
       .json()
-      .then((body: { error?: { message?: string } }) => body.error?.message)
-      .catch(() => undefined);
+      .then((parsed: GoogleErrorBody) => parsed)
+      .catch((): GoogleErrorBody => ({}));
 
-    throw new GmailApiError(
-      response.status,
-      `Gmail ${path} failed with HTTP ${response.status}${reason ? `: ${reason}` : ""}`,
-    );
+    const reason = body.error?.message;
+    const message = `Gmail ${path} failed with HTTP ${response.status}${reason ? `: ${reason}` : ""}`;
+
+    if (isRateLimit(response.status, body)) {
+      throw new GmailRateLimited(response.status, message);
+    }
+    throw new GmailApiError(response.status, message);
   }
 
   return (await response.json()) as T;

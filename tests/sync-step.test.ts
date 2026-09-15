@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient, type User } from "@supabase/supabase
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { encrypt } from "@/lib/crypto";
 import type { GmailMessage } from "@/lib/google/gmail";
+import { GMAIL_UNITS, RATE_LIMIT_WAIT_MS, waitAfter } from "@/lib/sync/pace";
 import { runSyncStep } from "@/lib/sync/run-sync-step";
 
 /**
@@ -66,6 +67,8 @@ type FakeMailbox = {
   /** Make messages.list or history.list fail with this HTTP status. */
   listStatus?: number;
   historyStatus?: number;
+  /** Answer messages.list and history.list with Gmail's per-user quota 403. */
+  rateLimited?: boolean;
   /** Hold messages.list replies until this many requests have arrived. */
   holdListUntil?: number;
   /** Runs before messages.list replies — for simulating another tab. */
@@ -132,6 +135,19 @@ function json(status: number, body: unknown): Response {
   });
 }
 
+/** The 403 Gmail really sent on the preview when the sync went too fast. */
+function quotaExceeded(): Response {
+  return json(403, {
+    error: {
+      code: 403,
+      message:
+        "Quota exceeded for quota metric 'Total Query Cost' and limit 'Units per minute per user' of service 'gmail.googleapis.com'.",
+      status: "PERMISSION_DENIED",
+      errors: [{ reason: "rateLimitExceeded", domain: "usageLimits" }],
+    },
+  });
+}
+
 const realFetch = globalThis.fetch;
 
 /**
@@ -175,6 +191,7 @@ function installFakeGoogle(box: FakeMailbox): URL[] {
         await listGate;
       }
       if (box.beforeListReply) await box.beforeListReply();
+      if (box.rateLimited) return quotaExceeded();
       if (box.listStatus) return json(box.listStatus, { error: { code: box.listStatus } });
 
       const page = box.listPages[pageToken];
@@ -190,6 +207,7 @@ function installFakeGoogle(box: FakeMailbox): URL[] {
     }
 
     if (path === "/history") {
+      if (box.rateLimited) return quotaExceeded();
       if (box.historyStatus) return json(box.historyStatus, { error: { code: box.historyStatus } });
 
       const page = box.historyPages[pageToken];
@@ -312,7 +330,7 @@ describe("runSyncStep", () => {
     it("creates the sync state as ready, without calling Google", async () => {
       const requests = installFakeGoogle(mailbox());
 
-      expect(await step()).toEqual({ status: "ready", done: false });
+      expect(await step()).toEqual({ status: "ready", done: false, waitMs: 0 });
       expect((await state())!.status).toBe("ready");
       expect(requests).toEqual([]);
     });
@@ -321,28 +339,39 @@ describe("runSyncStep", () => {
       installFakeGoogle(mailbox());
       await setState({ status: "ready" });
 
-      expect(await step()).toEqual({ status: "backfilling", done: false });
+      expect(await step()).toMatchObject({ status: "backfilling", done: false });
       expect(await state()).toMatchObject({ history_id: "1000", page_token: null });
       expect(await savedMessageIds()).toEqual([]);
     });
 
-    it("saves one page per step and remembers the next page token", async () => {
+    it("saves one page of 50 per step and remembers the next page token", async () => {
       const requests = installFakeGoogle(mailbox());
       await setState({ status: "backfilling", history_id: "1000" });
 
-      expect(await step()).toEqual({ status: "backfilling", done: false });
+      expect(await step()).toMatchObject({ status: "backfilling", done: false });
       expect(await savedMessageIds()).toEqual(["m1", "m2"]);
       expect(await state()).toMatchObject({ page_token: "p2", message_count: 2 });
 
       const list = onGmail(requests).find(toPath("/messages"))!;
       expect(list.searchParams.get("q")).toBe("newer_than:90d");
+      expect(list.searchParams.get("maxResults")).toBe("50");
     });
 
-    it("finishes the backfill on the last page", async () => {
+    it("asks the caller to wait long enough to stay inside Gmail's per-user quota", async () => {
+      installFakeGoogle(mailbox());
+      await setState({ status: "backfilling", history_id: "1000" });
+
+      // One list (5 units) and two messages read (20 units each).
+      const result = await step();
+      expect(result.waitMs).toBe(waitAfter(GMAIL_UNITS.messagesList + 2 * GMAIL_UNITS.messagesGet));
+      expect(result.waitMs).toBeGreaterThan(0);
+    });
+
+    it("finishes the backfill on the last page, with nothing left to wait for", async () => {
       installFakeGoogle(mailbox());
       await setState({ status: "backfilling", history_id: "1000", page_token: "p2" });
 
-      expect(await step()).toEqual({ status: "synced", done: true });
+      expect(await step()).toEqual({ status: "synced", done: true, waitMs: 0 });
       expect(await savedMessageIds()).toEqual(["m3"]);
       expect(await state()).toMatchObject({ status: "synced", page_token: null });
       expect((await state())!.last_synced_at).not.toBeNull();
@@ -352,7 +381,7 @@ describe("runSyncStep", () => {
       const requests = installFakeGoogle(mailbox());
       await setState({ status: "needs_reconnect" });
 
-      expect(await step()).toEqual({ status: "needs_reconnect", done: true });
+      expect(await step()).toEqual({ status: "needs_reconnect", done: true, waitMs: 0 });
       expect(requests).toEqual([]);
     });
 
@@ -360,7 +389,7 @@ describe("runSyncStep", () => {
       const requests = installFakeGoogle(mailbox());
       await db.from("google_accounts").delete().eq("user_id", user.id);
 
-      expect(await step()).toEqual({ status: "not_connected", done: true });
+      expect(await step()).toEqual({ status: "not_connected", done: true, waitMs: 0 });
       expect(await state()).toBeNull();
       expect(requests).toEqual([]);
     });
@@ -371,7 +400,7 @@ describe("runSyncStep", () => {
       const requests = installFakeGoogle(mailbox());
       await setState({ status: "synced", history_id: "1000" });
 
-      expect(await step()).toEqual({ status: "synced", done: true });
+      expect(await step()).toMatchObject({ status: "synced", done: true });
       expect(await savedMessageIds()).toEqual(["m4"]);
       expect((await state())!.history_id).toBe("1005");
 
@@ -391,10 +420,10 @@ describe("runSyncStep", () => {
       );
       await setState({ status: "synced", history_id: "1000" });
 
-      expect(await step()).toEqual({ status: "incremental", done: false });
+      expect(await step()).toMatchObject({ status: "incremental", done: false });
       expect(await state()).toMatchObject({ history_id: "1000", page_token: "h2" });
 
-      expect(await step()).toEqual({ status: "synced", done: true });
+      expect(await step()).toMatchObject({ status: "synced", done: true });
       expect(await state()).toMatchObject({ history_id: "1005", page_token: null });
       expect(await savedMessageIds()).toEqual(["m3", "m4"]);
     });
@@ -403,21 +432,42 @@ describe("runSyncStep", () => {
       installFakeGoogle(mailbox({ listPages: { "": { ids: ["m1", "gone"] } } }));
       await setState({ status: "backfilling", history_id: "1000" });
 
-      expect(await step()).toEqual({ status: "synced", done: true });
+      expect(await step()).toMatchObject({ status: "synced", done: true });
       expect(await savedMessageIds()).toEqual(["m1"]);
       expect((await state())!.last_error).toBeNull();
     });
   });
 
   describe("when things go wrong", () => {
+    it("pauses on Gmail's rate limit without losing its place, and asks the caller to wait", async () => {
+      installFakeGoogle(mailbox({ rateLimited: true }));
+      await setState({ status: "backfilling", history_id: "1000", page_token: "p2" });
+
+      expect(await step()).toEqual({ status: "backfilling", done: false, waitMs: RATE_LIMIT_WAIT_MS });
+      expect(await state()).toMatchObject({
+        status: "backfilling",
+        page_token: "p2",
+        last_error: null,
+      });
+      expect(await savedMessageIds()).toEqual([]);
+    });
+
+    it("pauses an incremental sync on the rate limit too, keeping its bookmark", async () => {
+      installFakeGoogle(mailbox({ rateLimited: true }));
+      await setState({ status: "synced", history_id: "1000" });
+
+      expect(await step()).toEqual({ status: "synced", done: false, waitMs: RATE_LIMIT_WAIT_MS });
+      expect(await state()).toMatchObject({ status: "synced", history_id: "1000" });
+    });
+
     it("starts over from a fresh bookmark when Gmail's history has expired", async () => {
       installFakeGoogle(mailbox({ historyStatus: 404 }));
       await setState({ status: "synced", history_id: "1" });
 
-      expect(await step()).toEqual({ status: "ready", done: false });
+      expect(await step()).toMatchObject({ status: "ready", done: false });
       expect((await state())!.page_token).toBeNull();
 
-      expect(await step()).toEqual({ status: "backfilling", done: false });
+      expect(await step()).toMatchObject({ status: "backfilling", done: false });
       expect((await state())!.history_id).toBe("1000");
     });
 
@@ -425,7 +475,7 @@ describe("runSyncStep", () => {
       const requests = installFakeGoogle(mailbox({ tokenError: "invalid_grant" }));
       await setState({ status: "backfilling", history_id: "1000", page_token: "p2" });
 
-      expect(await step()).toEqual({ status: "needs_reconnect", done: true });
+      expect(await step()).toEqual({ status: "needs_reconnect", done: true, waitMs: 0 });
       expect((await state())!.last_error).toBeTruthy();
       expect(onGmail(requests)).toEqual([]);
     });
@@ -434,13 +484,13 @@ describe("runSyncStep", () => {
       installFakeGoogle(mailbox({ listStatus: 500 }));
       await setState({ status: "backfilling", history_id: "1000" });
 
-      expect(await step()).toEqual({ status: "error", done: true });
+      expect(await step()).toEqual({ status: "error", done: true, waitMs: 0 });
       expect((await state())!.last_error).toContain("500");
 
       vi.unstubAllGlobals();
       installFakeGoogle(mailbox());
 
-      expect(await step()).toEqual({ status: "backfilling", done: false });
+      expect(await step()).toMatchObject({ status: "backfilling", done: false });
       expect((await state())!.last_error).toBeNull();
     });
   });
@@ -470,7 +520,7 @@ describe("runSyncStep", () => {
       );
       await setState({ status: "backfilling", history_id: "1000" });
 
-      expect(await step()).toEqual({ status: "synced", done: true });
+      expect(await step()).toMatchObject({ status: "synced", done: true });
       expect(await state()).toMatchObject({ status: "synced", page_token: null });
     });
   });
