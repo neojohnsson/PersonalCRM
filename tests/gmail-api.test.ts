@@ -158,6 +158,29 @@ describe("listAddedSince", () => {
     await expect(failure).rejects.toBeInstanceOf(GmailApiError);
     await expect(failure).rejects.toMatchObject({ status: 500 });
   });
+
+  it("keeps Google's reason in the error message, so the status line can show it", async () => {
+    fakeGmail(403, {
+      error: { code: 403, message: "Metadata scope does not support 'q' parameter", status: "PERMISSION_DENIED" },
+    });
+
+    await expect(listMessageIds(TOKEN, { lookbackDays: 90 })).rejects.toMatchObject({
+      status: 403,
+      message: "Gmail /messages failed with HTTP 403: Metadata scope does not support 'q' parameter",
+    });
+  });
+
+  it("still fails cleanly when the error reply isn't JSON", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>(async () => new Response("<html>Bad gateway</html>", { status: 502 })),
+    );
+
+    await expect(listMessageIds(TOKEN, { lookbackDays: 90 })).rejects.toMatchObject({
+      status: 502,
+      message: "Gmail /messages failed with HTTP 502",
+    });
+  });
 });
 
 describe("getMailboxHistoryId", () => {

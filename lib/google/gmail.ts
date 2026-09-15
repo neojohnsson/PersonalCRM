@@ -75,9 +75,17 @@ async function gmailGet<T>(
   });
 
   if (!response.ok) {
+    // Keep Google's own explanation: "HTTP 403" alone could mean a missing
+    // permission, a disabled API or a rate limit, and the status line should
+    // say which. Only the error text is kept — never any message content.
+    const reason = await response
+      .json()
+      .then((body: { error?: { message?: string } }) => body.error?.message)
+      .catch(() => undefined);
+
     throw new GmailApiError(
       response.status,
-      `Gmail ${path} failed with HTTP ${response.status}`,
+      `Gmail ${path} failed with HTTP ${response.status}${reason ? `: ${reason}` : ""}`,
     );
   }
 
