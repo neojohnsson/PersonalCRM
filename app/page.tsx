@@ -2,6 +2,7 @@ import Link from "next/link";
 import { APP_NAME } from "@/lib/app-config";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { DisconnectGmailButton } from "./disconnect-gmail-button";
 import { SignOutButton } from "./sign-out-button";
 
 /**
@@ -50,6 +51,9 @@ export default async function Home() {
                 this page will list the people you actually talk to, most
                 recent first.
               </p>
+              <div className="mt-6">
+                <DisconnectGmailButton />
+              </div>
             </>
           ) : (
             <>
