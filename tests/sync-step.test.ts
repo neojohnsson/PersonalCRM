@@ -68,6 +68,8 @@ type FakeMailbox = {
   historyStatus?: number;
   /** Hold messages.list replies until this many requests have arrived. */
   holdListUntil?: number;
+  /** Runs before messages.list replies — for simulating another tab. */
+  beforeListReply?: () => Promise<void>;
 };
 
 function gmailMessage(
@@ -172,6 +174,7 @@ function installFakeGoogle(box: FakeMailbox): URL[] {
         if (listRequests >= box.holdListUntil) releaseList();
         await listGate;
       }
+      if (box.beforeListReply) await box.beforeListReply();
       if (box.listStatus) return json(box.listStatus, { error: { code: box.listStatus } });
 
       const page = box.listPages[pageToken];
@@ -443,7 +446,7 @@ describe("runSyncStep", () => {
   });
 
   describe("two tabs at once", () => {
-    it("never skips or double-counts a page when two steps run together", async () => {
+    it("saves a page once, however many steps run it together", async () => {
       // Both steps read the state, then both ask Gmail for the same page —
       // the fake holds the reply until both requests have arrived.
       const requests = installFakeGoogle(mailbox({ holdListUntil: 2 }));
@@ -455,6 +458,20 @@ describe("runSyncStep", () => {
       expect(await savedMessageIds()).toEqual(["m1", "m2"]);
       expect(await state()).toMatchObject({ page_token: "p2", message_count: 2 });
       expect(onGmail(requests).filter(toPath("/messages"))).toHaveLength(2);
+    });
+
+    it("doesn't undo progress another step saved while this one was working", async () => {
+      // While this step waits on Gmail, "another tab" finishes the whole sync.
+      // A slow step that saved blindly would drag the sync back to page 2.
+      installFakeGoogle(
+        mailbox({
+          beforeListReply: () => setState({ status: "synced", history_id: "1000", page_token: null }),
+        }),
+      );
+      await setState({ status: "backfilling", history_id: "1000" });
+
+      expect(await step()).toEqual({ status: "synced", done: true });
+      expect(await state()).toMatchObject({ status: "synced", page_token: null });
     });
   });
 });
