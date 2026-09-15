@@ -202,6 +202,9 @@ I build this, styled from `design/ContactList.dc.html`.
    button**. The button is scaffolding so the sync can be built and watched; it is removed
    when the schedule lands. See "Built for a schedule" below.
 6. **You write `proxy.ts` and `requireUser()`**, with me explaining each line.
+7. **Who counts as a person** (agreed 2026-09-15): on mail you receive, the sender; on
+   mail you send, everyone in To **and** Cc. Someone in both on one message counts once.
+   Other people Cc'd on mail you receive don't count — they aren't talking to you.
 
 ## Built for a schedule
 
