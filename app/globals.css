@@ -24,6 +24,21 @@
   --color-accent-tint: #fdf1ea;
   --color-affirm: #15803d;
   --color-info: #1e5fa8;
+
+  /* The near-black of the sidebar and the dark pill buttons. */
+  --color-ink-deep: #17181a;
+  /* Secondary text steps from ContactList / Main: status line, cells, headings. */
+  --color-ink-quiet: #8a8c92;
+  --color-ink-muted: #82848a;
+  --color-ink-ghost: #b0b2b8;
+  /* Row dividers and the hover tint of the table. */
+  --color-line-soft: #f4f4f2;
+  --color-paper-tint: #faf9f7;
+
+  /* The left sidebar. */
+  --color-rail-active: #303237;
+  --color-rail-icon: #75777e;
+  --color-rail-avatar: #4a4d54;
 }
 
 body {
