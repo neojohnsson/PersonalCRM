@@ -37,6 +37,20 @@ Architecture: `docs/architecture.md`. Decisions and their reasons: `docs/decisio
   AI-generated writes straight to a contact record or a Gmail draft.
 - Every AI output about a person is dated, editable, and links to its source.
 
+## Design
+
+- **Every screen is built from its design in `design/`** (`*.dc.html`, laid out
+  in `design/canvas.json`). Match its layout, type sizes, colours, icons and
+  spacing — the finished app has to look like the design, not merely be
+  "styled from" it.
+- Colours live as tokens in `app/globals.css`; add new ones there, taken
+  from the design, rather than inventing values.
+- Differences only for honest reasons, each written in a comment where it
+  happens: copy that would describe a feature the current slice doesn't
+  have yet, real data instead of the mock names, and fitting phone widths.
+- A screen with no design yet: reuse the patterns of the nearest designed
+  screen, and say so.
+
 ## Stack
 
 - Next.js (App Router) + TypeScript
