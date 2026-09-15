@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { encrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
+import { resetSyncAfterReconnect } from "@/lib/sync/reconnect";
 
 type GoogleTokens = {
     access_token: string;
@@ -80,6 +81,13 @@ export async function GET(request: NextRequest) {
         );
 
     if (saveError) {
+        return clearState(NextResponse.redirect(new URL("/connect?error=save_failed", request.url)));
+    }
+
+    // A fresh key un-sticks a sync that stopped on the old, dead one.
+    try {
+        await resetSyncAfterReconnect(supabase, user.id);
+    } catch {
         return clearState(NextResponse.redirect(new URL("/connect?error=save_failed", request.url)));
     }
 
