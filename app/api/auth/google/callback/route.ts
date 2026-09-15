@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { encrypt } from "@/lib/crypto";
+import { googleCallbackUrl } from "@/lib/google/redirect";
 import { createClient } from "@/lib/supabase/server";
 import { resetSyncAfterReconnect } from "@/lib/sync/reconnect";
 
@@ -36,7 +37,9 @@ export async function GET(request: NextRequest) {
             code: code,
             client_id: process.env.GOOGLE_CLIENT_ID!,
             client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-            redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
+            // Must be exactly the redirect_uri the consent request sent.
+            // Both are built from the address the app is running on.
+            redirect_uri: googleCallbackUrl(request),
             grant_type: "authorization_code",
         }),
     });

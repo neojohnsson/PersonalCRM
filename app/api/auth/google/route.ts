@@ -1,16 +1,19 @@
-
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth";
+import { googleCallbackUrl } from "@/lib/google/redirect";
 import { randomBytes } from "node:crypto";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
     await requireUser();
     const state = randomBytes(32).toString("base64url");
 
     const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
 
     const client_id = process.env.GOOGLE_CLIENT_ID!;
-    const redirect_uri = process.env.GOOGLE_REDIRECT_URI!;
+    // Built from the address this request came in on, so localhost, previews
+    // and production each get their own callback. See lib/google/redirect.ts.
+    const redirect_uri = googleCallbackUrl(request);
     const scope = "https://www.googleapis.com/auth/gmail.readonly";
     const response_type = "code";
     const access_type = "offline";
