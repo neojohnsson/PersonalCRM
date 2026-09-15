@@ -161,3 +161,55 @@ revoke all on public.people from anon;
 --
 -- Until these exist, RLS is on with no policies, which denies everything —
 -- so the tests fail. That's expected. Then: npm test.
+
+create policy "Users can view their own Gmail messages"
+on public.gmail_messages
+for select
+to authenticated
+using ((select auth.uid()) = user_id);
+
+create policy "Users can save their own Gmail messages"
+on public.gmail_messages
+for insert
+to authenticated
+with check ((select auth.uid()) = user_id);
+
+create policy "Users can update their own Gmail messages"
+on public.gmail_messages
+for update
+to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+create policy "Users can delete their own Gmail messages"
+on public.gmail_messages
+for delete
+to authenticated
+using ((select auth.uid()) = user_id);
+
+-- 
+
+create policy "Users can view their own Gmail sync state"
+on public.gmail_sync_state
+for select
+to authenticated
+using ((select auth.uid()) = user_id);
+
+create policy "Users can save their own Gmail sync state"
+on public.gmail_sync_state
+for insert
+to authenticated
+with check ((select auth.uid()) = user_id);
+
+create policy "Users can update their own Gmail sync state"
+on public.gmail_sync_state
+for update
+to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+create policy "Users can delete their own Gmail sync state"
+on public.gmail_sync_state
+for delete
+to authenticated
+using ((select auth.uid()) = user_id);
