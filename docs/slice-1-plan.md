@@ -107,7 +107,7 @@ token table stays narrow.
 | Column | Why |
 |---|---|
 | `status` | Where the state machine is (below) |
-| `backfill_page_token` | Where to resume the first sync |
+| `page_token` | Where to resume, for a backfill or an incremental sync (renamed in `0003`) |
 | `history_id` | Gmail's bookmark for "changes since" |
 | `last_synced_at`, `last_error`, `message_count` | So the status bar doesn't lie |
 
