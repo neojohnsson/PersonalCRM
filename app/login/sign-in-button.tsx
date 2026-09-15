@@ -32,9 +32,20 @@ export function SignInButton() {
     //     Gmail access is a separate, later consent on /connect, so a user
     //     can sign in without handing over their mailbox in the same breath.
     // ─────────────────────────────────────────────────────────────────────
-    void supabase;
-    setError("Sign-in is not wired up yet.");
-    setPending(false);
+
+    const redirect = window.location.origin;
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirect + "/auth/callback",
+      }
+    });
+
+    if (error) {
+      setError(error.message);
+      setPending(false);
+    }
   }
 
   return (

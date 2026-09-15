@@ -53,7 +53,7 @@ Do this before writing product code — it's the long pole and it blocks everyth
 2. **OAuth consent screen** → External → publishing status stays **Testing**
 3. Add yourself under **Test users** — nobody can sign in until they're on that list
 4. **Credentials** → OAuth client ID → Web application
-5. Authorised redirect URI: `http://localhost:3000/api/auth/google/callback` — must match `GOOGLE_REDIRECT_URI` character for character. A mismatch is the most common OAuth error there is.
+5. Authorised redirect URIs: one per address the app runs on, each ending in `/api/auth/google/callback` — `http://localhost:3000/…`, each Vercel preview branch (`https://personal-crm-git-<branch>-newcus-projects.vercel.app/…`), and production. The app builds the address from wherever it's running (`lib/google/redirect.ts`), so there's no setting to keep in step — but an address missing from this list gets `redirect_uri_mismatch`, the most common OAuth error there is.
 6. Copy the client ID and secret into `.env.local`
 
 Note: Next.js 16 has breaking changes relative to most training data. Check `node_modules/next/dist/docs/` rather than assuming App Router conventions.

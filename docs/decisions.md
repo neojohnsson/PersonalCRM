@@ -23,6 +23,10 @@ _What was decided, and why. Revise when a decision turns out wrong — the histo
 | Progress model | Warmth from countable signals | Reply rate, response speed, recency, thread depth — never an AI opinion |
 | Stack | Next.js + Supabase + Vercel | Fastest route to something hosted and real |
 | Language | English UI, drafts in the thread's language | Swedish contacts get Swedish drafts |
+| First sync reach | 90 days | Fast to test and enough to find who you actually talk to; easy to raise later |
+| Gmail scope timing | Read-only from Slice 1, draft scope added in Slice 5 | Ask for the smallest permission the current code uses |
+| Google API client | Plain `fetch`, no `googleapis` | Every OAuth request is visible and understood, not hidden in a library |
+| Sync trigger | Scheduled, no button | A tool you have to remember to refresh is one you stop opening. Slice 1 uses a temporary button while the sync is built |
 
 ## Trade-offs accepted
 
@@ -47,6 +51,5 @@ Chat with your inbox · mobile app · teams and shared workspaces · calendar, S
 ## Open
 
 - The name.
-- How far back the first sync should reach — 12 months is a guess.
 - Which model for which job, and the monthly spend cap.
 - Whether the two-tier import and whose-turn logic are worth reusing elsewhere.

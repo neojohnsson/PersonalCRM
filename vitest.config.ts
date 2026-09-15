@@ -8,8 +8,16 @@ config({ path: ".env.local" });
 
 export default defineConfig({
   resolve: {
-    // Same "@/..." alias as tsconfig.json, so tests import the way the app does.
-    alias: { "@": fileURLToPath(new URL(".", import.meta.url)) },
+    alias: {
+      // Same "@/..." alias as tsconfig.json, so tests import the way the app does.
+      "@": fileURLToPath(new URL(".", import.meta.url)),
+      // `import "server-only"` throws anywhere but a React server bundle, so
+      // tests of server code (lib/google/tokens.ts) point it at the package's
+      // own empty file — the same thing Next.js resolves it to on the server.
+      "server-only": fileURLToPath(
+        new URL("./node_modules/server-only/empty.js", import.meta.url),
+      ),
+    },
   },
   test: {
     include: ["tests/**/*.test.ts"],
