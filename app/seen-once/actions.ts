@@ -9,6 +9,10 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * The Seen once queue's buttons.
  *
+ * `only` is bound by the button (Next.js 16 forms guide, "Passing additional
+ * arguments"): a row's button binds its row's address, the bulk buttons bind
+ * null and act on everything ticked.
+ *
  * A Server Action can be called by anyone who sends it a POST, not only by
  * these buttons (Next.js 16 docs, "Mutating data"), so each one checks the user
  * itself. The work happens in database functions that run as the signed-in
@@ -17,9 +21,9 @@ import { createClient } from "@/lib/supabase/server";
  */
 
 /** "Add as contact", for one row or everything ticked. */
-export async function addAsContacts(formData: FormData): Promise<void> {
+export async function addAsContacts(only: string | null, formData: FormData): Promise<void> {
   const user = await requireUser();
-  const emails = emailsFromForm(formData);
+  const emails = emailsFromForm(formData, only);
   if (emails.length === 0) return;
 
   const supabase = await createClient();
@@ -36,9 +40,9 @@ export async function addAsContacts(formData: FormData): Promise<void> {
  * "Dismiss", for one row or everything ticked. Their incoming mail is deleted
  * and their future mail is never stored (slice-2-plan.md, decision A).
  */
-export async function dismissPeople(formData: FormData): Promise<void> {
+export async function dismissPeople(only: string | null, formData: FormData): Promise<void> {
   const user = await requireUser();
-  const emails = emailsFromForm(formData);
+  const emails = emailsFromForm(formData, only);
   if (emails.length === 0) return;
 
   const supabase = await createClient();

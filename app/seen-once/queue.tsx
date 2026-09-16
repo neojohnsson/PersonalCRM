@@ -21,8 +21,9 @@ export type SeenOncePerson = {
  *
  * Only the ticking needs JavaScript — how many are selected, select all, the
  * bulk buttons' labels. The buttons themselves are ordinary submit buttons
- * that post to Server Actions: every checkbox is named "email", and each row's
- * own button sends name="only" with its address, so it acts on just that row.
+ * that post to Server Actions. Every checkbox is named "email"; each row's own
+ * button is bound to its row's address, and the bulk buttons are bound to null
+ * so they act on everything ticked.
  */
 export function SeenOnceQueue({
   people,
@@ -72,10 +73,18 @@ export function SeenOnceQueue({
               calendar invites
             </span>
           )}
-          <SubmitButton action={dismissPeople} variant="ghost" disabled={selected.length === 0}>
+          <SubmitButton
+            action={dismissPeople.bind(null, null)}
+            variant="ghost"
+            disabled={selected.length === 0}
+          >
             Dismiss selected
           </SubmitButton>
-          <SubmitButton action={addAsContacts} variant="solid" disabled={selected.length === 0}>
+          <SubmitButton
+            action={addAsContacts.bind(null, null)}
+            variant="solid"
+            disabled={selected.length === 0}
+          >
             {selected.length > 0
               ? `Add ${selected.length} as ${selected.length === 1 ? "contact" : "contacts"}`
               : "Add as contacts"}
@@ -171,10 +180,10 @@ function Row({
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-[7px]">
-        <SubmitButton action={dismissPeople} variant="ghost" name="only" value={person.email}>
+        <SubmitButton action={dismissPeople.bind(null, person.email)} variant="ghost">
           Dismiss
         </SubmitButton>
-        <SubmitButton action={addAsContacts} variant="solid" name="only" value={person.email}>
+        <SubmitButton action={addAsContacts.bind(null, person.email)} variant="solid">
           Add as contact
         </SubmitButton>
       </div>
@@ -229,22 +238,20 @@ const BUTTON = {
 };
 
 /**
- * A submit button for one of the Server Actions. While any submission of the
- * form is on its way, every button is disabled, so nothing is sent twice.
+ * A submit button for one of the Server Actions, already bound to what it acts
+ * on. No `name`: React reserves it for buttons whose formAction is a function.
+ * While any submission of the form is on its way, every button is disabled, so
+ * nothing is sent twice.
  */
 function SubmitButton({
   action,
   variant,
   disabled = false,
-  name,
-  value,
   children,
 }: {
   action: (formData: FormData) => Promise<void>;
   variant: keyof typeof BUTTON;
   disabled?: boolean;
-  name?: string;
-  value?: string;
   children: React.ReactNode;
 }) {
   const { pending } = useFormStatus();
@@ -253,8 +260,6 @@ function SubmitButton({
     <button
       type="submit"
       formAction={action}
-      name={name}
-      value={value}
       disabled={disabled || pending}
       className={`shrink-0 rounded-full px-[14px] py-2 text-[12px] font-semibold whitespace-nowrap transition-colors disabled:cursor-default disabled:opacity-50 ${BUTTON[variant]}`}
     >

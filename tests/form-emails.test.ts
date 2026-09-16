@@ -17,13 +17,19 @@ describe("emailsFromForm", () => {
   it("acts on just one row when that row's own button was pressed", () => {
     expect(
       emailsFromForm(
-        form([
-          ["email", "johan@example.se"],
-          ["email", "sara@example.se"],
-          ["only", "mikael@example.se"],
-        ]),
+        form([["email", "johan@example.se"], ["email", "sara@example.se"]]),
+        "mikael@example.se",
       ),
     ).toEqual(["mikael@example.se"]);
+  });
+
+  it("treats a bulk button (bound to null) as everything ticked", () => {
+    expect(emailsFromForm(form([["email", "johan@example.se"]]), null)).toEqual(["johan@example.se"]);
+  });
+
+  it("cleans a row's own address like any other", () => {
+    expect(emailsFromForm(new FormData(), "  Mikael@Example.se ")).toEqual(["mikael@example.se"]);
+    expect(emailsFromForm(new FormData(), "not an address")).toEqual([]);
   });
 
   it("trims, lowercases and lists each address once", () => {
