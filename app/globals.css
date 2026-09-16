@@ -7,6 +7,42 @@
 :root {
   --background: #ffffff;
   --foreground: #1a1b1e;
+
+  /* Scrollbar thumb: a soft grey between the design's line and ghost greys. */
+  --scrollbar-thumb: #d6d7d9;
+  --scrollbar-thumb-hover: #b0b2b8;
+}
+
+/*
+ * A thin scrollbar in the app's own greys instead of the operating system's
+ * default. Kept rather than hidden: it's the only sign of how long a list is
+ * and where you are in it. scrollbar-gutter reserves its space, so pages
+ * don't jump sideways when they become long enough to scroll.
+ */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+  scrollbar-gutter: stable;
+}
+
+/* Older Safari, which doesn't know scrollbar-color. */
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
 }
 
 @theme inline {

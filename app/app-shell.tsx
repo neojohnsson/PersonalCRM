@@ -15,6 +15,10 @@ import { initials } from "@/lib/format";
  *     for: the connected Gmail address, Disconnect and Sign out.
  *   - Below the sm breakpoint the sidebar is hidden and the app name shows
  *     in the header instead, so the list keeps the width on a phone.
+ *
+ * The sidebar is sticky: it stays the height of the window and doesn't move
+ * while the page scrolls — the design is a fixed 900px frame, so it never
+ * had to say what happens below the fold.
  */
 export function AppShell({
   userEmail,
@@ -27,7 +31,7 @@ export function AppShell({
 }) {
   return (
     <div className="flex flex-1 bg-paper text-ink">
-      <aside className="hidden w-14 shrink-0 flex-col items-center gap-[3px] bg-ink-deep pt-3.5 pb-4 sm:flex">
+      <aside className="sticky top-0 hidden h-dvh w-14 shrink-0 flex-col items-center gap-[3px] self-start bg-ink-deep pt-3.5 pb-4 sm:flex">
         <div
           aria-hidden="true"
           className="mb-3 flex size-[30px] items-center justify-center rounded-[9px] bg-white"
@@ -67,7 +71,9 @@ export function AppShell({
         {userEmail && (
           <div
             title={userEmail}
-            className="mt-1.5 flex size-[30px] items-center justify-center rounded-full bg-rail-avatar"
+            // A rounded square like the logo tile, not the design's circle:
+            // changed at the user's request, 2026-09-16.
+            className="mt-1.5 flex size-[30px] items-center justify-center rounded-[9px] bg-rail-avatar"
           >
             <span className="text-[10.5px] font-bold text-white">
               {initials(null, userEmail)}

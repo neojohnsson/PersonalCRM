@@ -204,6 +204,16 @@ export function parseAddressList(header: string | undefined): Address[] {
   return addresses;
 }
 
+/**
+ * A Subject header as readable text: encoded words decoded (the way mail
+ * clients send å ä ö), whitespace collapsed. null when there's no subject.
+ */
+export function parseSubject(value: string | undefined): string | null {
+  if (!value) return null;
+  const subject = decodeEncodedWords(value).replace(/\s+/g, " ").trim();
+  return subject || null;
+}
+
 function header(message: GmailMessage, name: string): string | undefined {
   const wanted = name.toLowerCase();
   return message.payload?.headers?.find((h) => h.name.toLowerCase() === wanted)?.value;
