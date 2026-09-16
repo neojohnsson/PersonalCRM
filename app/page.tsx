@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
+import { displayName } from "@/lib/contacts/display";
+import { MAX_QUERY_LENGTH, ilikePattern, normaliseQuery } from "@/lib/contacts/search";
 import { avatarColors, countOf, daysAgo, initials } from "@/lib/format";
+import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 import { lookbackDays } from "@/lib/sync/config";
 import { describeSync, type SyncLine, type SyncSummary } from "@/lib/sync/describe";
@@ -10,23 +13,22 @@ import { SignOutButton } from "./sign-out-button";
 import { SyncButton } from "./sync-button";
 
 /**
- * The home page: everyone you've exchanged mail with, most recent first —
- * never A–Z (AGENTS.md, core premise).
+ * The home page: your contacts, most recent contact first — never A–Z
+ * (AGENTS.md, core premise).
  *
- * Layout from the designs: heading and status line from design/Main.dc.html,
- * the table card from design/ContactList.dc.html.
+ * Built from design/ContactList.dc.html: the Contacts / Seen once tabs, the
+ * search box and dark pill button on the top row, the table card. The status
+ * line comes from design/Main.dc.html.
  *
- * Differences from ContactList, on purpose — slice 1 doesn't have the data:
- *   - Company → Email. Company arrives with contact records in slice 2.
- *   - Whose turn, Warmth → Sent, Received. Those are slice 3 calculations;
- *     slice 1 only counts messages.
- *   - No Contacts / Seen once tabs, filter chips, search or Add contact:
- *     the two-tier import and manual contacts are slice 2.
- *   - Main's date on the right is left out: rendered on a server in UTC it
- *     can show the wrong day near midnight in Sweden.
- *
- * It will be noisy: newsletters and no-reply senders show up. Filtering them
- * is slice 2.
+ * Differences from ContactList, on purpose:
+ *   - Whose turn and Warmth columns, the filter chips and the sort menu: slice 3.
+ *     "Messages" stands in, since slice 2 can count them.
+ *   - "Add contact" arrives with its form (slice-2-plan.md, step 6), so there's
+ *     never a button to a page that doesn't exist.
+ *   - The dark pill says Sync now, the temporary button (slice-1-plan.md,
+ *     decision 5).
+ *   - The design has no visible heading; the page has a hidden one, so screen
+ *     readers still get a title.
  */
 
 const PAGE_SIZE = 50;
@@ -38,13 +40,14 @@ const CARD =
 const DARK_PILL =
   "flex items-center gap-[7px] rounded-full bg-ink-deep px-4 py-[9px] text-[12.5px] font-semibold text-white transition hover:bg-ink/85";
 
-type Person = {
-  email: string;
-  name: string | null;
+type ContactRow = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  company: string | null;
+  primary_email: string | null;
   message_count: number;
-  sent_count: number;
-  received_count: number;
-  last_contact_at: string;
+  last_contact_at: string | null;
 };
 
 export default async function Home({ searchParams }: PageProps<"/">) {
@@ -58,7 +61,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     .select("email")
     .eq("user_id", user.id)
     .maybeSingle();
-  if (gmailError) throw gmailError;
+  if (gmailError) throw supabaseError(gmailError, "Couldn't check the Gmail connection");
 
   const signOut = <SignOutButton />;
 
@@ -66,11 +69,11 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     return (
       <AppShell userEmail={user.email} headerRight={signOut}>
         <main className="flex flex-1 flex-col gap-[22px] px-4 pt-2 pb-[26px] sm:px-[30px]">
-          <Heading />
+          <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.035em]">Contacts</h1>
           <EmptyCard title="Connect Gmail to begin">
             <p>
-              Once Gmail is connected, this page lists the people you actually
-              talk to, most recent first.
+              Once Gmail is connected, everyone you&rsquo;ve written to and
+              heard back from shows up here, most recent first.
             </p>
             <Link href="/connect" className={`${DARK_PILL} mt-5 self-start`}>
               Connect Gmail
@@ -81,31 +84,52 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     );
   }
 
-  const { show } = await searchParams;
+  const { show, q } = await searchParams;
+  const query = normaliseQuery(q);
   const requested = typeof show === "string" ? Number.parseInt(show, 10) : NaN;
   const limit = requested > 0 ? Math.min(requested, MAX_ROWS) : PAGE_SIZE;
 
-  const [syncQuery, peopleQuery] = await Promise.all([
+  let contactsQuery = supabase
+    .from("contact_list")
+    .select("id, first_name, last_name, company, primary_email, message_count, last_contact_at", {
+      count: "exact",
+    })
+    .eq("user_id", user.id)
+    .order("last_contact_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (query) contactsQuery = contactsQuery.ilike("search_text", ilikePattern(query));
+
+  const [syncQuery, contactsResult, seenOnceResult, allContactsResult] = await Promise.all([
     supabase
       .from("gmail_sync_state")
       .select("status, message_count, last_synced_at, last_error")
       .eq("user_id", user.id)
       .maybeSingle(),
+    contactsQuery,
     supabase
-      .from("people")
-      .select("email, name, message_count, sent_count, received_count, last_contact_at", {
-        count: "exact",
-      })
+      .from("person_tiers")
+      .select("email", { count: "exact", head: true })
       .eq("user_id", user.id)
-      .order("last_contact_at", { ascending: false })
-      .limit(limit),
+      .eq("tier", "seen_once")
+      .is("contact_id", null),
+    // While searching, the tab still shows how many contacts there are in all.
+    query
+      ? supabase.from("contacts").select("id", { count: "exact", head: true }).eq("user_id", user.id)
+      : null,
   ]);
-  if (syncQuery.error) throw syncQuery.error;
-  if (peopleQuery.error) throw peopleQuery.error;
+  if (syncQuery.error) throw supabaseError(syncQuery.error, "Couldn't load the sync status");
+  if (contactsResult.error) throw supabaseError(contactsResult.error, "Couldn't load contacts");
+  if (seenOnceResult.error) throw supabaseError(seenOnceResult.error, "Couldn't count Seen once");
+  if (allContactsResult?.error) {
+    throw supabaseError(allContactsResult.error, "Couldn't count contacts");
+  }
 
   const sync = syncQuery.data as SyncSummary | null;
-  const people = (peopleQuery.data ?? []) as Person[];
-  const total = peopleQuery.count ?? people.length;
+  const contacts = (contactsResult.data ?? []) as ContactRow[];
+  const matching = contactsResult.count ?? contacts.length;
+  const totalContacts = allContactsResult?.count ?? matching;
+  const seenOnce = seenOnceResult.count ?? 0;
 
   return (
     <AppShell
@@ -118,35 +142,105 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         </>
       }
     >
-      <main className="flex flex-1 flex-col gap-[22px] px-4 pt-2 pb-[26px] sm:px-[30px]">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="flex flex-col gap-2">
-            <Heading />
-            <StatusLine line={describeSync(sync, total)} />
-          </div>
+      <main className="flex flex-1 flex-col gap-4 px-4 pt-2 pb-[26px] sm:px-[30px]">
+        <h1 className="sr-only">Contacts</h1>
 
-          {sync?.status === "needs_reconnect" ? (
-            <Link href="/connect" className={DARK_PILL}>
-              Reconnect Gmail
-            </Link>
-          ) : (
-            <SyncButton />
-          )}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <ListTabs contacts={totalContacts} seenOnce={seenOnce} />
+
+          <div className="flex w-full flex-wrap items-start gap-2 sm:w-auto">
+            <SearchBox query={query} />
+            {sync?.status === "needs_reconnect" ? (
+              <Link href="/connect" className={DARK_PILL}>
+                Reconnect Gmail
+              </Link>
+            ) : (
+              <SyncButton />
+            )}
+          </div>
         </div>
 
-        {people.length > 0 ? (
-          <PeopleTable people={people} total={total} limit={limit} />
+        <StatusLine line={describeSync(sync, totalContacts)} />
+
+        {contacts.length > 0 ? (
+          <ContactTable contacts={contacts} total={matching} limit={limit} query={query} />
+        ) : query ? (
+          <EmptyCard title={`No contacts match “${query}”`}>
+            <p>Search looks at names, companies, roles, tags and every address.</p>
+            <Link href="/" className="mt-3 self-start font-semibold text-ink hover:text-ink-soft">
+              Clear the search
+            </Link>
+          </EmptyCard>
         ) : (
-          <NobodyYet sync={sync} />
+          <NoContactsYet sync={sync} seenOnce={seenOnce} />
         )}
       </main>
     </AppShell>
   );
 }
 
-function Heading() {
+/** ContactList's segmented tabs. The Seen once tab leads to the review queue. */
+function ListTabs({ contacts, seenOnce }: { contacts: number; seenOnce: number }) {
   return (
-    <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.035em]">People</h1>
+    <nav aria-label="Lists" className="flex items-center gap-[3px] rounded-full bg-chip-track p-[3px]">
+      <span
+        aria-current="page"
+        className="flex items-center gap-[7px] rounded-full bg-white px-[15px] py-[7px] shadow-[0_1px_2px_rgba(20,20,25,.06)]"
+      >
+        <span className="text-[13px] font-semibold tracking-[-0.01em]">Contacts</span>
+        <span className="text-[11.5px] font-semibold text-ink-faint tabular-nums">
+          {contacts.toLocaleString("en-GB")}
+        </span>
+      </span>
+      <Link
+        href="/seen-once"
+        className="flex items-center gap-[7px] rounded-full px-[15px] py-[7px] transition-colors hover:bg-white/60"
+      >
+        <span className="text-[13px] font-medium text-ink-soft">Seen once</span>
+        <span className="text-[11.5px] font-semibold text-ink-hush tabular-nums">
+          {seenOnce.toLocaleString("en-GB")}
+        </span>
+      </Link>
+    </nav>
+  );
+}
+
+/**
+ * A plain GET form: pressing Enter loads /?q=…, so search works without any
+ * JavaScript and the address can be bookmarked.
+ */
+function SearchBox({ query }: { query: string }) {
+  return (
+    <form
+      role="search"
+      action="/"
+      className="flex w-full items-center gap-2 rounded-full bg-white px-[15px] py-2 shadow-[0_1px_2px_rgba(20,20,25,.04)] focus-within:ring-2 focus-within:ring-ink/10 sm:w-[206px]"
+    >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.9}
+        strokeLinecap="round"
+        className="size-[15px] shrink-0 text-ink-hush"
+      >
+        <circle cx="10.5" cy="10.5" r="6.5" />
+        <path d="m15.4 15.4 4.1 4.1" />
+      </svg>
+      <label htmlFor="contact-search" className="sr-only">
+        Search contacts
+      </label>
+      <input
+        id="contact-search"
+        name="q"
+        type="search"
+        defaultValue={query}
+        maxLength={MAX_QUERY_LENGTH}
+        placeholder="Search name, company, tag"
+        className="w-full min-w-0 bg-transparent text-[12.5px] text-ink outline-none placeholder:text-ink-hush"
+      />
+    </form>
   );
 }
 
@@ -168,8 +262,21 @@ function StatusLine({ line }: { line: SyncLine }) {
   );
 }
 
-function PeopleTable({ people, total, limit }: { people: Person[]; total: number; limit: number }) {
+function ContactTable({
+  contacts,
+  total,
+  limit,
+  query,
+}: {
+  contacts: ContactRow[];
+  total: number;
+  limit: number;
+  query: string;
+}) {
   const heading = "px-2 pt-[11px] pb-[9px] text-[10.5px] font-bold tracking-[0.07em] text-ink-ghost uppercase";
+
+  const more = new URLSearchParams({ show: String(limit + PAGE_SIZE) });
+  if (query) more.set("q", query);
 
   return (
     <div className={`${CARD} overflow-hidden`}>
@@ -178,27 +285,27 @@ function PeopleTable({ people, total, limit }: { people: Person[]; total: number
           <col />
           <col className="hidden w-[186px] md:table-column" />
           <col className="hidden w-[128px] md:table-column" />
-          <col className="hidden w-[118px] md:table-column" />
           <col className="w-[74px]" />
         </colgroup>
 
         <thead>
           <tr>
             <th scope="col" className={`${heading} pl-[22px] text-left`}>Name</th>
-            <th scope="col" className={`${heading} hidden text-left md:table-cell`}>Email</th>
-            <th scope="col" className={`${heading} hidden text-left md:table-cell`}>Sent</th>
-            <th scope="col" className={`${heading} hidden text-left md:table-cell`}>Received</th>
+            <th scope="col" className={`${heading} hidden text-left md:table-cell`}>Company</th>
+            <th scope="col" className={`${heading} hidden text-left md:table-cell`}>Messages</th>
             <th scope="col" className={`${heading} pr-[22px] text-right`}>Last</th>
           </tr>
         </thead>
 
         <tbody>
-          {people.map((person) => {
-            const colors = avatarColors(person.email);
+          {contacts.map((contact) => {
+            const name = displayName(contact);
+            const hasName = Boolean(contact.first_name?.trim() || contact.last_name?.trim());
+            const colors = avatarColors(contact.primary_email ?? contact.id);
 
             return (
               <tr
-                key={person.email}
+                key={contact.id}
                 className="h-[38px] border-t border-line-soft transition-colors hover:bg-paper-tint"
               >
                 <td className="py-0 pr-2 pl-[22px]">
@@ -208,24 +315,28 @@ function PeopleTable({ people, total, limit }: { people: Person[]; total: number
                       style={colors}
                       className="flex size-6 shrink-0 items-center justify-center rounded-full text-[9.5px] font-bold"
                     >
-                      {initials(person.name, person.email)}
+                      {initials(
+                        hasName ? name : null,
+                        contact.primary_email ?? contact.first_name ?? "?",
+                      )}
                     </span>
                     <span className="truncate text-[13.5px] font-semibold tracking-[-0.01em]">
-                      {person.name ?? person.email}
+                      {name}
                     </span>
                   </div>
                 </td>
                 <td className="hidden truncate px-2 text-[12.5px] text-ink-muted md:table-cell">
-                  {person.email}
+                  {contact.company ?? <span className="text-ink-hush">—</span>}
                 </td>
                 <td className="hidden px-2 text-[12.5px] font-semibold tabular-nums md:table-cell">
-                  {person.sent_count}
-                </td>
-                <td className="hidden px-2 text-[12.5px] font-semibold tabular-nums md:table-cell">
-                  {person.received_count}
+                  {contact.message_count}
                 </td>
                 <td className="pr-[22px] pl-2 text-right text-[12px] font-semibold text-ink-muted">
-                  <time dateTime={person.last_contact_at}>{daysAgo(person.last_contact_at)}</time>
+                  {contact.last_contact_at ? (
+                    <time dateTime={contact.last_contact_at}>{daysAgo(contact.last_contact_at)}</time>
+                  ) : (
+                    <span className="text-ink-hush">—</span>
+                  )}
                 </td>
               </tr>
             );
@@ -235,11 +346,11 @@ function PeopleTable({ people, total, limit }: { people: Person[]; total: number
 
       <div className="flex items-center justify-between border-t border-line-soft px-[22px] py-2.5">
         <span className="text-[11.5px] font-medium text-ink-ghost">
-          Showing {people.length.toLocaleString("en-GB")} of {countOf(total, "person", "people")}
+          Showing {contacts.length.toLocaleString("en-GB")} of {countOf(total, "contact")}
         </span>
-        {people.length < total && limit < MAX_ROWS && (
+        {contacts.length < total && limit < MAX_ROWS && (
           <Link
-            href={`/?show=${limit + PAGE_SIZE}`}
+            href={`/?${more}`}
             scroll={false}
             className="text-[11.5px] font-semibold text-ink-muted hover:text-ink"
           >
@@ -251,21 +362,32 @@ function PeopleTable({ people, total, limit }: { people: Person[]; total: number
   );
 }
 
-function NobodyYet({ sync }: { sync: SyncSummary | null }) {
+function NoContactsYet({ sync, seenOnce }: { sync: SyncSummary | null; seenOnce: number }) {
   const days = lookbackDays();
 
   if (sync?.status === "backfilling" || sync?.status === "incremental") {
     return (
       <EmptyCard title="Reading your mail…">
-        <p>People appear here as each page of messages is saved.</p>
+        <p>
+          Contacts appear when the sync finishes: everyone you&rsquo;ve written
+          to and heard back from.
+        </p>
       </EmptyCard>
     );
   }
 
   if (sync?.status === "synced") {
     return (
-      <EmptyCard title="No one found">
-        <p>No conversations in the last {days} days.</p>
+      <EmptyCard title="No contacts yet">
+        <p>
+          Nobody in the last {days} days both wrote to you and got a reply.
+          {seenOnce > 0 && " People who only wrote once are waiting in Seen once."}
+        </p>
+        {seenOnce > 0 && (
+          <Link href="/seen-once" className="mt-3 self-start font-semibold text-ink hover:text-ink-soft">
+            Review {countOf(seenOnce, "person", "people")}
+          </Link>
+        )}
       </EmptyCard>
     );
   }
@@ -281,8 +403,9 @@ function NobodyYet({ sync }: { sync: SyncSummary | null }) {
   return (
     <EmptyCard title="Nothing synced yet">
       <p>
-        Press Sync now to read the last {days} days of email headers — who
-        wrote, who received it, and when. Nothing else is read.
+        Press Sync now to read the last {days} days of email headers. Everyone
+        you&rsquo;ve written to and heard back from becomes a contact. Nothing
+        else is read.
       </p>
     </EmptyCard>
   );

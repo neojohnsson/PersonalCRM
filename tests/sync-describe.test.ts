@@ -18,10 +18,10 @@ describe("describeSync", () => {
     expect(describeSync(null, 0, NOW)).toEqual({ tone: "idle", text: "Not synced yet" });
   });
 
-  it("reads like the design once synced", () => {
+  it("reads like the design once synced, counting contacts", () => {
     expect(describeSync(sync({}), 48, NOW)).toEqual({
       tone: "ok",
-      text: "Last synced 4 minutes ago · 312 messages · 48 people",
+      text: "Last synced 4 minutes ago · 312 messages · 48 contacts",
     });
   });
 
@@ -59,7 +59,7 @@ describe("describeSync", () => {
 
   it("uses singular words for one", () => {
     expect(describeSync(sync({ message_count: 1 }), 1, NOW).text).toBe(
-      "Last synced 4 minutes ago · 1 message · 1 person",
+      "Last synced 4 minutes ago · 1 message · 1 contact",
     );
   });
 });
