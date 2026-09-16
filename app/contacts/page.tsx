@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
+import { EmptyCard, StatusLine } from "@/app/page-parts";
 import { DisconnectGmailButton } from "@/app/disconnect-gmail-button";
 import { SignOutButton } from "@/app/sign-out-button";
 import { SyncButton } from "@/app/sync-button";
@@ -16,7 +17,7 @@ import { supabaseError } from "@/lib/supabase/errors";
 import { readAll } from "@/lib/supabase/read-all";
 import { createClient } from "@/lib/supabase/server";
 import { lookbackDays } from "@/lib/sync/config";
-import { describeSync, type SyncLine, type SyncSummary } from "@/lib/sync/describe";
+import { describeSync, type SyncSummary } from "@/lib/sync/describe";
 
 export const metadata = { title: `Contacts · ${APP_NAME}` };
 
@@ -323,24 +324,6 @@ function Chip({ href, active, label, count }: { href: string; active: boolean; l
   );
 }
 
-const DOT: Record<SyncLine["tone"], string> = {
-  ok: "bg-affirm",
-  busy: "bg-info animate-pulse",
-  problem: "bg-accent",
-  idle: "bg-ink-faint",
-};
-
-function StatusLine({ line }: { line: SyncLine }) {
-  return (
-    <div className="flex items-center gap-[9px]">
-      <span aria-hidden="true" className={`size-1.5 shrink-0 rounded-full ${DOT[line.tone]}`} />
-      <p role="status" className="text-[12.5px] font-medium text-ink-quiet">
-        {line.text}
-      </p>
-    </div>
-  );
-}
-
 const WARMTH_TEXT: Record<Band, string> = {
   warm: "text-affirm",
   cooling: "text-cooling",
@@ -502,14 +485,5 @@ function NoContactsYet({ sync, seenOnce }: { sync: SyncSummary | null; seenOnce:
         written to and heard back from becomes a contact. Nothing else is read.
       </p>
     </EmptyCard>
-  );
-}
-
-function EmptyCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className={`${CARD} flex max-w-xl flex-col px-[22px] py-6 sm:px-8`}>
-      <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">{title}</h2>
-      <div className="mt-2 flex flex-col text-[13.5px] leading-[1.55] text-ink-soft">{children}</div>
-    </section>
   );
 }
