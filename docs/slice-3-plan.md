@@ -8,11 +8,11 @@ you at slice 3, the project is a success and everything after is upside."
 
 **Done when** a test proves it — not when it renders:
 
-- [ ] Whose-turn tests pass: from fake message histories — they wrote last, you wrote
+- [x] Whose-turn tests pass: from fake message histories — they wrote last, you wrote
       last, a stale thread, a person with several addresses, mail you only Cc'd them on
-- [ ] Warmth tests pass: each of the four signals on its own, the score from them, and
+- [x] Warmth tests pass: each of the four signals on its own, the score from them, and
       the same history always giving the same score
-- [ ] Next-touch tests pass: two-user RLS, and snooze / skip / mark done
+- [x] Next-touch tests pass: two-user RLS, and snooze / skip / mark done
 - [ ] On the Vercel preview with a real mailbox: `/` shows who is waiting on you today,
       and a contact's warmth shows the numbers it came from
 
