@@ -50,15 +50,12 @@ export function SignInButton() {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      {/* design/Login.dc.html: a dark pill with Google's mark in a white circle. */}
       <button
         onClick={signIn}
         disabled={pending}
-        className="flex w-full items-center justify-center gap-2.5 rounded-full bg-ink-deep px-[26px] py-3.5 text-[14.5px] font-semibold tracking-[-0.01em] text-white transition hover:bg-ink/85 disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-3 rounded-lg border border-line bg-white px-5 py-3 text-[15px] font-medium text-ink transition hover:bg-paper disabled:opacity-60"
       >
-        <span className="flex size-[22px] items-center justify-center rounded-full bg-white [&>svg]:size-3.5">
-          <GoogleMark />
-        </span>
+        <GoogleMark />
         {pending ? "Opening Google…" : "Continue with Google"}
       </button>
 
