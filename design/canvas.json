@@ -1,10 +1,77 @@
 {
   "artboards": [
-    { "file": "Connect.dc.html", "x": 0, "y": 0, "w": 1440, "h": 900, "title": "1 · Connect Gmail" },
-    { "file": "Main.dc.html", "x": 1560, "y": 0, "w": 1440, "h": 900, "title": "2 · Who needs you today" },
-    { "file": "ContactList.dc.html", "x": 3120, "y": 0, "w": 1440, "h": 900, "title": "3 · Contact list" },
-    { "file": "ContactDetail.dc.html", "x": 0, "y": 1080, "w": 1440, "h": 900, "title": "4 · Contact detail" },
-    { "file": "ReviewQueue.dc.html", "x": 1560, "y": 1080, "w": 1440, "h": 900, "title": "5 · Seen once queue" }
+    {
+      "file": "LoginError.dc.html",
+      "x": -3120,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "0b · Sign in, error"
+    },
+    {
+      "file": "Login.dc.html",
+      "x": -1560,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "0 · Sign in"
+    },
+    {
+      "file": "Connect.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "1 · Connect Gmail"
+    },
+    {
+      "file": "Main.dc.html",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "2 · Who needs you today"
+    },
+    {
+      "file": "ContactList.dc.html",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "3 · Contact list"
+    },
+    {
+      "file": "ContactDetail.dc.html",
+      "x": 0,
+      "y": 1080,
+      "w": 1440,
+      "h": 900,
+      "title": "4 · Contact detail"
+    },
+    {
+      "file": "ReviewQueue.dc.html",
+      "x": 1560,
+      "y": 1080,
+      "w": 1440,
+      "h": 900,
+      "title": "5 · Seen once queue"
+    },
+    {
+      "file": "Calendar.dc.html",
+      "x": 3120,
+      "y": 1080,
+      "w": 1440,
+      "h": 900,
+      "title": "6 · Calendar"
+    },
+    {
+      "file": "Profile.dc.html",
+      "x": 0,
+      "y": 2100,
+      "w": 1440,
+      "h": 1160,
+      "title": "7 · Profile"
+    }
   ],
   "annotations": [
     {
@@ -27,7 +94,30 @@
       "y": 1120,
       "w": 440,
       "text": "The stat strip is the warmth score with its signals beside it — never the number alone.\n\nThe values are set at 21px rather than 30px on purpose. These are inferences drawn from a mailbox, not invoice totals, and they shouldn't carry the typographic confidence of a fact."
+    },
+    {
+      "id": "note-calendar",
+      "x": 4640,
+      "y": 1120,
+      "w": 440,
+      "text": "Later, not slices 1-3. Google Calendar, read-only.\n\nA meeting with a contact is the strongest warmth signal there is. The page reads time, title and guest addresses only, and never creates or edits an event — a next touch stays a date in the app, not a silent calendar entry.\n\n'Before your 15:30' and 'Met, no follow-up' are plain computation over data the app already has. No AI."
+    },
+    {
+      "id": "note-profile",
+      "x": -520,
+      "y": 2140,
+      "w": 440,
+      "text": "Slice 5 (drafting) needs this page.\n\nEverything the drafting AI may know about you lives here, and only here. Facts read from a CV land as 'waiting for you' — same pending rule as every other AI output. Links are text the AI sees; the app never opens them, so LinkedIn is never scraped."
+    },
+    {
+      "id": "note-login",
+      "x": -1560,
+      "y": -210,
+      "w": 440,
+      "text": "The first screen a new visitor sees. Built from Connect Gmail: same column, C tile, 33px heading, white card, black pill.\n\nSigning in only says who you are. Gmail is the next screen. The error version uses Connect's orange notice and shows only the fixed messages from app/login/page.tsx, never the raw ?error= text."
     }
   ],
-  "launch": { "view": "canvas" }
+  "launch": {
+    "view": "canvas"
+  }
 }
