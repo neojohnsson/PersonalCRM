@@ -1,8 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { supabaseError } from "@/lib/supabase/errors";
 import { touchesByContact, type ContactAddress, type StoredMessage } from "@/lib/relationship/touches";
 import { warmth, type Warmth } from "@/lib/relationship/warmth";
 import { whoseTurn, type Turn } from "@/lib/relationship/whose-turn";
+import { DEFAULT_PAGE_SIZE, readAll } from "@/lib/supabase/read-all";
 
 /**
  * Whose turn and warmth for every one of a user's contacts, from two queries:
@@ -25,12 +25,6 @@ export type Relationship = {
 /** For a contact with no stored mail at all. */
 export const NO_MAIL: Relationship = { turn: { kind: "none" }, warmth: null, messageCount: 0 };
 
-/**
- * Supabase answers at most 1,000 rows per request by default, and a mailbox
- * can hold more messages than that — so both queries are read page by page.
- */
-const DEFAULT_PAGE_SIZE = 1_000;
-
 const MESSAGE_COLUMNS =
   "gmail_message_id, thread_id, direction, internal_date, from_email, to_emails, cc_emails, subject";
 
@@ -44,7 +38,6 @@ export async function loadRelationships(
 
   const [addresses, messages] = await Promise.all([
     readAll<ContactAddress>(
-      pageSize,
       (from, to) =>
         db
           .from("contact_emails")
@@ -53,9 +46,9 @@ export async function loadRelationships(
           .order("id")
           .range(from, to),
       "Couldn't load contact addresses",
+      pageSize,
     ),
     readAll<StoredMessage>(
-      pageSize,
       (from, to) =>
         db
           .from("gmail_messages")
@@ -64,6 +57,7 @@ export async function loadRelationships(
           .order("id")
           .range(from, to),
       "Couldn't load messages",
+      pageSize,
     ),
   ]);
 
@@ -77,27 +71,4 @@ export async function loadRelationships(
   }
 
   return relationships;
-}
-
-type PageResult = PromiseLike<{
-  data: unknown[] | null;
-  error: { message: string; code?: string | null } | null;
-}>;
-
-/** Reads rows `pageSize` at a time until a page comes back short. */
-async function readAll<T>(
-  pageSize: number,
-  page: (from: number, to: number) => PageResult,
-  whatFailed: string,
-): Promise<T[]> {
-  const rows: T[] = [];
-
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await page(from, from + pageSize - 1);
-    if (error) throw supabaseError(error, whatFailed);
-
-    const batch = (data ?? []) as T[];
-    rows.push(...batch);
-    if (batch.length < pageSize) return rows;
-  }
 }

@@ -49,7 +49,7 @@ export function AppShell({
         </div>
 
         <nav aria-label="Main" className="flex flex-col items-center gap-[3px]">
-          <NavItem href="/" label="Contacts" active={active === "contacts"}>
+          <NavItem href="/contacts" label="Contacts" active={active === "contacts"}>
             <circle cx="9.5" cy="8" r="3.3" />
             <path d="M3.5 20c0-3.4 2.7-5.6 6-5.6s6 2.2 6 5.6" />
             <path d="M16.5 5.3a3.2 3.2 0 0 1 0 5.5" />

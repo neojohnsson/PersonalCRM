@@ -91,7 +91,7 @@ export default async function SeenOncePage({ searchParams }: PageProps<"/seen-on
       <main className="flex flex-1 flex-col gap-4 px-4 pt-2.5 pb-7 sm:px-[30px]">
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div className="flex flex-col gap-2">
-            <Link href="/" className="text-[12.5px] font-medium text-ink-soft sm:hidden">
+            <Link href="/contacts" className="text-[12.5px] font-medium text-ink-soft sm:hidden">
               ← Contacts
             </Link>
             <h1 className="text-[28px] leading-[1.1] font-bold tracking-[-0.035em]">Seen once</h1>

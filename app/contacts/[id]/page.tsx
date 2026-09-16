@@ -93,7 +93,7 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
     >
       <main className="flex flex-1 flex-col gap-5 px-4 pt-2.5 pb-7 sm:px-[30px]">
         <Link
-          href="/"
+          href="/contacts"
           aria-label="Back to contacts"
           className="flex size-[34px] items-center justify-center rounded-[11px] bg-white text-ink-body shadow-[0_1px_2px_rgba(20,20,25,.05)] transition-colors hover:text-ink"
         >
