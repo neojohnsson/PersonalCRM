@@ -128,6 +128,7 @@ describe("toMessageRow", () => {
           From: '"Karin Lindqvist" <Karin@Example.se>',
           To: "neo@gmail.com",
           Cc: "Johan <johan@example.se>, KARIN@example.se",
+          Subject: "=?UTF-8?Q?Fr=C3=A5ga_om_examensarbete?=",
         },
       }),
       mailbox,
@@ -142,6 +143,7 @@ describe("toMessageRow", () => {
       from_name: "Karin Lindqvist",
       to_emails: ["neo@gmail.com"],
       cc_emails: ["johan@example.se", "karin@example.se"],
+      subject: "Fråga om examensarbete",
       direction: "inbound",
       has_list_unsubscribe: false,
     });

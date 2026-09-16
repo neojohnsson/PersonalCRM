@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { filterReason } from "@/lib/google/filter";
 import {
   GmailApiError,
   GmailHistoryTooOld,
@@ -8,8 +9,9 @@ import {
   listAddedSince,
   listMessageIds,
 } from "@/lib/google/gmail";
-import { toMessageRow } from "@/lib/google/parse";
+import { toMessageRow, type MessageRow } from "@/lib/google/parse";
 import { GmailReconnectRequired, getAccessToken } from "@/lib/google/tokens";
+import { importContacts } from "@/lib/sync/import-contacts";
 import { GMAIL_UNITS, RATE_LIMIT_WAIT_MS, waitAfter } from "@/lib/sync/pace";
 
 /**
@@ -28,6 +30,13 @@ import { GMAIL_UNITS, RATE_LIMIT_WAIT_MS, waitAfter } from "@/lib/sync/pace";
  *   backfilling            one page of the last N days        backfilling │ synced
  *   synced, incremental    one page of mail since bookmark    incremental │ synced
  *   needs_reconnect        nothing — the user must reconnect  needs_reconnect
+ *
+ * What a page stores: every message except incoming mail from automated
+ * senders and dismissed people (lib/google/filter.ts), which is never written —
+ * only counted in filtered_count (slice-2-plan.md, decision A).
+ *
+ * Whenever a step leaves the sync `synced`, everyone with mail in both
+ * directions who isn't a contact yet becomes one (lib/sync/import-contacts.ts).
  *
  * Built for a schedule (slice-1-plan.md): it takes the database client and
  * user id as arguments and never reads a session or cookie. Every query also
@@ -57,6 +66,7 @@ type SyncState = {
   status: SyncStatus;
   history_id: string | null;
   page_token: string | null;
+  filtered_count: number;
 };
 
 type Context = {
@@ -91,7 +101,7 @@ export async function runSyncStep(
 
   const { data: state, error: stateError } = await db
     .from("gmail_sync_state")
-    .select("status, history_id, page_token")
+    .select("status, history_id, page_token, filtered_count")
     .eq("user_id", userId)
     .maybeSingle<SyncState>();
   if (stateError) throw stateError;
@@ -114,19 +124,31 @@ export async function runSyncStep(
     lookbackDays: options.lookbackDays,
   };
 
+  let stepResult: SyncStepResult;
   try {
-    switch (state.status) {
-      case "ready":
-      case "error":
-        return await startBackfill(context, state);
-      case "backfilling":
-        return await backfillPage(context, state);
-      case "synced":
-      case "incremental":
-        return await incrementalPage(context, state);
-    }
+    stepResult = await runStep(context, state);
   } catch (error) {
     return await recordFailure(context, state, error);
+  }
+
+  if (stepResult.status === "synced") {
+    return await importAfterSync(context, stepResult);
+  }
+  return stepResult;
+}
+
+function runStep(context: Context, state: SyncState): Promise<SyncStepResult> {
+  switch (state.status) {
+    case "ready":
+    case "error":
+      return startBackfill(context, state);
+    case "backfilling":
+      return backfillPage(context, state);
+    case "synced":
+    case "incremental":
+      return incrementalPage(context, state);
+    case "needs_reconnect":
+      return Promise.resolve(result("needs_reconnect"));
   }
 }
 
@@ -134,6 +156,9 @@ export async function runSyncStep(
  * Save Gmail's bookmark *before* reading any mail. Anything that arrives
  * during a long backfill is then after the bookmark, so the next incremental
  * sync picks it up instead of it falling in the gap.
+ *
+ * A fresh backfill also starts the filtered count from zero: it re-reads the
+ * whole lookback window, so the old count would count the same mail twice.
  *
  * Also the retry path from `error`: it starts the backfill over. Messages are
  * upserted, so re-reading ones already saved costs time but never duplicates.
@@ -145,7 +170,13 @@ async function startBackfill(context: Context, state: SyncState): Promise<SyncSt
   return saveIfUnchanged(
     context,
     state,
-    { status: "backfilling", history_id: historyId, page_token: null, last_error: null },
+    {
+      status: "backfilling",
+      history_id: historyId,
+      page_token: null,
+      filtered_count: 0,
+      last_error: null,
+    },
     GMAIL_UNITS.getProfile,
   );
 }
@@ -159,16 +190,15 @@ async function backfillPage(context: Context, state: SyncState): Promise<SyncSte
     pageSize: PAGE_SIZE,
   });
 
-  const messageCount = await saveMessages(context, accessToken, page.ids);
+  const saved = await saveMessages(context, accessToken, page.ids);
   const units = GMAIL_UNITS.messagesList + page.ids.length * GMAIL_UNITS.messagesGet;
+  const counts = {
+    message_count: saved.messageCount,
+    filtered_count: state.filtered_count + saved.skipped,
+  };
 
   if (page.nextPageToken) {
-    return saveIfUnchanged(
-      context,
-      state,
-      { page_token: page.nextPageToken, message_count: messageCount },
-      units,
-    );
+    return saveIfUnchanged(context, state, { page_token: page.nextPageToken, ...counts }, units);
   }
 
   return saveIfUnchanged(
@@ -177,7 +207,7 @@ async function backfillPage(context: Context, state: SyncState): Promise<SyncSte
     {
       status: "synced",
       page_token: null,
-      message_count: messageCount,
+      ...counts,
       last_synced_at: new Date().toISOString(),
       last_error: null,
     },
@@ -205,14 +235,18 @@ async function incrementalPage(context: Context, state: SyncState): Promise<Sync
     pageSize: PAGE_SIZE,
   });
 
-  const messageCount = await saveMessages(context, accessToken, page.ids);
+  const saved = await saveMessages(context, accessToken, page.ids);
   const units = GMAIL_UNITS.historyList + page.ids.length * GMAIL_UNITS.messagesGet;
+  const counts = {
+    message_count: saved.messageCount,
+    filtered_count: state.filtered_count + saved.skipped,
+  };
 
   if (page.nextPageToken) {
     return saveIfUnchanged(
       context,
       state,
-      { status: "incremental", page_token: page.nextPageToken, message_count: messageCount },
+      { status: "incremental", page_token: page.nextPageToken, ...counts },
       units,
     );
   }
@@ -224,7 +258,7 @@ async function incrementalPage(context: Context, state: SyncState): Promise<Sync
       status: "synced",
       history_id: page.historyId,
       page_token: null,
-      message_count: messageCount,
+      ...counts,
       last_synced_at: new Date().toISOString(),
       last_error: null,
     },
@@ -233,8 +267,39 @@ async function incrementalPage(context: Context, state: SyncState): Promise<Sync
 }
 
 /**
- * Fetch each message's headers, turn them into rows, and upsert them.
- * Returns how many messages the user has stored in total.
+ * Once the sync is up to date, turn new two-way people into contacts.
+ *
+ * Importing is safe to repeat — it only creates what's missing — so it runs
+ * on every step that ends `synced`, including when another tab got there
+ * first.
+ *
+ * If it fails, the sync says so (status `error`, with the reason) rather than
+ * reporting "synced" while contacts are silently missing. Retrying starts the
+ * backfill over, which re-reads mail but never duplicates it.
+ */
+async function importAfterSync(
+  context: Context,
+  stepResult: SyncStepResult,
+): Promise<SyncStepResult> {
+  try {
+    await importContacts(context.db, context.userId);
+    return stepResult;
+  } catch (error) {
+    return saveIfUnchanged(
+      context,
+      { status: "synced", history_id: null, page_token: null, filtered_count: 0 },
+      { status: "error", last_error: `Contacts couldn't be created: ${describe(error)}` },
+      0,
+    );
+  }
+}
+
+/**
+ * Fetch each message's headers, turn them into rows, drop the ones the filter
+ * rules skip, and upsert the rest.
+ *
+ * Returns how many messages the user has stored in total, and how many on this
+ * page were skipped by the rules.
  *
  * Upsert on (user_id, gmail_message_id) is what makes every step safe to
  * repeat: saving a message twice updates it instead of adding a copy.
@@ -243,8 +308,11 @@ async function saveMessages(
   context: Context,
   accessToken: string,
   ids: string[],
-): Promise<number> {
-  const rows = [];
+): Promise<{ messageCount: number; skipped: number }> {
+  const dismissed = ids.length > 0 ? await loadDismissed(context) : new Set<string>();
+
+  const rows: MessageRow[] = [];
+  let skipped = 0;
 
   for (let i = 0; i < ids.length; i += PARALLEL_FETCHES) {
     const batch = ids.slice(i, i + PARALLEL_FETCHES);
@@ -263,7 +331,13 @@ async function saveMessages(
         userId: context.userId,
         ownEmail: context.ownEmail,
       });
-      if (row) rows.push(row);
+      if (!row) continue;
+
+      if (filterReason(row, dismissed)) {
+        skipped++;
+      } else {
+        rows.push(row);
+      }
     }
   }
 
@@ -280,7 +354,18 @@ async function saveMessages(
     .eq("user_id", context.userId);
   if (error) throw error;
 
-  return count ?? 0;
+  return { messageCount: count ?? 0, skipped };
+}
+
+/** The addresses the user dismissed from Seen once, lowercased. One query per step. */
+async function loadDismissed(context: Context): Promise<Set<string>> {
+  const { data, error } = await context.db
+    .from("seen_once_dismissals")
+    .select("email")
+    .eq("user_id", context.userId);
+  if (error) throw error;
+
+  return new Set(data.map((row) => row.email as string));
 }
 
 /**
@@ -292,7 +377,8 @@ async function saveMessages(
  * The first to finish moves the row to page 2. The second's save then matches
  * no row — the page token is no longer what it read — so it changes nothing
  * and reports where the sync actually is. No page is skipped or done twice
- * over in the saved state.
+ * over in the saved state — including filtered_count, which only the winner
+ * adds to.
  *
  * `units` is what the step spent on Gmail's quota, whoever won the save: it
  * decides how long the caller waits before the next step.

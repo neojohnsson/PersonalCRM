@@ -15,7 +15,8 @@ import { runSyncStep } from "@/lib/sync/run-sync-step";
  *     mailbox, so no real mail is read and every reply is under the test's
  *     control
  *
- * Needs migration 0003 run (the page_token column).
+ * Needs migrations 0003 (page_token) and 0004 (subject, filtered_count,
+ * seen_once_dismissals) run.
  */
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -77,11 +78,23 @@ type FakeMailbox = {
 
 function gmailMessage(
   id: string,
-  fields: { from: string; to?: string; cc?: string; sent?: boolean; date: string },
+  fields: {
+    from: string;
+    to?: string;
+    cc?: string;
+    subject?: string;
+    sent?: boolean;
+    listUnsubscribe?: boolean;
+    date: string;
+  },
 ): GmailMessage {
   const headers = [{ name: "From", value: fields.from }];
   if (fields.to) headers.push({ name: "To", value: fields.to });
   if (fields.cc) headers.push({ name: "Cc", value: fields.cc });
+  if (fields.subject) headers.push({ name: "Subject", value: fields.subject });
+  if (fields.listUnsubscribe) {
+    headers.push({ name: "List-Unsubscribe", value: "<mailto:stop@example.se>" });
+  }
 
   return {
     id,
@@ -96,12 +109,14 @@ const MESSAGES: Record<string, GmailMessage> = {
   m1: gmailMessage("m1", {
     from: '"Karin Lindqvist" <karin@example.se>',
     to: OWN_EMAIL,
+    subject: "Examensarbete",
     date: "2026-09-01T09:00:00Z",
   }),
   m2: gmailMessage("m2", {
     from: OWN_EMAIL,
     to: "karin@example.se",
     cc: "Johan Ek <johan@example.se>",
+    subject: "Re: Examensarbete",
     sent: true,
     date: "2026-09-02T09:00:00Z",
   }),
@@ -114,6 +129,19 @@ const MESSAGES: Record<string, GmailMessage> = {
     from: "Elin Marklund <elin@example.se>",
     to: OWN_EMAIL,
     date: "2026-09-10T09:00:00Z",
+  }),
+  news: gmailMessage("news", {
+    from: "Nyhetsbrev <news@example.se>",
+    to: OWN_EMAIL,
+    subject: "Veckans nyheter",
+    listUnsubscribe: true,
+    date: "2026-09-04T09:00:00Z",
+  }),
+  robot: gmailMessage("robot", {
+    from: "noreply@github.com",
+    to: OWN_EMAIL,
+    subject: "[GitHub] A new sign-in",
+    date: "2026-09-05T09:00:00Z",
   }),
 };
 
@@ -273,10 +301,19 @@ describe("runSyncStep", () => {
     if (user) await admin.auth.admin.deleteUser(user.id);
   });
 
+  async function contactAddresses(): Promise<string[]> {
+    const { data, error } = await db.from("contact_emails").select("email").order("email");
+    if (error) throw error;
+    return data.map((row) => row.email);
+  }
+
   beforeEach(async () => {
-    // Every test starts connected, with no sync state and no messages.
+    // Every test starts connected, with no sync state, messages, dismissals or
+    // contacts (deleting a contact deletes its addresses too).
     await db.from("gmail_sync_state").delete().eq("user_id", user.id);
     await db.from("gmail_messages").delete().eq("user_id", user.id);
+    await db.from("seen_once_dismissals").delete().eq("user_id", user.id);
+    await db.from("contacts").delete().eq("user_id", user.id);
 
     const { error } = await db.from("google_accounts").upsert(
       {
@@ -311,6 +348,7 @@ describe("runSyncStep", () => {
         history_id: "1000",
         page_token: null,
         message_count: 3,
+        filtered_count: 0,
         last_error: null,
       });
       expect((await state())!.last_synced_at).not.toBeNull();
@@ -323,6 +361,28 @@ describe("runSyncStep", () => {
         { email: "johan@example.se", message_count: 2 },
         { email: "karin@example.se", message_count: 2 },
       ]);
+
+      // Karin and Johan each wrote and were written to, so the finished sync
+      // made them contacts.
+      expect(await contactAddresses()).toEqual(["johan@example.se", "karin@example.se"]);
+    });
+
+    it("creates contacts only once the sync has finished, and never from one-way mail", async () => {
+      installFakeGoogle(mailbox());
+      await setState({ status: "backfilling", history_id: "1000" });
+
+      // Page 1: Karin both ways already — but the sync isn't finished.
+      expect(await step()).toMatchObject({ status: "backfilling" });
+      expect(await contactAddresses()).toEqual([]);
+
+      // Last page: synced, so the import runs.
+      expect(await step()).toMatchObject({ status: "synced" });
+      expect(await contactAddresses()).toEqual(["johan@example.se", "karin@example.se"]);
+
+      // A later sync brings mail from Elin, who has only written: no contact.
+      expect(await step()).toMatchObject({ status: "synced" });
+      expect(await savedMessageIds()).toContain("m4");
+      expect(await contactAddresses()).toEqual(["johan@example.se", "karin@example.se"]);
     });
   });
 
@@ -392,6 +452,77 @@ describe("runSyncStep", () => {
       expect(await step()).toEqual({ status: "not_connected", done: true, waitMs: 0 });
       expect(await state()).toBeNull();
       expect(requests).toEqual([]);
+    });
+  });
+
+  describe("what the sync stores", () => {
+    it("saves each message's subject", async () => {
+      installFakeGoogle(mailbox({ listPages: { "": { ids: ["m1", "m3"] } } }));
+      await setState({ status: "backfilling", history_id: "1000" });
+
+      await step();
+
+      const { data } = await db
+        .from("gmail_messages")
+        .select("gmail_message_id, subject")
+        .order("gmail_message_id");
+      expect(data).toEqual([
+        { gmail_message_id: "m1", subject: "Examensarbete" },
+        { gmail_message_id: "m3", subject: null },
+      ]);
+    });
+
+    it("never stores newsletters or automated senders, and counts what it skipped", async () => {
+      installFakeGoogle(mailbox({ listPages: { "": { ids: ["m1", "news", "robot"] } } }));
+      await setState({ status: "backfilling", history_id: "1000" });
+
+      expect(await step()).toMatchObject({ status: "synced" });
+      expect(await savedMessageIds()).toEqual(["m1"]);
+      expect(await state()).toMatchObject({ message_count: 1, filtered_count: 2 });
+    });
+
+    it("adds to the count page by page, and starts it over with a fresh backfill", async () => {
+      installFakeGoogle(mailbox({ listPages: { p2: { ids: ["robot"] } } }));
+      await setState({ status: "backfilling", history_id: "1000", page_token: "p2", filtered_count: 5 });
+
+      await step();
+      expect((await state())!.filtered_count).toBe(6);
+
+      await setState({ status: "ready" });
+      await step();
+      expect(await state()).toMatchObject({ status: "backfilling", filtered_count: 0 });
+    });
+
+    it("never stores mail from someone the user dismissed", async () => {
+      installFakeGoogle(mailbox({ listPages: { "": { ids: ["m1", "m3"] } } }));
+      await db.from("seen_once_dismissals").insert({ user_id: user.id, email: "karin@example.se" });
+      await setState({ status: "backfilling", history_id: "1000" });
+
+      await step();
+
+      expect(await savedMessageIds()).toEqual(["m3"]);
+      expect((await state())!.filtered_count).toBe(1);
+    });
+
+    it("still stores mail the user sent to a dismissed address", async () => {
+      installFakeGoogle(mailbox({ listPages: { "": { ids: ["m2"] } } }));
+      await db.from("seen_once_dismissals").insert({ user_id: user.id, email: "karin@example.se" });
+      await setState({ status: "backfilling", history_id: "1000" });
+
+      await step();
+
+      expect(await savedMessageIds()).toEqual(["m2"]);
+      expect((await state())!.filtered_count).toBe(0);
+    });
+
+    it("filters mail found by a later sync too", async () => {
+      installFakeGoogle(mailbox({ historyPages: { "": { ids: ["m4", "news"], historyId: "1005" } } }));
+      await setState({ status: "synced", history_id: "1000", filtered_count: 3 });
+
+      await step();
+
+      expect(await savedMessageIds()).toEqual(["m4"]);
+      expect((await state())!.filtered_count).toBe(4);
     });
   });
 
@@ -507,6 +638,18 @@ describe("runSyncStep", () => {
       expect(results.map((result) => result.status)).toEqual(["backfilling", "backfilling"]);
       expect(await savedMessageIds()).toEqual(["m1", "m2"]);
       expect(await state()).toMatchObject({ page_token: "p2", message_count: 2 });
+      expect(onGmail(requests).filter(toPath("/messages"))).toHaveLength(2);
+    });
+
+    it("counts skipped mail once when two steps run the same page", async () => {
+      const requests = installFakeGoogle(
+        mailbox({ holdListUntil: 2, listPages: { "": { ids: ["m1", "news"], next: "p2" } } }),
+      );
+      await setState({ status: "backfilling", history_id: "1000" });
+
+      await Promise.all([step(), step()]);
+
+      expect((await state())!.filtered_count).toBe(1);
       expect(onGmail(requests).filter(toPath("/messages"))).toHaveLength(2);
     });
 

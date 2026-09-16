@@ -13,10 +13,25 @@ Roles, when other people use it: the user is the data controller, this applicati
 | Stored | Not stored |
 |---|---|
 | Contact details: name, email, phone, company, role | Message bodies, by default |
-| Message metadata: sender, recipient, timestamp, subject, thread id | Attachments |
-| Your own notes and tags | Anything from mail you never replied to, beyond a "seen once" address |
-| An editable AI relationship summary | |
+| Message metadata: sender, recipients, timestamp, subject, thread id | Attachments |
+| Your own notes and tags | Anything from automated senders — newsletters, no-reply addresses, calendar invites |
+| An editable AI relationship summary | Anything from someone you dismissed, beyond their address |
 | Touch history — when contact happened and in which direction | |
+
+### What the Gmail sync keeps, person by person
+
+_Since slice 2 (`docs/slice-2-plan.md`, decision A)._
+
+| Who | What is kept |
+|---|---|
+| Automated senders — a no-reply address, a `List-Unsubscribe` header, a calendar invite | **Nothing.** The sync skips their messages and only counts how many it skipped |
+| Seen once, not yet decided — they wrote to you, or you to them, but never both | The headers of those messages, so the queue can show who, when and the subject |
+| Dismissed from Seen once | **Only their address**, so their future mail is skipped too. The messages they sent are deleted at the moment they're dismissed |
+| Contacts — mail in both directions, or added from Seen once or by hand | Headers of every message, plus the contact record |
+
+Mail you sent is always kept, including mail to someone you later dismissed: it's your own mail, and it may have gone to other people too.
+
+The filters decide from the sender and the headers only — never from a message body.
 
 Message bodies are fetched live from Gmail when they're needed on screen and are not persisted, **except** for contacts where the user explicitly opts in. That retention has a visible period and a delete control, and the period is enforced by a scheduled job — a retention policy that isn't actually enforced is a lie in a privacy policy.
 

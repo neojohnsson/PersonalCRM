@@ -1,0 +1,309 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: "Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #c2410c; text-decoration: none; }
+    a:hover { color: #9a3412; }
+    p { margin: 0; }
+    h1, h2, h3 { margin: 0; }
+    .ghost { background: #f4f4f2; color: #4a4c52; border: none; border-radius: 999px; padding: 8px 14px; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0; }
+    .solid { background: #17181a; color: #ffffff; border: none; border-radius: 999px; padding: 8px 15px; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0; }
+    .dayh { flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; }
+    .dayn { font-size: 10.5px; font-weight: 700; color: #b0b2b8; text-transform: uppercase; letter-spacing: 0.06em; }
+    .dayd { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+    .col { flex: 1; position: relative; border-left: 1px solid #f1f1ef; }
+    .hr { position: absolute; left: 52px; right: 0; height: 1px; background: #f1f1ef; }
+    .hl { position: absolute; left: 0; width: 44px; text-align: right; font-size: 10.5px; font-weight: 600; color: #b0b2b8; transform: translateY(-50%); }
+    .ev { position: absolute; left: 4px; right: 4px; border-radius: 9px; padding: 6px 8px; display: flex; flex-direction: column; gap: 1px; overflow: hidden; box-sizing: border-box; }
+    .ev-t { font-size: 11.5px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; }
+    .ev-s { font-size: 10.5px; font-weight: 500; line-height: 1.3; }
+    .lbl { font-size: 10px; font-weight: 700; color: #b0b2b8; text-transform: uppercase; letter-spacing: 0.07em; }
+  </style>
+</helmet>
+<div style="width:1440px;height:900px;background:#f6f6f4;display:flex;color:#1a1b1e;overflow:hidden">
+
+  <aside style="width:56px;background:#17181a;display:flex;flex-direction:column;align-items:center;padding:14px 0 16px;gap:3px;flex-shrink:0">
+    <div style="width:30px;height:30px;border-radius:9px;background:#ffffff;display:flex;align-items:center;justify-content:center;margin-bottom:12px">
+      <span style="font-size:14px;font-weight:800;color:#17181a;letter-spacing:-0.03em">C</span>
+    </div>
+    <div style="width:34px;height:34px;border-radius:10px;background:#2e3035;display:flex;align-items:center;justify-content:center;color:#f6f6f4;margin-bottom:8px">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#75777e">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.4V20h13V9.4"></path></svg>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#75777e">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="8" r="3.3"></circle><path d="M3.5 20c0-3.4 2.7-5.6 6-5.6s6 2.2 6 5.6"></path><path d="M16.5 5.3a3.2 3.2 0 0 1 0 5.5"></path><path d="M18.4 14.9c1.9.7 2.9 2.5 2.9 5.1"></path></svg>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#75777e;position:relative">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13h4l1.4 2.4h5.2L16 13h4"></path><path d="M5.6 5h12.8l2.6 8v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5z"></path></svg>
+      <div style="position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:#e2703a"></div>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;background:#303237;display:flex;align-items:center;justify-content:center;color:#ffffff">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.6"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
+    </div>
+    <div style="flex-grow:1"></div>
+    <div style="width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#75777e">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17.5 7H20M4 17h3.5M12 17h8"></path><circle cx="15" cy="7" r="2.2"></circle><circle cx="9.5" cy="17" r="2.2"></circle></svg>
+    </div>
+    <div style="width:30px;height:30px;border-radius:50%;background:#4a4d54;margin-top:6px;display:flex;align-items:center;justify-content:center">
+      <span style="font-size:10.5px;font-weight:700;color:#ffffff">NJ</span>
+    </div>
+  </aside>
+
+  <div style="flex-grow:1;display:flex;flex-direction:column;min-width:0">
+
+    <header style="height:60px;display:flex;align-items:center;padding:0 26px;flex-shrink:0;position:relative">
+      <div style="position:absolute;left:50%;transform:translateX(-50%);display:flex;gap:2px;background:#ffffff;border-radius:999px;padding:4px;box-shadow:0 1px 2px rgba(20,20,25,.05), 0 4px 12px rgba(20,20,25,.06)">
+        <div style="border-radius:999px;background:#f1f1ef;padding:6px 15px;font-size:12.5px;font-weight:600;color:#1a1b1e">Week</div>
+        <div style="border-radius:999px;padding:6px 15px;font-size:12.5px;font-weight:500;color:#9c9ea4">Month</div>
+        <div style="border-radius:999px;padding:6px 15px;font-size:12.5px;font-weight:500;color:#9c9ea4">Agenda</div>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:4px">
+        <div style="width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#6f7177">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.4 15.4 4.1 4.1"></path></svg>
+        </div>
+        <div style="width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#6f7177;position:relative">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.8a6 6 0 1 0-12 0c0 5.8-2 7.3-2 7.3h16s-2-1.5-2-7.3"></path><path d="M13.7 19.4a2 2 0 0 1-3.4 0"></path></svg>
+          <div style="position:absolute;top:5px;right:5px;min-width:14px;height:14px;border-radius:999px;background:#c2410c;color:#ffffff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px">8</div>
+        </div>
+      </div>
+    </header>
+
+    <div style="flex-grow:1;padding:8px 30px 30px;display:flex;flex-direction:column;gap:22px;min-height:0">
+
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <h1 style="font-size:30px;font-weight:700;letter-spacing:-0.035em;line-height:1.1">Calendar</h1>
+          <div style="display:flex;align-items:center;gap:9px">
+            <div style="width:6px;height:6px;border-radius:50%;background:#15803d"></div>
+            <p style="font-size:12.5px;color:#8a8c92;font-weight:500">Google Calendar connected · read-only · synced 2 minutes ago</p>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:18px;padding-bottom:2px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="width:10px;height:10px;border-radius:3px;background:#e8eef7"></div>
+              <span style="font-size:11.5px;font-weight:500;color:#82848a">With a contact</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="width:10px;height:10px;border-radius:3px;background:#f1f1ef"></div>
+              <span style="font-size:11.5px;font-weight:500;color:#82848a">Other events</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="width:10px;height:10px;border-radius:3px;background:#fdf1ea"></div>
+              <span style="font-size:11.5px;font-weight:500;color:#82848a">Next touch</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="width:32px;height:32px;border-radius:11px;background:#ffffff;display:flex;align-items:center;justify-content:center;color:#4a4c52;box-shadow:0 1px 2px rgba(20,20,25,.05)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"></path></svg>
+            </div>
+            <span style="font-size:13px;font-weight:600;letter-spacing:-0.01em;padding:0 6px">8 – 14 September</span>
+            <div style="width:32px;height:32px;border-radius:11px;background:#ffffff;display:flex;align-items:center;justify-content:center;color:#4a4c52;box-shadow:0 1px 2px rgba(20,20,25,.05)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+            </div>
+            <div style="background:#ffffff;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:600;color:#4a4c52;box-shadow:0 1px 2px rgba(20,20,25,.05);margin-left:4px">Today</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:20px;flex-grow:1;min-height:0">
+
+        <div style="flex-grow:1;background:#ffffff;border-radius:18px;box-shadow:0 1px 2px rgba(20,20,25,.04), 0 6px 16px rgba(20,20,25,.05);overflow:hidden;display:flex;flex-direction:column;min-width:0">
+
+          <div style="display:flex;height:52px;align-items:center;flex-shrink:0">
+            <div style="width:52px;flex-shrink:0"></div>
+            <div class="dayh"><span class="dayn">Mon</span><span class="dayd" style="color:#9c9ea4">8</span></div>
+            <div class="dayh"><span class="dayn">Tue</span><span class="dayd" style="color:#9c9ea4">9</span></div>
+            <div class="dayh"><span class="dayn">Wed</span><span class="dayd" style="color:#9c9ea4">10</span></div>
+            <div class="dayh"><span class="dayn" style="color:#17181a">Thu</span><span style="min-width:26px;height:26px;border-radius:999px;background:#17181a;color:#ffffff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center">11</span></div>
+            <div class="dayh"><span class="dayn">Fri</span><span class="dayd">12</span></div>
+            <div class="dayh"><span class="dayn">Sat</span><span class="dayd">13</span></div>
+            <div class="dayh"><span class="dayn">Sun</span><span class="dayd">14</span></div>
+          </div>
+
+          <div style="display:flex;height:36px;align-items:stretch;border-top:1px solid #ecece9;border-bottom:1px solid #ecece9;flex-shrink:0">
+            <div style="width:52px;flex-shrink:0;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;box-sizing:border-box">
+              <span style="font-size:9.5px;font-weight:700;color:#b0b2b8;text-transform:uppercase;letter-spacing:0.05em">Due</span>
+            </div>
+            <div class="col"></div>
+            <div class="col"></div>
+            <div class="col"></div>
+            <div class="col"></div>
+            <div class="col" style="display:flex;align-items:center;padding:0 4px">
+              <div style="flex-grow:1;background:#fdf1ea;border-radius:7px;padding:4px 8px;display:flex;align-items:center;gap:6px;min-width:0">
+                <div style="width:5px;height:5px;border-radius:50%;background:#c2410c;flex-shrink:0"></div>
+                <span style="font-size:11px;font-weight:600;color:#9a3412;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Anders Kvist</span>
+              </div>
+            </div>
+            <div class="col" style="background:#faf9f7"></div>
+            <div class="col" style="background:#faf9f7"></div>
+          </div>
+
+          <div style="flex-grow:1;position:relative;display:flex;min-height:0">
+            <div class="hr" style="top:0"></div>
+            <div class="hr" style="top:64px"></div>
+            <div class="hr" style="top:128px"></div>
+            <div class="hr" style="top:192px"></div>
+            <div class="hr" style="top:256px"></div>
+            <div class="hr" style="top:320px"></div>
+            <div class="hr" style="top:384px"></div>
+            <div class="hr" style="top:448px"></div>
+            <div class="hr" style="top:512px"></div>
+            <div class="hr" style="top:576px"></div>
+
+            <div style="width:52px;flex-shrink:0;position:relative">
+              <span class="hl" style="top:8px">08</span>
+              <span class="hl" style="top:64px">09</span>
+              <span class="hl" style="top:128px">10</span>
+              <span class="hl" style="top:192px">11</span>
+              <span class="hl" style="top:256px">12</span>
+              <span class="hl" style="top:320px">13</span>
+              <span class="hl" style="top:384px">14</span>
+              <span class="hl" style="top:448px">15</span>
+              <span class="hl" style="top:512px">16</span>
+              <span class="hl" style="top:576px">17</span>
+            </div>
+
+            <!-- Mon 8 -->
+            <div class="col">
+              <div class="ev" style="top:130px;height:124px;background:#f1f1ef;opacity:0.6">
+                <span class="ev-t" style="color:#4a4c52">Lecture · Systems theory</span>
+                <span class="ev-s" style="color:#9c9ea4">10:00 – 12:00</span>
+              </div>
+            </div>
+
+            <!-- Tue 9 -->
+            <div class="col">
+              <div class="ev" style="top:66px;height:92px;background:#f1f1ef;opacity:0.6">
+                <span class="ev-t" style="color:#4a4c52">Seminar · Modelling</span>
+                <span class="ev-s" style="color:#9c9ea4">09:00 – 10:30</span>
+              </div>
+              <div class="ev" style="top:258px;height:60px;background:#e9f3ec;opacity:0.6;flex-direction:row;gap:7px;align-items:flex-start">
+                <div style="width:20px;height:20px;border-radius:50%;background:#ffffff;color:#2c6b47;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:700;flex-shrink:0">LV</div>
+                <div style="display:flex;flex-direction:column;gap:1px;min-width:0">
+                  <span class="ev-t" style="color:#2c6b47">Coffee · Lars Vikström</span>
+                  <span class="ev-s" style="color:#5b8a6e">12:00 – 13:00</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Wed 10 -->
+            <div class="col">
+              <div class="ev" style="top:18px;height:108px;background:#f1f1ef;opacity:0.6">
+                <span class="ev-t" style="color:#4a4c52">Lecture · Statistics</span>
+                <span class="ev-s" style="color:#9c9ea4">08:15 – 10:00</span>
+              </div>
+              <div class="ev" style="top:322px;height:188px;background:#f1f1ef;opacity:0.6">
+                <span class="ev-t" style="color:#4a4c52">Project group</span>
+                <span class="ev-s" style="color:#9c9ea4">13:00 – 16:00</span>
+              </div>
+            </div>
+
+            <!-- Thu 11 · today -->
+            <div class="col" style="background:#fcfcfb">
+              <div class="ev" style="top:130px;height:124px;background:#f1f1ef;opacity:0.6">
+                <span class="ev-t" style="color:#4a4c52">Lecture · Systems theory</span>
+                <span class="ev-s" style="color:#9c9ea4">10:00 – 12:00</span>
+              </div>
+              <div class="ev" style="top:482px;height:46px;background:#e8eef7;flex-direction:row;gap:7px;align-items:flex-start;box-shadow:0 0 0 1.5px #2c5c96">
+                <div style="width:20px;height:20px;border-radius:50%;background:#ffffff;color:#2c5c96;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:700;flex-shrink:0">JE</div>
+                <div style="display:flex;flex-direction:column;gap:1px;min-width:0">
+                  <span class="ev-t" style="color:#2c5c96;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Johan Ekström</span>
+                  <span class="ev-s" style="color:#5d7fa9">15:30 – 16:15</span>
+                </div>
+              </div>
+              <div style="position:absolute;left:-5px;right:0;top:362px;height:2px;background:#17181a;display:flex;align-items:center">
+                <div style="width:8px;height:8px;border-radius:50%;background:#17181a;margin-left:0"></div>
+              </div>
+            </div>
+
+            <!-- Fri 12 -->
+            <div class="col">
+              <div class="ev" style="top:66px;height:30px;background:#e5f2f1;flex-direction:row;gap:6px;align-items:center;padding:0 8px">
+                <span class="ev-s" style="color:#4f8883;flex-shrink:0">09:00</span>
+                <span class="ev-t" style="color:#266b66;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Petter Ahlgren</span>
+              </div>
+              <div class="ev" style="top:322px;height:124px;background:#f1f1ef">
+                <span class="ev-t" style="color:#4a4c52">Exam prep</span>
+                <span class="ev-s" style="color:#9c9ea4">13:00 – 15:00</span>
+              </div>
+            </div>
+
+            <div class="col" style="background:#faf9f7"></div>
+            <div class="col" style="background:#faf9f7"></div>
+          </div>
+        </div>
+
+        <div style="width:296px;flex-shrink:0;display:flex;flex-direction:column;gap:18px">
+
+          <div style="background:#ffffff;border-radius:18px;padding:18px 20px;box-shadow:0 1px 2px rgba(20,20,25,.04), 0 6px 16px rgba(20,20,25,.05);display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <h2 style="font-size:14.5px;font-weight:700;letter-spacing:-0.015em">Before your 15:30</h2>
+              <span style="font-size:11.5px;font-weight:600;color:#9c9ea4">in 1 h 50 min</span>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="width:32px;height:32px;border-radius:50%;background:#e8eef7;color:#2c5c96;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">JE</div>
+              <div style="display:flex;flex-direction:column;gap:1px;min-width:0">
+                <span style="font-size:14px;font-weight:600;letter-spacing:-0.01em">Johan Ekström</span>
+                <span style="font-size:12px;color:#9c9ea4">Utvecklingschef · Fortnox</span>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:8px;background:#fdf1ea;border-radius:999px;padding:6px 12px;align-self:flex-start">
+              <div style="width:6px;height:6px;border-radius:50%;background:#c2410c"></div>
+              <span style="font-size:12px;font-weight:700;color:#c2410c">Your turn · 6 days</span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <span class="lbl">Open thread</span>
+              <span style="font-size:13px;font-weight:600;letter-spacing:-0.01em">Re: Examensarbete VT26</span>
+              <span style="font-size:12px;color:#82848a;line-height:1.45">They asked about your thesis timeline on 5 September</span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <span class="lbl">Your notes</span>
+              <span style="font-size:12.5px;color:#4a4c52;line-height:1.5">Runs the platform team. Takes two thesis students a year; decisions land in October.</span>
+            </div>
+
+            <div style="display:flex;gap:7px">
+              <button class="solid">Open contact</button>
+              <button class="ghost">Open in Gmail</button>
+            </div>
+          </div>
+
+          <div style="background:#ffffff;border-radius:18px;padding:18px 20px;box-shadow:0 1px 2px rgba(20,20,25,.04), 0 6px 16px rgba(20,20,25,.05);display:flex;flex-direction:column;gap:12px">
+            <h2 style="font-size:14.5px;font-weight:700;letter-spacing:-0.015em">Met, no follow-up</h2>
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div style="width:32px;height:32px;border-radius:50%;background:#e9f3ec;color:#2c6b47;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">LV</div>
+              <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+                <span style="font-size:13.5px;font-weight:600;letter-spacing:-0.01em">Lars Vikström</span>
+                <span style="font-size:12px;color:#6f7177;line-height:1.45">Coffee on Tuesday. Nothing sent to Lars since.</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:7px">
+              <button class="ghost">Set next touch</button>
+              <button class="ghost">Not needed</button>
+            </div>
+          </div>
+
+          <p style="font-size:11.5px;line-height:1.55;color:#9c9ea4;font-weight:500;padding:0 4px">A meeting with a contact counts toward warmth, like an exchange does. Only the time, title and guest addresses are read — never the description — and no event is ever created or changed.</p>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

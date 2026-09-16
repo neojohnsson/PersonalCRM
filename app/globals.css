@@ -7,6 +7,42 @@
 :root {
   --background: #ffffff;
   --foreground: #1a1b1e;
+
+  /* Scrollbar thumb: a soft grey between the design's line and ghost greys. */
+  --scrollbar-thumb: #d6d7d9;
+  --scrollbar-thumb-hover: #b0b2b8;
+}
+
+/*
+ * A thin scrollbar in the app's own greys instead of the operating system's
+ * default. Kept rather than hidden: it's the only sign of how long a list is
+ * and where you are in it. scrollbar-gutter reserves its space, so pages
+ * don't jump sideways when they become long enough to scroll.
+ */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+  scrollbar-gutter: stable;
+}
+
+/* Older Safari, which doesn't know scrollbar-color. */
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
 }
 
 @theme inline {
@@ -31,6 +67,21 @@
   --color-ink-quiet: #8a8c92;
   --color-ink-muted: #82848a;
   --color-ink-ghost: #b0b2b8;
+  /* The faint count on an inactive tab, and the search placeholder. */
+  --color-ink-hush: #b9bbc0;
+  /* The grey track behind ContactList's Contacts / Seen once tabs. */
+  --color-chip-track: #eaeae7;
+
+  /* ReviewQueue: checkbox outline, subject text, the "from them" pill, and
+     the sidebar's waiting dot. */
+  --color-line-strong: #d8d8d4;
+  --color-ink-body: #4a4c52;
+  --color-info-tint: #e8eef7;
+  --color-info-ink: #2c5c96;
+  --color-accent-soft: #e2703a;
+
+  /* ContactDetail's tag chips. */
+  --color-chip: #f1f1ef;
   /* Row dividers and the hover tint of the table. */
   --color-line-soft: #f4f4f2;
   --color-paper-tint: #faf9f7;

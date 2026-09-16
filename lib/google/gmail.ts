@@ -19,8 +19,11 @@
 
 const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me";
 
-/** The only headers the sync asks for. No body, no subject (decision 4). */
-export const METADATA_HEADERS = ["From", "To", "Cc", "List-Unsubscribe"] as const;
+/**
+ * The only headers the sync asks for. Never the body. Subject since slice 2
+ * (slice-2-plan.md, decision B).
+ */
+export const METADATA_HEADERS = ["From", "To", "Cc", "Subject", "List-Unsubscribe"] as const;
 
 export type GmailHeader = { name: string; value: string };
 
