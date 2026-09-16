@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { NO_MAIL, loadRelationships } from "@/lib/relationship/load";
+import { NO_MAIL, loadRelationship, loadRelationships } from "@/lib/relationship/load";
 
 /**
  * Loading whose turn and warmth for every contact, as a signed-in user, against
@@ -135,5 +135,87 @@ describe("loadRelationships", () => {
   it("finds nothing when someone else asks for Alice's contacts", async () => {
     const relationships = await loadRelationships(bobClient, alice.id, { now: NOW });
     expect(relationships.size).toBe(0);
+  });
+});
+
+describe("loadRelationship, for one contact", () => {
+  let alice: User;
+  let bob: User;
+  let aliceClient: SupabaseClient;
+  let bobClient: SupabaseClient;
+  let karinId: string;
+  let nilsId: string;
+
+  beforeAll(async () => {
+    alice = await createUser("one-alice");
+    bob = await createUser("one-bob");
+    aliceClient = await signInAs(alice.email!);
+    bobClient = await signInAs(bob.email!);
+
+    const { data: contacts, error } = await aliceClient
+      .from("contacts")
+      .insert([
+        { user_id: alice.id, first_name: "Karin", source: "gmail" },
+        { user_id: alice.id, first_name: "Nils", source: "gmail" },
+      ])
+      .select("id, first_name");
+    if (error) throw error;
+    karinId = contacts.find((c) => c.first_name === "Karin")!.id;
+    nilsId = contacts.find((c) => c.first_name === "Nils")!.id;
+
+    const { error: emailsError } = await aliceClient.from("contact_emails").insert([
+      { user_id: alice.id, contact_id: karinId, email: "karin@fortnox.se", is_primary: true },
+      { user_id: alice.id, contact_id: karinId, email: "karin.l@gmail.com", is_primary: false },
+      { user_id: alice.id, contact_id: nilsId, email: "nils@lnu.se", is_primary: true },
+    ]);
+    if (emailsError) throw emailsError;
+
+    const base = { user_id: alice.id, has_list_unsubscribe: false, subject: "Hej" };
+    const { error: messagesError } = await aliceClient.from("gmail_messages").insert([
+      // To her second address.
+      { ...base, gmail_message_id: "m1", thread_id: "t1", internal_date: daysAgo(10), from_email: "alice@example.se", to_emails: ["karin.l@gmail.com"], cc_emails: [], direction: "outbound" },
+      // From her work address.
+      { ...base, gmail_message_id: "m2", thread_id: "t1", internal_date: daysAgo(6), from_email: "karin@fortnox.se", to_emails: ["alice@example.se"], cc_emails: [], direction: "inbound" },
+      // She's only on Cc of mail Alice sent: still a touch.
+      { ...base, gmail_message_id: "m3", thread_id: "t2", internal_date: daysAgo(20), from_email: "alice@example.se", to_emails: ["team@fortnox.se"], cc_emails: ["karin@fortnox.se"], direction: "outbound" },
+      // She's on Cc of someone else's mail: not a touch, whatever the filter lets through.
+      { ...base, gmail_message_id: "m4", thread_id: "t3", internal_date: daysAgo(2), from_email: "boss@fortnox.se", to_emails: ["alice@example.se"], cc_emails: ["karin@fortnox.se"], direction: "inbound" },
+      // Nils's mail.
+      { ...base, gmail_message_id: "m5", thread_id: "t4", internal_date: daysAgo(1), from_email: "nils@lnu.se", to_emails: ["alice@example.se"], cc_emails: [], direction: "inbound" },
+    ]);
+    if (messagesError) throw messagesError;
+  });
+
+  afterAll(async () => {
+    if (alice) await admin.auth.admin.deleteUser(alice.id);
+    if (bob) await admin.auth.admin.deleteUser(bob.id);
+  });
+
+  it("gives the same answer as the whole-mailbox load", async () => {
+    const all = await loadRelationships(aliceClient, alice.id, { now: NOW });
+    const karin = await loadRelationship(aliceClient, alice.id, karinId, { now: NOW });
+
+    expect(karin.messageCount).toBe(3);
+    expect(karin).toEqual(all.get(karinId));
+    expect(await loadRelationship(aliceClient, alice.id, nilsId, { now: NOW })).toEqual(all.get(nilsId));
+  });
+
+  it("reads page by page too", async () => {
+    const whole = await loadRelationship(aliceClient, alice.id, karinId, { now: NOW });
+    const paged = await loadRelationship(aliceClient, alice.id, karinId, { now: NOW, pageSize: 1 });
+    expect(paged).toEqual(whole);
+  });
+
+  it("finds no mail for a contact with no addresses, or for someone else", async () => {
+    const { data, error } = await aliceClient
+      .from("contacts")
+      .insert({ user_id: alice.id, first_name: "Met at a fair", source: "manual" })
+      .select("id")
+      .single();
+    if (error) throw error;
+
+    expect(await loadRelationship(aliceClient, alice.id, data.id, { now: NOW })).toEqual(NO_MAIL);
+    expect(await loadRelationship(bobClient, alice.id, karinId, { now: NOW })).toEqual(NO_MAIL);
+    expect(await loadRelationship(bobClient, bob.id, karinId, { now: NOW })).toEqual(NO_MAIL);
   });
 });

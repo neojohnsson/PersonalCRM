@@ -41,6 +41,16 @@ export function dayMonth(date: Date | string, timeZone = "Europe/Stockholm"): st
   );
 }
 
+/** "4 March 2026" — dayMonth with the year, for dates that may be long ago. */
+export function dayMonthYear(date: Date | string, timeZone = "Europe/Stockholm"): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone,
+  }).format(new Date(date));
+}
+
 /**
  * Avatar initials: first and last word of the name — "Maja Öberg" → "MÖ".
  * No name: the parts of the address before the @ — "karin.lindqvist@…" → "KL".

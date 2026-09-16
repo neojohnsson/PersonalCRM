@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { touchesByContact, type ContactAddress, type StoredMessage } from "@/lib/relationship/touches";
 import { warmth, type Warmth } from "@/lib/relationship/warmth";
 import { whoseTurn, type Turn } from "@/lib/relationship/whose-turn";
+import { supabaseError } from "@/lib/supabase/errors";
 import { DEFAULT_PAGE_SIZE, readAll } from "@/lib/supabase/read-all";
 
 /**
@@ -71,4 +72,59 @@ export async function loadRelationships(
   }
 
   return relationships;
+}
+
+/**
+ * The same, for one contact — for their own page, where loading every message
+ * in the mailbox would be wasted work. The database hands back only mail from
+ * or to one of their addresses; the rules that decide whether it's a touch
+ * are still touchesByContact's, so the answer is the same as in the list.
+ *
+ * Addresses are stored lowercased on both sides (lib/google/parse.ts,
+ * lib/contacts/contact-form.ts), so exact matching finds them all.
+ */
+export async function loadRelationship(
+  db: SupabaseClient,
+  userId: string,
+  contactId: string,
+  options: { now?: Date; pageSize?: number } = {},
+): Promise<Relationship> {
+  const now = options.now ?? new Date();
+  const pageSize = options.pageSize ?? DEFAULT_PAGE_SIZE;
+
+  const { data: addresses, error } = await db
+    .from("contact_emails")
+    .select("contact_id, email")
+    .eq("user_id", userId)
+    .eq("contact_id", contactId)
+    .returns<ContactAddress[]>();
+  if (error) throw supabaseError(error, "Couldn't load the contact's addresses");
+  if (addresses.length === 0) return NO_MAIL;
+
+  const list = postgrestList(addresses.map((address) => address.email));
+  const messages = await readAll<StoredMessage>(
+    (from, to) =>
+      db
+        .from("gmail_messages")
+        .select(MESSAGE_COLUMNS)
+        .eq("user_id", userId)
+        .or(`from_email.in.(${list}),to_emails.ov.{${list}},cc_emails.ov.{${list}}`)
+        .order("id")
+        .range(from, to),
+    "Couldn't load the contact's messages",
+    pageSize,
+  );
+
+  const touches = touchesByContact(messages, addresses).get(contactId);
+  if (!touches) return NO_MAIL;
+
+  return { turn: whoseTurn(touches, now), warmth: warmth(touches, now), messageCount: touches.length };
+}
+
+/**
+ * Values for a PostgREST filter list, each in double quotes so a comma, brace
+ * or bracket inside an address can't end the list early.
+ */
+function postgrestList(values: string[]): string {
+  return values.map((value) => `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`).join(",");
 }
