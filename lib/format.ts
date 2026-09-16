@@ -29,6 +29,19 @@ export function daysAgo(date: Date | string, now: Date = new Date()): string {
 }
 
 /**
+ * "3 September", in Swedish time by default.
+ *
+ * Pages render on Vercel's servers, which run in UTC. Without a time zone,
+ * mail sent at 23:30 in Sweden would show as the day before. The app has one
+ * user, in Sweden; a user setting can replace the default when that changes.
+ */
+export function dayMonth(date: Date | string, timeZone = "Europe/Stockholm"): string {
+  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", timeZone }).format(
+    new Date(date),
+  );
+}
+
+/**
  * Avatar initials: first and last word of the name — "Maja Öberg" → "MÖ".
  * No name: the parts of the address before the @ — "karin.lindqvist@…" → "KL".
  */

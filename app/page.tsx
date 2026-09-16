@@ -134,6 +134,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   return (
     <AppShell
       userEmail={user.email}
+      seenOnceCount={seenOnce}
       headerRight={
         <>
           <span className="hidden text-[13px] text-ink-faint md:inline">{gmail.email}</span>

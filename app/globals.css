@@ -71,6 +71,14 @@ html {
   --color-ink-hush: #b9bbc0;
   /* The grey track behind ContactList's Contacts / Seen once tabs. */
   --color-chip-track: #eaeae7;
+
+  /* ReviewQueue: checkbox outline, subject text, the "from them" pill, and
+     the sidebar's waiting dot. */
+  --color-line-strong: #d8d8d4;
+  --color-ink-body: #4a4c52;
+  --color-info-tint: #e8eef7;
+  --color-info-ink: #2c5c96;
+  --color-accent-soft: #e2703a;
   /* Row dividers and the hover tint of the table. */
   --color-line-soft: #f4f4f2;
   --color-paper-tint: #faf9f7;
