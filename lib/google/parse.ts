@@ -27,6 +27,7 @@ export type MessageRow = {
   from_name: string | null;
   to_emails: string[];
   cc_emails: string[];
+  subject: string | null;
   direction: "inbound" | "outbound";
   has_list_unsubscribe: boolean;
 };
@@ -226,6 +227,9 @@ function header(message: GmailMessage, name: string): string | undefined {
  *
  * Direction: outbound when Gmail labelled it SENT — which also catches mail
  * sent from an alias — or when From is the mailbox's own address.
+ *
+ * Whether a valid row is *kept* is lib/google/filter.ts's decision, made by
+ * the sync afterwards.
  */
 export function toMessageRow(
   message: GmailMessage,
@@ -252,6 +256,7 @@ export function toMessageRow(
     from_name: from.name,
     to_emails: parseAddressList(header(message, "To")).map((a) => a.email),
     cc_emails: parseAddressList(header(message, "Cc")).map((a) => a.email),
+    subject: parseSubject(header(message, "Subject")),
     direction: outbound ? "outbound" : "inbound",
     has_list_unsubscribe: header(message, "List-Unsubscribe") !== undefined,
   };

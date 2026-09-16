@@ -99,6 +99,7 @@ describe("getMessageMetadata", () => {
       "From",
       "To",
       "Cc",
+      "Subject",
       "List-Unsubscribe",
     ]);
   });
