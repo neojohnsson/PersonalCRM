@@ -28,7 +28,7 @@ describe("describeSync", () => {
   it("shows progress while backfilling and while checking for new mail", () => {
     expect(describeSync(sync({ status: "backfilling", message_count: 100 }), 12, NOW)).toEqual({
       tone: "busy",
-      text: "Syncing · 100 messages so far",
+      text: "Syncing · 100 messages so far · keep this tab open",
     });
     expect(describeSync(sync({ status: "incremental" }), 48, NOW)).toEqual({
       tone: "busy",

@@ -38,7 +38,9 @@ export function describeSync(
 
   switch (sync.status) {
     case "backfilling":
-      return { tone: "busy", text: `Syncing · ${messages} so far` };
+      // "Keep this tab open": the Sync now button drives the backfill from the
+      // browser, so closing the tab pauses it. Goes once the sync is scheduled.
+      return { tone: "busy", text: `Syncing · ${messages} so far · keep this tab open` };
 
     case "incremental":
       return { tone: "busy", text: `Checking for new mail · ${messages}` };
