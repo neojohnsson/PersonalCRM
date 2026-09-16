@@ -11,6 +11,7 @@ import {
 } from "@/lib/google/gmail";
 import { toMessageRow, type MessageRow } from "@/lib/google/parse";
 import { GmailReconnectRequired, getAccessToken } from "@/lib/google/tokens";
+import { importContacts } from "@/lib/sync/import-contacts";
 import { GMAIL_UNITS, RATE_LIMIT_WAIT_MS, waitAfter } from "@/lib/sync/pace";
 
 /**
@@ -33,6 +34,9 @@ import { GMAIL_UNITS, RATE_LIMIT_WAIT_MS, waitAfter } from "@/lib/sync/pace";
  * What a page stores: every message except incoming mail from automated
  * senders and dismissed people (lib/google/filter.ts), which is never written —
  * only counted in filtered_count (slice-2-plan.md, decision A).
+ *
+ * Whenever a step leaves the sync `synced`, everyone with mail in both
+ * directions who isn't a contact yet becomes one (lib/sync/import-contacts.ts).
  *
  * Built for a schedule (slice-1-plan.md): it takes the database client and
  * user id as arguments and never reads a session or cookie. Every query also
@@ -120,19 +124,31 @@ export async function runSyncStep(
     lookbackDays: options.lookbackDays,
   };
 
+  let stepResult: SyncStepResult;
   try {
-    switch (state.status) {
-      case "ready":
-      case "error":
-        return await startBackfill(context, state);
-      case "backfilling":
-        return await backfillPage(context, state);
-      case "synced":
-      case "incremental":
-        return await incrementalPage(context, state);
-    }
+    stepResult = await runStep(context, state);
   } catch (error) {
     return await recordFailure(context, state, error);
+  }
+
+  if (stepResult.status === "synced") {
+    return await importAfterSync(context, stepResult);
+  }
+  return stepResult;
+}
+
+function runStep(context: Context, state: SyncState): Promise<SyncStepResult> {
+  switch (state.status) {
+    case "ready":
+    case "error":
+      return startBackfill(context, state);
+    case "backfilling":
+      return backfillPage(context, state);
+    case "synced":
+    case "incremental":
+      return incrementalPage(context, state);
+    case "needs_reconnect":
+      return Promise.resolve(result("needs_reconnect"));
   }
 }
 
@@ -248,6 +264,34 @@ async function incrementalPage(context: Context, state: SyncState): Promise<Sync
     },
     units,
   );
+}
+
+/**
+ * Once the sync is up to date, turn new two-way people into contacts.
+ *
+ * Importing is safe to repeat — it only creates what's missing — so it runs
+ * on every step that ends `synced`, including when another tab got there
+ * first.
+ *
+ * If it fails, the sync says so (status `error`, with the reason) rather than
+ * reporting "synced" while contacts are silently missing. Retrying starts the
+ * backfill over, which re-reads mail but never duplicates it.
+ */
+async function importAfterSync(
+  context: Context,
+  stepResult: SyncStepResult,
+): Promise<SyncStepResult> {
+  try {
+    await importContacts(context.db, context.userId);
+    return stepResult;
+  } catch (error) {
+    return saveIfUnchanged(
+      context,
+      { status: "synced", history_id: null, page_token: null, filtered_count: 0 },
+      { status: "error", last_error: `Contacts couldn't be created: ${describe(error)}` },
+      0,
+    );
+  }
 }
 
 /**

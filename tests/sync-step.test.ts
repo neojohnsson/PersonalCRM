@@ -301,11 +301,19 @@ describe("runSyncStep", () => {
     if (user) await admin.auth.admin.deleteUser(user.id);
   });
 
+  async function contactAddresses(): Promise<string[]> {
+    const { data, error } = await db.from("contact_emails").select("email").order("email");
+    if (error) throw error;
+    return data.map((row) => row.email);
+  }
+
   beforeEach(async () => {
-    // Every test starts connected, with no sync state, messages or dismissals.
+    // Every test starts connected, with no sync state, messages, dismissals or
+    // contacts (deleting a contact deletes its addresses too).
     await db.from("gmail_sync_state").delete().eq("user_id", user.id);
     await db.from("gmail_messages").delete().eq("user_id", user.id);
     await db.from("seen_once_dismissals").delete().eq("user_id", user.id);
+    await db.from("contacts").delete().eq("user_id", user.id);
 
     const { error } = await db.from("google_accounts").upsert(
       {
@@ -353,6 +361,28 @@ describe("runSyncStep", () => {
         { email: "johan@example.se", message_count: 2 },
         { email: "karin@example.se", message_count: 2 },
       ]);
+
+      // Karin and Johan each wrote and were written to, so the finished sync
+      // made them contacts.
+      expect(await contactAddresses()).toEqual(["johan@example.se", "karin@example.se"]);
+    });
+
+    it("creates contacts only once the sync has finished, and never from one-way mail", async () => {
+      installFakeGoogle(mailbox());
+      await setState({ status: "backfilling", history_id: "1000" });
+
+      // Page 1: Karin both ways already — but the sync isn't finished.
+      expect(await step()).toMatchObject({ status: "backfilling" });
+      expect(await contactAddresses()).toEqual([]);
+
+      // Last page: synced, so the import runs.
+      expect(await step()).toMatchObject({ status: "synced" });
+      expect(await contactAddresses()).toEqual(["johan@example.se", "karin@example.se"]);
+
+      // A later sync brings mail from Elin, who has only written: no contact.
+      expect(await step()).toMatchObject({ status: "synced" });
+      expect(await savedMessageIds()).toContain("m4");
+      expect(await contactAddresses()).toEqual(["johan@example.se", "karin@example.se"]);
     });
   });
 
