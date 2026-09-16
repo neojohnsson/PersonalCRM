@@ -79,6 +79,9 @@ html {
   --color-info-tint: #e8eef7;
   --color-info-ink: #2c5c96;
   --color-accent-soft: #e2703a;
+
+  /* ContactDetail's tag chips. */
+  --color-chip: #f1f1ef;
   /* Row dividers and the hover tint of the table. */
   --color-line-soft: #f4f4f2;
   --color-paper-tint: #faf9f7;

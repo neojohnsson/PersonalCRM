@@ -17,16 +17,14 @@ import { SyncButton } from "./sync-button";
  * (AGENTS.md, core premise).
  *
  * Built from design/ContactList.dc.html: the Contacts / Seen once tabs, the
- * search box and dark pill button on the top row, the table card. The status
+ * search box and "Add contact" on the top row, the table card. The status
  * line comes from design/Main.dc.html.
  *
  * Differences from ContactList, on purpose:
  *   - Whose turn and Warmth columns, the filter chips and the sort menu: slice 3.
  *     "Messages" stands in, since slice 2 can count them.
- *   - "Add contact" arrives with its form (slice-2-plan.md, step 6), so there's
- *     never a button to a page that doesn't exist.
- *   - The dark pill says Sync now, the temporary button (slice-1-plan.md,
- *     decision 5).
+ *   - A white Sync now pill sits where the design's sort menu is — the
+ *     temporary button (slice-1-plan.md, decision 5).
  *   - The design has no visible heading; the page has a hidden one, so screen
  *     readers still get a title.
  */
@@ -152,12 +150,21 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           <div className="flex w-full flex-wrap items-start gap-2 sm:w-auto">
             <SearchBox query={query} />
             {sync?.status === "needs_reconnect" ? (
-              <Link href="/connect" className={DARK_PILL}>
+              <Link
+                href="/connect"
+                className="flex items-center rounded-full bg-white px-4 py-[9px] text-[12.5px] font-semibold text-ink shadow-[0_1px_2px_rgba(20,20,25,.04)] hover:bg-paper-tint"
+              >
                 Reconnect Gmail
               </Link>
             ) : (
               <SyncButton />
             )}
+            <Link href="/contacts/new" className={DARK_PILL}>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" className="size-3.5">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Add contact
+            </Link>
           </div>
         </div>
 
@@ -305,9 +312,11 @@ function ContactTable({
             const colors = avatarColors(contact.primary_email ?? contact.id);
 
             return (
+              // The name's link stretches over the whole row (after:inset-0),
+              // so anywhere on the row opens the contact.
               <tr
                 key={contact.id}
-                className="h-[38px] border-t border-line-soft transition-colors hover:bg-paper-tint"
+                className="relative h-[38px] border-t border-line-soft transition-colors hover:bg-paper-tint"
               >
                 <td className="py-0 pr-2 pl-[22px]">
                   <div className="flex min-w-0 items-center gap-[11px]">
@@ -321,9 +330,12 @@ function ContactTable({
                         contact.primary_email ?? contact.first_name ?? "?",
                       )}
                     </span>
-                    <span className="truncate text-[13.5px] font-semibold tracking-[-0.01em]">
+                    <Link
+                      href={`/contacts/${contact.id}`}
+                      className="truncate text-[13.5px] font-semibold tracking-[-0.01em] outline-none after:absolute after:inset-0 after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-ink/20 focus-visible:after:ring-inset"
+                    >
                       {name}
-                    </span>
+                    </Link>
                   </div>
                 </td>
                 <td className="hidden truncate px-2 text-[12.5px] text-ink-muted md:table-cell">

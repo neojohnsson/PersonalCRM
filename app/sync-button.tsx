@@ -69,7 +69,9 @@ export function SyncButton() {
         type="button"
         onClick={sync}
         disabled={isSyncing}
-        className="flex items-center gap-[7px] rounded-full bg-ink-deep px-4 py-[9px] text-[12.5px] font-semibold text-white tabular-nums transition hover:bg-ink/85 disabled:opacity-70"
+        // White, like the design's sort pill: the dark pill beside it is
+        // "Add contact", the page's main action.
+        className="flex items-center gap-[7px] rounded-full bg-white px-4 py-[9px] text-[12.5px] font-semibold text-ink tabular-nums shadow-[0_1px_2px_rgba(20,20,25,.04)] transition hover:bg-paper-tint disabled:opacity-70"
       >
         <svg
           aria-hidden="true"
