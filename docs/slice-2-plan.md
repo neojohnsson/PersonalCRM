@@ -7,14 +7,15 @@ record, manual add and edit.
 
 **Done when** a test proves it — not when it renders:
 
-- [ ] Two-user RLS tests pass for every new table and view
-- [ ] Filter tests pass: automated senders are never stored; your own addresses are
+- [x] Two-user RLS tests pass for every new table and view
+- [x] Filter tests pass: automated senders are never stored; your own addresses are
       never a person
-- [ ] Classification tests pass: two-way → contact, one-way → seen once, dismissed →
+- [x] Classification tests pass: two-way → contact, one-way → seen once, dismissed →
       gone and not stored again
-- [ ] Contact form tests pass: required fields, email format, edits kept exactly as typed
-- [ ] On the Vercel preview with a real mailbox: sync → contacts appear on their own,
+- [x] Contact form tests pass: required fields, email format, edits kept exactly as typed
+- [x] On the Vercel preview with a real mailbox: sync → contacts appear on their own,
       Seen once holds the rest, add and dismiss work, a contact added and edited by hand
+      (checked 2026-09-16)
 
 **Who writes what** (`AGENTS.md`): Claude writes the code. Every piece is explained
 before it's built and walked through after. The most depth goes to the RLS policies for
