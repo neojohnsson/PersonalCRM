@@ -49,18 +49,21 @@ export function SignInButton() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col gap-3">
+      {/* The black pill from design/Login.dc.html, same as /connect's button. */}
       <button
         onClick={signIn}
         disabled={pending}
-        className="flex w-full items-center justify-center gap-3 rounded-lg border border-line bg-white px-5 py-3 text-[15px] font-medium text-ink transition hover:bg-paper disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2.5 rounded-full bg-ink-deep px-[26px] py-3.5 text-[14.5px] font-semibold tracking-[-0.01em] text-white transition hover:bg-ink/85 disabled:opacity-60"
       >
-        <GoogleMark />
+        <span className="flex size-[22px] items-center justify-center rounded-full bg-white">
+          <GoogleMark />
+        </span>
         {pending ? "Opening Google…" : "Continue with Google"}
       </button>
 
       {error && (
-        <p role="alert" className="text-[13px] text-accent">
+        <p role="alert" className="text-center text-[13px] text-accent">
           {error}
         </p>
       )}
@@ -70,7 +73,7 @@ export function SignInButton() {
 
 function GoogleMark() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+    <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden="true">
       <path
         fill="#4285F4"
         d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62Z"

@@ -1,4 +1,5 @@
 import { APP_NAME } from "@/lib/app-config";
+import { BrandTile, Callout, Divider, Item, Section } from "@/app/intro-screen";
 import { SignInButton } from "./sign-in-button";
 
 export const metadata = { title: `Sign in · ${APP_NAME}` };
@@ -19,6 +20,17 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 const FALLBACK_ERROR = "Something went wrong signing in. Try again.";
 
+/**
+ * The first screen a new visitor sees.
+ *
+ * Built from design/Login.dc.html, and its error state from
+ * LoginError.dc.html. Differences from the design, on purpose:
+ *   - No "Read the full privacy page" link. That page arrives in slice 7
+ *     (docs/plan.md §3.12), and a link to nothing on the very first screen
+ *     would be a broken promise.
+ *   - Below the sm breakpoint the heading is 28px instead of 33px, the same
+ *     phone fit /connect uses.
+ */
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const { error } = await searchParams;
   const errorMessage =
@@ -27,36 +39,48 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       : null;
 
   return (
-    <main className="flex flex-1 items-center justify-center bg-paper px-6 py-16">
-      <div className="w-full max-w-sm">
-        <div className="rounded-2xl border border-line bg-white p-8 shadow-[0_1px_2px_rgba(26,27,30,0.04)]">
-          <h1 className="text-[22px] font-semibold tracking-tight text-ink">
-            {APP_NAME}
-          </h1>
-          <p className="mt-2 text-[15px] leading-6 text-ink-soft">
-            Imports the people you actually talk to, and tells you who is
-            waiting on you.
-          </p>
-
-          {errorMessage && (
-            <p
-              role="alert"
-              className="mt-6 rounded-lg border border-accent/20 bg-accent-tint px-4 py-3 text-[13px] leading-5 text-ink"
-            >
-              {errorMessage}
+    <main className="flex flex-1 items-center justify-center bg-paper px-6 py-14 text-ink">
+      <div className="flex w-full max-w-[460px] flex-col gap-[26px]">
+        <div className="flex flex-col gap-[18px]">
+          <BrandTile />
+          <div className="flex flex-col gap-2.5">
+            <h1 className="text-[28px] leading-[1.15] font-bold tracking-[-0.035em] sm:text-[33px]">
+              Who&rsquo;s waiting on you?
+            </h1>
+            <p className="text-[15.5px] leading-[1.55] text-ink-soft">
+              {APP_NAME} finds the people you actually talk to in Gmail, and
+              tells you whose turn it is to write.
             </p>
-          )}
-
-          <div className="mt-7">
-            <SignInButton />
           </div>
-
-          <p className="mt-5 text-[13px] leading-5 text-ink-faint">
-            Signing in only identifies you. Gmail stays untouched until you
-            connect it on the next screen, and you get a plain-English summary
-            of what that means first.
-          </p>
         </div>
+
+        {errorMessage && (
+          <Callout role="alert" icon="alert">
+            {errorMessage}
+          </Callout>
+        )}
+
+        <div className="flex flex-col gap-[22px] rounded-[18px] bg-white px-6 py-[26px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] sm:px-[30px]">
+          <SignInButton />
+
+          <Divider />
+
+          <Section title="What signing in does">
+            <Item icon="check" tone="info">
+              Tells the app who you are — your name and email address
+            </Item>
+            <Item icon="cross" tone="muted">
+              It does <span className="font-semibold">not</span> open Gmail.
+              That&rsquo;s the next screen, and you read what it means before
+              you agree.
+            </Item>
+          </Section>
+        </div>
+
+        <p className="px-1 text-[13px] leading-[1.55] text-ink-quiet">
+          Invite only for now. Google keeps the app in testing mode, so your
+          Google account has to be added as a tester first.
+        </p>
       </div>
     </main>
   );
