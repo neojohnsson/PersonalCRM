@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
 import { EmptyCard, StatusLine } from "@/app/page-parts";
+import { SearchBox } from "@/app/contacts/search-box";
 import { DisconnectGmailButton } from "@/app/disconnect-gmail-button";
 import { SignOutButton } from "@/app/sign-out-button";
 import { SyncButton } from "@/app/sync-button";
 import { APP_NAME } from "@/lib/app-config";
 import { requireUser } from "@/lib/auth";
 import { displayName } from "@/lib/contacts/display";
-import { MAX_QUERY_LENGTH, ilikePattern, normaliseQuery } from "@/lib/contacts/search";
+import { ilikePattern, normaliseQuery } from "@/lib/contacts/search";
 import { avatarColors, countOf, daysAgo, initials } from "@/lib/format";
 import { FILTERS, countByFilter, hasTag, matchesFilter, parseFilter, topTags } from "@/lib/relationship/list";
 import { NO_MAIL, loadRelationships, type Relationship } from "@/lib/relationship/load";
@@ -277,34 +278,6 @@ function ListTabs({ contacts, seenOnce }: { contacts: number; seenOnce: number }
         </span>
       </Link>
     </nav>
-  );
-}
-
-/** A plain GET form: Enter loads /contacts?q=…, without JavaScript, bookmarkable. */
-function SearchBox({ query }: { query: string }) {
-  return (
-    <form
-      role="search"
-      action="/contacts"
-      className="flex w-full items-center gap-2 rounded-full bg-white px-[15px] py-2 shadow-[0_1px_2px_rgba(20,20,25,.04)] focus-within:ring-2 focus-within:ring-ink/10 sm:w-[206px]"
-    >
-      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" className="size-[15px] shrink-0 text-ink-hush">
-        <circle cx="10.5" cy="10.5" r="6.5" />
-        <path d="m15.4 15.4 4.1 4.1" />
-      </svg>
-      <label htmlFor="contact-search" className="sr-only">
-        Search contacts
-      </label>
-      <input
-        id="contact-search"
-        name="q"
-        type="search"
-        defaultValue={query}
-        maxLength={MAX_QUERY_LENGTH}
-        placeholder="Search name, company, tag"
-        className="w-full min-w-0 bg-transparent text-[12.5px] text-ink outline-none placeholder:text-ink-hush"
-      />
-    </form>
   );
 }
 
