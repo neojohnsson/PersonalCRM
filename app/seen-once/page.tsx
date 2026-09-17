@@ -23,6 +23,8 @@ export const metadata = { title: `Seen once · ${APP_NAME}` };
  *     a company name: slice 2 has no company for people who aren't contacts.
  *   - "Newest first" is a label, not a menu — it's the only order there is.
  *   - A "← Contacts" link on phones, where the sidebar is hidden.
+ *   - A "Dismissed" link beside "Newest first", to the page where a dismissal
+ *     can be undone (./dismissed). The design has no way back from Dismiss.
  */
 
 const PAGE_SIZE = 50;
@@ -102,20 +104,28 @@ export default async function SeenOncePage({ searchParams }: PageProps<"/seen-on
             </p>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2 rounded-full bg-white px-[15px] py-2 shadow-[0_1px_2px_rgba(20,20,25,.04)]">
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.9}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="size-[15px] text-ink-faint"
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              href="/seen-once/dismissed"
+              className="rounded-full bg-white px-[15px] py-2 text-[12.5px] font-medium text-ink-soft shadow-[0_1px_2px_rgba(20,20,25,.04)] transition-colors hover:text-ink"
             >
-              <path d="M5 6h14M8 12h8M10.5 18h3" />
-            </svg>
-            <span className="text-[12.5px] text-ink-faint">Newest first</span>
+              Dismissed
+            </Link>
+            <div className="flex shrink-0 items-center gap-2 rounded-full bg-white px-[15px] py-2 shadow-[0_1px_2px_rgba(20,20,25,.04)]">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.9}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="size-[15px] text-ink-faint"
+              >
+                <path d="M5 6h14M8 12h8M10.5 18h3" />
+              </svg>
+              <span className="text-[12.5px] text-ink-faint">Newest first</span>
+            </div>
           </div>
         </div>
 
