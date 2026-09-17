@@ -17,9 +17,9 @@ import {
 } from "@/lib/ai/summary-parts";
 import { displayName } from "@/lib/contacts/display";
 import { getAccessToken } from "@/lib/google/tokens";
-import { addDays, isIsoDate, todayIn } from "@/lib/relationship/dates";
+import { todayIn } from "@/lib/relationship/dates";
 import { contactTouches } from "@/lib/relationship/load";
-import { MAX_DAYS_AHEAD } from "@/lib/relationship/next-touch";
+import { TIMINGS, touchDate } from "@/lib/relationship/touch-date";
 import { supabaseError } from "@/lib/supabase/errors";
 
 /**
@@ -77,7 +77,15 @@ The four parts:
 The suggestions, which the user may copy onto the contact:
 - company: the organisation they work for, as a short name ("Fortnox"). A company email domain counts as a source; a personal address (gmail.com, outlook.com and the like) does not. Null if unclear.
 - role: their job title or role, only if a message states it. Null otherwise.
-- next_touch: when and why the user should get back in touch. "reason" is a short phrase (under 20 words) saying what to do. "date" is YYYY-MM-DD only if the messages give a specific date, or a clear time counted from a dated message ("next Friday", "after the 20th") — otherwise null. Never make up a date. Watch for negations: "I can't before the 20th" is not a promise for the 20th. Null reason if nothing is open.`;
+- next_touch: what the user should do next and when. "reason" is a short phrase (under 20 words) saying what to do — it may involve someone else, like "Contact Niklas Hedlund, as Martin suggested". "timing" is the one kind that fits best:
+  - stated_date: the messages give a specific date for it, or a clear time counted from a dated message ("next Friday", "after the 20th"). Put it in "date" as YYYY-MM-DD.
+  - reply_owed: they asked the user something and are waiting for an answer.
+  - referral: they pointed the user to another person or place to follow up with.
+  - waiting_on_them: the user asked something and is waiting for their answer.
+  - they_will_get_back: they said they would come back to the user.
+  - later_event: it depends on something later, like "when your internship approaches" or "in the spring". Put the month in "month" as YYYY-MM only if the messages name one.
+  - nothing_open: nothing is left to do. Then "reason" is null.
+  "why" is one short sentence explaining that timing, based on the messages. Leave "date" and "month" null unless the rules above say to fill them. Never make up a date. Watch for negations: "I can't before the 20th" is not a promise for the 20th. You don't pick the day — the app does, from the timing.`;
 
 const TEXT_WITH_SOURCES: JsonSchema = {
   type: "object",
@@ -113,10 +121,13 @@ export const SUMMARY_SCHEMA: JsonSchema = {
           type: "object",
           properties: {
             reason: { type: ["string", "null"] },
+            timing: { type: "string", enum: [...TIMINGS] },
             date: { type: ["string", "null"] },
+            month: { type: ["string", "null"] },
+            why: { type: ["string", "null"] },
             sources: { type: "array", items: { type: "string" } },
           },
-          required: ["reason", "date", "sources"],
+          required: ["reason", "timing", "date", "month", "why", "sources"],
           additionalProperties: false,
         },
       },
@@ -134,7 +145,7 @@ export type RawSummary = Record<SummaryPart, Cited<"text">> & {
   suggestions: {
     company: Cited<"value">;
     role: Cited<"value">;
-    next_touch: Cited<"reason" | "date">;
+    next_touch: Cited<"reason" | "date" | "month" | "why"> & { timing: string };
   };
 };
 
@@ -174,6 +185,8 @@ export type CheckedSummary = {
     role: string | null;
     touchReason: string | null;
     touchOn: string | null;
+    touchWhy: string | null;
+    touchRough: boolean;
   };
   sources: Partial<Record<SummaryPart | Suggestion, SourceRef[]>>;
   /** What was thrown out because none of its citations were real. */
@@ -213,8 +226,8 @@ const PERSONAL_DOMAINS = new Set([
  *   - anything left with no real citation is removed — a claim with no source
  *     doesn't go in the record (decisions.md, principle 2)
  *   - a company whose only source is a personal address is removed
- *   - a date that isn't a real calendar date from today to five years ahead is
- *     removed, and a date never stands without a reason
+ *   - the next touch's date comes from the timing rules, never straight from
+ *     the model (lib/relationship/touch-date.ts); "nothing open" removes it
  *   - everything is cut to the length its field allows
  */
 export function checkSummary(
@@ -272,12 +285,19 @@ export function checkSummary(
   let suggestedRole = clean(role?.value, MAX_SUGGESTED_FIELD_CHARS);
   if (suggestedRole !== null && !realSources("role", role!.sources, false)) suggestedRole = null;
 
-  let touchReason = clean(touch?.reason, MAX_SUGGESTED_REASON_CHARS);
+  let touchReason = touch?.timing === "nothing_open" ? null : clean(touch?.reason, MAX_SUGGESTED_REASON_CHARS);
   let touchOn: string | null = null;
+  let touchWhy: string | null = null;
+  let touchRough = false;
   if (touchReason !== null) {
     if (realSources("next_touch", touch!.sources, false)) {
-      const date = touch!.date?.trim() ?? "";
-      touchOn = isIsoDate(date) && date >= today && date <= addDays(today, MAX_DAYS_AHEAD) ? date : null;
+      const due = touchDate(
+        { timing: touch!.timing, date: touch!.date?.trim() || null, month: touch!.month?.trim() || null },
+        { today, ...lastDays(conversation) },
+      );
+      touchOn = due?.dueOn ?? null;
+      touchRough = due?.rough ?? false;
+      touchWhy = clean(touch!.why, MAX_SUGGESTED_REASON_CHARS);
     } else {
       touchReason = null;
     }
@@ -285,10 +305,19 @@ export function checkSummary(
 
   return {
     parts,
-    suggestions: { company: suggestedCompany, role: suggestedRole, touchReason, touchOn },
+    suggestions: { company: suggestedCompany, role: suggestedRole, touchReason, touchOn, touchWhy, touchRough },
     sources,
     dropped,
   };
+}
+
+/** The Swedish calendar day of your last and their last email in the conversation. */
+function lastDays(conversation: ConversationMessage[]): { lastFromYou: string | null; lastFromThem: string | null } {
+  const last = (from: "you" | "them") => {
+    const message = conversation.filter((m) => m.from === from).at(-1);
+    return message ? todayIn("Europe/Stockholm", message.at) : null;
+  };
+  return { lastFromYou: last("you"), lastFromThem: last("them") };
 }
 
 /** Trimmed, cut to `max`, and null if nothing's left. */
@@ -393,6 +422,8 @@ export async function generateSummary(
     suggested_role: checked.suggestions.role,
     suggested_touch_reason: checked.suggestions.touchReason,
     suggested_touch_on: checked.suggestions.touchOn,
+    suggested_touch_why: checked.suggestions.touchWhy,
+    suggested_touch_rough: checked.suggestions.touchRough,
     sources: checked.sources,
     as_of: newest.toISOString(),
     model: config.model,
@@ -404,6 +435,8 @@ type PendingRow = Record<SummaryPart, string | null> & {
   suggested_role: string | null;
   suggested_touch_reason: string | null;
   suggested_touch_on: string | null;
+  suggested_touch_why: string | null;
+  suggested_touch_rough: boolean;
   sources: CheckedSummary["sources"];
   as_of: string;
   model: string;

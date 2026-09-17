@@ -216,9 +216,12 @@ describe("AI summaries and spending", () => {
           suggested_role: "Head of platform",
           suggested_touch_reason: "Ask about the thesis decision",
           suggested_touch_on: "2026-10-01",
+          suggested_touch_why: "She said the decision lands in October.",
           sources: { company: [{ messageId: "m1", threadId: "t1" }] },
         })
-        .select("suggested_company, suggested_role, suggested_touch_reason, suggested_touch_on")
+        .select(
+          "suggested_company, suggested_role, suggested_touch_reason, suggested_touch_on, suggested_touch_why, suggested_touch_rough",
+        )
         .single();
       expect(error).toBeNull();
       expect(data).toEqual({
@@ -226,6 +229,8 @@ describe("AI summaries and spending", () => {
         suggested_role: "Head of platform",
         suggested_touch_reason: "Ask about the thesis decision",
         suggested_touch_on: "2026-10-01",
+        suggested_touch_why: "She said the decision lands in October.", // 0012
+        suggested_touch_rough: false, // 0012: false unless set
       });
 
       expect((await bobClient.from("contact_summaries").select("suggested_company")).data).toEqual([]);
@@ -235,6 +240,7 @@ describe("AI summaries and spending", () => {
         { suggested_company: "x".repeat(201) },
         { suggested_touch_reason: "x".repeat(301) },
         { suggested_touch_on: "2026-10-01" }, // a date with no reason
+        { suggested_touch_why: "x".repeat(301) },
       ]) {
         const { error: refused } = await aliceClient
           .from("contact_summaries")

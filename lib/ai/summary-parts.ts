@@ -34,8 +34,12 @@ export type SavedSummary = {
   suggested_company: string | null;
   suggested_role: string | null;
   suggested_touch_reason: string | null;
-  /** YYYY-MM-DD, only when the emails gave a date. */
+  /** YYYY-MM-DD, from the timing rules (lib/relationship/touch-date.ts). */
   suggested_touch_on: string | null;
+  /** The AI's one sentence on why that timing. */
+  suggested_touch_why: string | null;
+  /** The date is only a rough guess: "pick a better date". */
+  suggested_touch_rough: boolean;
   as_of: string;
   edited: boolean;
   model: string;
@@ -45,4 +49,4 @@ export type SavedSummary = {
 };
 
 export const SUMMARY_COLUMNS =
-  "id, contact_id, status, who_they_are, how_you_know, discussed, next_step, sources, suggested_company, suggested_role, suggested_touch_reason, suggested_touch_on, as_of, edited, model, created_at, updated_at, approved_at";
+  "id, contact_id, status, who_they_are, how_you_know, discussed, next_step, sources, suggested_company, suggested_role, suggested_touch_reason, suggested_touch_on, suggested_touch_why, suggested_touch_rough, as_of, edited, model, created_at, updated_at, approved_at";

@@ -398,8 +398,16 @@ function Suggestions({
             <div className="flex min-w-0 flex-col gap-0.5">
               <span className="text-[13px] text-ink-body">
                 <span className="text-ink-muted">Next touch:</span> {touchReason}
-                {summary.suggested_touch_on ? ` · ${shortDate(summary.suggested_touch_on)}` : " · no date in the emails"}
+                {summary.suggested_touch_on ? ` · ${weekdayDate(summary.suggested_touch_on)}` : " · pick a date"}
               </span>
+              {(summary.suggested_touch_why || summary.suggested_touch_rough) && (
+                <span className="text-[12px] leading-[1.45] text-ink-muted">
+                  {summary.suggested_touch_why}
+                  {summary.suggested_touch_rough && (
+                    <span className="text-cooling"> Rough guess — pick a better date.</span>
+                  )}
+                </span>
+              )}
               <Sources sources={summary.sources.next_touch ?? []} gmailEmail={gmailEmail} />
             </div>
             <Link href={`/contacts/${contact.id}?touch=${summary.id}#next-touch`} scroll={false} className={GHOST}>
@@ -465,6 +473,13 @@ function gmailLink(messageId: string, gmailEmail: string | null): string {
   return gmailEmail
     ? `https://mail.google.com/mail/?authuser=${encodeURIComponent(gmailEmail)}#all/${messageId}`
     : `https://mail.google.com/mail/u/0/#all/${messageId}`;
+}
+
+/** "Mon 22 Sep" — a next-touch date, read as a calendar day with no time zone. */
+function weekdayDate(isoDate: string): string {
+  return new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(
+    new Date(`${isoDate}T00:00:00Z`),
+  );
 }
 
 /** "12 Sep", in Swedish time. */
