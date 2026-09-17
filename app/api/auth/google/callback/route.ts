@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { encrypt } from "@/lib/crypto";
 import { googleCallbackUrl } from "@/lib/google/redirect";
+import { canRead, parseGrantedScopes } from "@/lib/google/scopes";
 import { createClient } from "@/lib/supabase/server";
 import { resetSyncAfterReconnect } from "@/lib/sync/reconnect";
 
@@ -49,7 +50,10 @@ export async function GET(request: NextRequest) {
 
     const tokens: GoogleTokens = await response.json();
 
-    if (!tokens.scope.split(" ").includes("https://www.googleapis.com/auth/gmail.readonly")) {
+    // Google lets the user untick permissions, so check what was really granted.
+    // Reading is required; creating drafts is optional and only enables Draft reply.
+    const grantedScopes = parseGrantedScopes(tokens.scope);
+    if (!canRead(grantedScopes)) {
         return clearState(NextResponse.redirect(new URL("/connect?error=scope_missing", request.url)));
     }
 
@@ -78,6 +82,7 @@ export async function GET(request: NextRequest) {
                 user_id: user.id,
                 email: profile.emailAddress,
                 refresh_token_encrypted: encryptedToken,
+                scopes: grantedScopes,
                 updated_at: new Date().toISOString(),
             },
             { onConflict: "user_id" },

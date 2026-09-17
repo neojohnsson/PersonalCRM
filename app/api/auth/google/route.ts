@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { googleCallbackUrl } from "@/lib/google/redirect";
+import { REQUESTED_SCOPES } from "@/lib/google/scopes";
 import { randomBytes } from "node:crypto";
 
 export async function POST(request: NextRequest) {
@@ -14,7 +15,9 @@ export async function POST(request: NextRequest) {
     // Built from the address this request came in on, so localhost, previews
     // and production each get their own callback. See lib/google/redirect.ts.
     const redirect_uri = googleCallbackUrl(request);
-    const scope = "https://www.googleapis.com/auth/gmail.readonly";
+    // Read mail, and create drafts (slice 5a). Google shows them as separate
+    // boxes; lib/google/scopes.ts says what each allows.
+    const scope = REQUESTED_SCOPES;
     const response_type = "code";
     const access_type = "offline";
     const prompt = "consent";
