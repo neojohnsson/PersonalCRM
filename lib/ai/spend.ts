@@ -29,7 +29,7 @@ export class AiCapReached extends Error {
 
 export type SpendRequest = {
   contactId: string | null;
-  purpose: "summary";
+  purpose: "summary" | "draft";
   model: string;
   /** From maxCostOf: the most this request could cost. */
   estimateUsd: number;

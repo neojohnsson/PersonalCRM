@@ -26,6 +26,13 @@ export const MODEL_PRICES: Record<string, ModelPrice> = {
  */
 export const DEFAULT_MODEL = "gpt-5.6-luna";
 
+/**
+ * Drafts get a bigger model: they are written to a real person, and small
+ * models write stiff, translated-sounding Swedish (plan.md §5.3). The user's
+ * choice, 2026-09-17. Set LLM_MODEL_GOOD to use another one from the list.
+ */
+export const DEFAULT_DRAFT_MODEL = "gpt-5-mini";
+
 export type TokenUsage = {
   inputTokens: number;
   /** The part of inputTokens OpenAI had cached, billed at the cached price. */

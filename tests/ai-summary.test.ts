@@ -255,7 +255,7 @@ const admin = createClient(SUPABASE_URL, SECRET_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-const CONFIG: AiConfig = { apiKey: "sk-test", model: "gpt-5.6-luna", monthlyCapUsd: 2 };
+const CONFIG: AiConfig = { apiKey: "sk-test", model: "gpt-5.6-luna", draftModel: "gpt-5-mini", monthlyCapUsd: 2 };
 const fakeToken = async () => "ya29.fake";
 
 const b64 = (text: string) => Buffer.from(text).toString("base64url");

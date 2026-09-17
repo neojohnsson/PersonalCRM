@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AiNotConfigured, DEFAULT_MONTHLY_CAP_USD, aiConfig, monthlyCapUsd } from "@/lib/ai/config";
-import { DEFAULT_MODEL, MODEL_PRICES, costOf, estimateTokens, maxCostOf } from "@/lib/ai/models";
+import { DEFAULT_DRAFT_MODEL, DEFAULT_MODEL, MODEL_PRICES, costOf, estimateTokens, maxCostOf } from "@/lib/ai/models";
 import { startOfMonthInStockholm } from "@/lib/ai/spend";
 
 /** Prices, cost arithmetic and settings. No network. */
@@ -23,8 +23,9 @@ describe("costOf", () => {
     expect(() => costOf("gpt-unknown", { inputTokens: 1, cachedInputTokens: 0, outputTokens: 1 })).toThrow(/No price/);
   });
 
-  it("has a price for the default model", () => {
+  it("has a price for both default models", () => {
     expect(MODEL_PRICES[DEFAULT_MODEL]).toBeDefined();
+    expect(MODEL_PRICES[DEFAULT_DRAFT_MODEL]).toBeDefined();
   });
 });
 
@@ -54,20 +55,25 @@ describe("aiConfig", () => {
     expect(aiConfig({ OPENAI_API_KEY: "sk-test" })).toEqual({
       apiKey: "sk-test",
       model: DEFAULT_MODEL,
+      draftModel: DEFAULT_DRAFT_MODEL,
       monthlyCapUsd: DEFAULT_MONTHLY_CAP_USD,
     });
   });
 
   it("takes another known model and cap from the environment", () => {
-    expect(aiConfig({ OPENAI_API_KEY: "sk-test", LLM_MODEL_FAST: "gpt-5-nano", LLM_MONTHLY_CAP_USD: "5" })).toEqual({
-      apiKey: "sk-test",
-      model: "gpt-5-nano",
-      monthlyCapUsd: 5,
-    });
+    expect(
+      aiConfig({
+        OPENAI_API_KEY: "sk-test",
+        LLM_MODEL_FAST: "gpt-5-nano",
+        LLM_MODEL_GOOD: "gpt-5.4-mini",
+        LLM_MONTHLY_CAP_USD: "5",
+      }),
+    ).toEqual({ apiKey: "sk-test", model: "gpt-5-nano", draftModel: "gpt-5.4-mini", monthlyCapUsd: 5 });
   });
 
-  it("refuses a model with no price", () => {
+  it("refuses either model if it has no price", () => {
     expect(() => aiConfig({ OPENAI_API_KEY: "sk-test", LLM_MODEL_FAST: "gpt-unknown" })).toThrow(AiNotConfigured);
+    expect(() => aiConfig({ OPENAI_API_KEY: "sk-test", LLM_MODEL_GOOD: "gpt-unknown" })).toThrow(AiNotConfigured);
   });
 
   it("falls back to the default cap for nonsense", () => {
