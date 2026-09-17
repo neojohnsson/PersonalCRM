@@ -5,7 +5,7 @@ import {
   SUMMARY_PARTS,
   type SavedSummary,
   type SummaryPart,
-} from "@/lib/ai/summary";
+} from "@/lib/ai/summary-parts";
 import { supabaseError } from "@/lib/supabase/errors";
 
 /**

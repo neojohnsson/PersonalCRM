@@ -4,6 +4,9 @@ import { AppShell } from "@/app/app-shell";
 import { DisconnectGmailButton } from "@/app/disconnect-gmail-button";
 import { SignOutButton } from "@/app/sign-out-button";
 import { APP_NAME } from "@/lib/app-config";
+import { AiNotConfigured, aiConfig, monthlyCapUsd } from "@/lib/ai/config";
+import { spentThisMonth } from "@/lib/ai/spend";
+import { summariesFor } from "@/lib/ai/summary-record";
 import { requireUser } from "@/lib/auth";
 import { isUuid } from "@/lib/contacts/contact-form";
 import { displayName } from "@/lib/contacts/display";
@@ -23,13 +26,15 @@ import type { Band } from "@/lib/relationship/warmth";
 import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 import { NextTouchCard } from "./next-touch-card";
+import { SummaryCard, type AiBudget } from "./summary-card";
 
 export const metadata = { title: `Contact · ${APP_NAME}` };
 
 /**
  * One contact, built from design/ContactDetail.dc.html: the header with avatar,
  * name, role · company, the contact line and the whose-turn pill; the warmth
- * stat strip; "Your notes"; "Next touch"; "Open thread".
+ * stat strip; the AI relationship summary; "Your notes"; "Next touch"; "Open
+ * thread".
  *
  * Differences from the design, on purpose:
  *   - Website and city aren't contact fields (slice-2-plan.md, decision C).
@@ -39,6 +44,8 @@ export const metadata = { title: `Contact · ${APP_NAME}` };
  *     thread — in the contact list's colours; the design only shows "Your turn".
  *   - No mail at all: one line saying there's no warmth yet, instead of five
  *     empty stat cards.
+ *   - The relationship summary card (slice 4) has no design; it's built from
+ *     this page's own cards, and says so in app/contacts/[id]/summary-card.tsx.
  *   - "Draft reply" is slice 5. Its place holds Edit, the one action slice 2 has;
  *     the "···" menu has nothing to hold yet and is left out.
  *   - plan.md §3.2's "one line on what they do" and "how you know them" have no
@@ -86,11 +93,14 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
   if (!contact) notFound();
 
   const emails = emailsResult.data.map((row) => row.email as string);
-  const [thread, relationship, nextTouch] = await Promise.all([
+  const [thread, relationship, nextTouch, summaries, spentUsd] = await Promise.all([
     latestThread(supabase, user.id, emails),
     loadRelationship(supabase, user.id, contact.id),
     openNextTouch(supabase, user.id, contact.id),
+    summariesFor(supabase, user.id, contact.id),
+    spentThisMonth(supabase, user.id),
   ]);
+  const budget: AiBudget = { spentUsd, capUsd: monthlyCapUsd(), ready: aiIsReady() };
   const pill = turnPill(relationship.turn);
 
   const name = displayName({ ...contact, primary_email: emails[0] ?? null });
@@ -187,6 +197,15 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
 
         <StatStrip relationship={relationship} hasEmails={emails.length > 0} />
 
+        <SummaryCard
+          contactId={contact.id}
+          approved={summaries.approved}
+          pending={summaries.pending}
+          hasMail={relationship.messageCount > 0}
+          budget={budget}
+          gmailEmail={gmailResult.data?.email ?? null}
+        />
+
         <div className="flex flex-col gap-[18px] lg:flex-row">
           <section className={`${CARD} flex min-w-0 flex-1 flex-col gap-[11px] px-[22px] py-[18px]`}>
             <div className="flex items-center justify-between gap-3">
@@ -261,6 +280,17 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
       </main>
     </AppShell>
   );
+}
+
+/** Whether the server has what the AI needs. The key itself never leaves the server. */
+function aiIsReady(): boolean {
+  try {
+    aiConfig();
+    return true;
+  } catch (error) {
+    if (error instanceof AiNotConfigured) return false;
+    throw error;
+  }
 }
 
 type Thread = {

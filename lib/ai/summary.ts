@@ -7,6 +7,14 @@ import { withSpendCap } from "@/lib/ai/spend";
 import { displayName } from "@/lib/contacts/display";
 import { getAccessToken } from "@/lib/google/tokens";
 import { contactTouches } from "@/lib/relationship/load";
+import {
+  MAX_PART_CHARS,
+  SUMMARY_COLUMNS,
+  SUMMARY_PARTS,
+  type SavedSummary,
+  type SourceRef,
+  type SummaryPart,
+} from "@/lib/ai/summary-parts";
 import { supabaseError } from "@/lib/supabase/errors";
 
 /**
@@ -16,36 +24,11 @@ import { supabaseError } from "@/lib/supabase/errors";
  * result as PENDING — a person approves it before it's part of the record.
  */
 
-export const SUMMARY_PARTS = ["who_they_are", "how_you_know", "discussed", "next_step"] as const;
-export type SummaryPart = (typeof SUMMARY_PARTS)[number];
-
-/** Longest text kept for one part — the database allows no more. */
-export const MAX_PART_CHARS = 2_000;
+export { MAX_PART_CHARS, SUMMARY_COLUMNS, SUMMARY_PARTS } from "@/lib/ai/summary-parts";
+export type { SavedSummary, SourceRef, SummaryPart } from "@/lib/ai/summary-parts";
 
 /** The answer's ceiling, reasoning included. Also what the cost reservation assumes. */
 export const MAX_OUTPUT_TOKENS = 2_500;
-
-export type SourceRef = { messageId: string; threadId: string };
-
-export type SavedSummary = {
-  id: string;
-  contact_id: string;
-  status: "pending" | "approved";
-  who_they_are: string | null;
-  how_you_know: string | null;
-  discussed: string | null;
-  next_step: string | null;
-  sources: Partial<Record<SummaryPart, SourceRef[]>>;
-  as_of: string;
-  edited: boolean;
-  model: string;
-  created_at: string;
-  updated_at: string;
-  approved_at: string | null;
-};
-
-export const SUMMARY_COLUMNS =
-  "id, contact_id, status, who_they_are, how_you_know, discussed, next_step, sources, as_of, edited, model, created_at, updated_at, approved_at";
 
 /** The contact has no mail the app can read — nothing to summarise, nothing spent. */
 export class NoMailToSummarise extends Error {
