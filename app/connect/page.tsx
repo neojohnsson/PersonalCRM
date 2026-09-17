@@ -1,6 +1,13 @@
-import Link from "next/link";
 import { APP_NAME } from "@/lib/app-config";
 import { requireUser } from "@/lib/auth";
+import {
+  BrandTile,
+  Callout,
+  Divider,
+  Icon,
+  Item,
+  Section,
+} from "@/app/intro-screen";
 
 export const metadata = { title: `Connect Gmail · ${APP_NAME}` };
 
@@ -30,11 +37,16 @@ const FALLBACK_ERROR = "Something went wrong connecting Gmail. Try again.";
 /**
  * The screen that runs before Google's consent screen.
  *
- * Layout is design/Connect.dc.html. The wording is not, on purpose: the design
- * describes the finished app (subject lines, bodies for summaries, the draft
- * permission). Slice 1 asks for read-only and stores no subject, and a privacy
- * screen that describes permissions the app isn't requesting would mislead.
- * The copy moves back towards the design as slices 4 and 5 land.
+ * Layout and most wording are design/Connect.dc.html's. Differences, on
+ * purpose — a privacy screen that describes what the app doesn't do would
+ * mislead:
+ *   - The permission is still read-only: drafts, and the design's line about
+ *     the draft permission, arrive with slice 5.
+ *   - No "opt in, one contact at a time" for keeping bodies: not built.
+ *   - Summaries are "editable", not "editable and deletable": an approved
+ *     summary can be changed, not yet deleted (slice 7).
+ *   - No "Read the full privacy page" link: that page is slice 7
+ *     (docs/plan.md §3.12), same as on /login.
  *
  * The point of the screen is in docs/plan.md §3.1: a plain-English
  * explanation of what is read and what is stored, shown *before* the consent
@@ -55,14 +67,7 @@ export default async function ConnectPage({
     <main className="flex flex-1 items-center justify-center bg-paper px-6 py-14 text-ink">
       <div className="flex w-full max-w-[620px] flex-col gap-[26px]">
         <div className="flex flex-col gap-[18px]">
-          <div
-            aria-hidden="true"
-            className="flex size-10 items-center justify-center rounded-xl bg-[#17181a]"
-          >
-            <span className="text-[18px] font-extrabold tracking-[-0.03em] text-white">
-              {APP_NAME.charAt(0)}
-            </span>
-          </div>
+          <BrandTile />
           <div className="flex flex-col gap-2.5">
             <h1 className="text-[28px] leading-[1.15] font-bold tracking-[-0.035em] sm:text-[33px]">
               Before you connect Gmail
@@ -84,7 +89,11 @@ export default async function ConnectPage({
         <div className="flex flex-col gap-[22px] rounded-[18px] bg-white px-6 py-[26px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] sm:px-[30px]">
           <Section title="What it reads">
             <Item icon="check" tone="info">
-              Message headers — who wrote, who received it, and when
+              Message headers — who wrote, when, and the subject line
+            </Item>
+            <Item icon="check" tone="info">
+              Message bodies — only for the one contact you ask to summarise, and only when you
+              ask
             </Item>
           </Section>
 
@@ -92,12 +101,15 @@ export default async function ConnectPage({
 
           <Section title="What it keeps">
             <Item icon="check" tone="affirm">
-              Message <span className="font-semibold">metadata</span> — sender,
-              recipients, date, and whether you sent it or received it
+              Contact details, your notes, and message{" "}
+              <span className="font-semibold">metadata</span> — sender, date, subject, direction
             </Item>
             <Item icon="check" tone="affirm">
-              <span className="font-semibold">Not</span> message bodies,
-              subject lines or attachments. Those stay in Gmail.
+              Summaries the AI writes and you approve — every one editable
+            </Item>
+            <Item icon="check" tone="affirm">
+              <span className="font-semibold">Not</span> message bodies or attachments. Those stay
+              in Gmail.
             </Item>
           </Section>
 
@@ -115,10 +127,10 @@ export default async function ConnectPage({
 
         <Callout icon="info">
           Worth knowing: Google&rsquo;s read-only permission covers{" "}
-          <span className="font-semibold">whole messages</span>, not just
-          headers. This app only ever asks Gmail for headers — but you are
-          granting more than that, so you should hear it from me rather than
-          notice it on the next screen.
+          <span className="font-semibold">every message</span>, whole. This app reads a
+          message&rsquo;s text only when you ask for a summary of that contact, sends it to OpenAI
+          for that one request, and doesn&rsquo;t store it — but you are granting more than that,
+          so you should hear it from me rather than notice it on the next screen.
         </Callout>
 
         <div className="flex flex-wrap items-center gap-4">
@@ -131,140 +143,15 @@ export default async function ConnectPage({
           <form action="/api/auth/google" method="post">
             <button
               type="submit"
-              className="flex items-center gap-[9px] rounded-full bg-[#17181a] px-[26px] py-3.5 text-[14.5px] font-semibold tracking-[-0.01em] text-white transition hover:bg-ink/85"
+              className="flex items-center gap-[9px] rounded-full bg-ink-deep px-[26px] py-3.5 text-[14.5px] font-semibold tracking-[-0.01em] text-white transition hover:bg-ink/85"
             >
               Continue to Google
               <Icon name="arrow" className="size-4" />
             </button>
           </form>
 
-          <Link
-            href="/privacy"
-            className="text-[14px] font-medium text-ink-soft hover:text-ink"
-          >
-            Read the full privacy page
-          </Link>
         </div>
       </div>
     </main>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-[11px] font-bold tracking-[0.09em] text-ink-faint uppercase">
-        {title}
-      </h2>
-      <ul className="flex flex-col gap-[9px]">{children}</ul>
-    </section>
-  );
-}
-
-const TONES = {
-  info: "text-info",
-  affirm: "text-affirm",
-  muted: "text-ink-faint",
-} as const;
-
-function Item({
-  icon,
-  tone,
-  children,
-}: {
-  icon: "check" | "cross";
-  tone: keyof typeof TONES;
-  children: React.ReactNode;
-}) {
-  return (
-    <li className="flex items-start gap-[11px]">
-      <Icon
-        name={icon}
-        className={`mt-0.5 size-[17px] shrink-0 ${TONES[tone]}`}
-      />
-      <p className="text-[14.5px] leading-[1.5]">{children}</p>
-    </li>
-  );
-}
-
-function Divider() {
-  return <div aria-hidden="true" className="h-px bg-line" />;
-}
-
-function Callout({
-  icon,
-  role,
-  children,
-}: {
-  icon: "alert" | "info";
-  role?: "alert";
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      role={role}
-      className="flex items-start gap-3 rounded-[14px] bg-accent-tint px-[18px] py-[15px]"
-    >
-      <Icon name={icon} className="mt-0.5 size-[17px] shrink-0 text-accent" />
-      <p className="text-[13.5px] leading-[1.55] text-[#7c3a12]">{children}</p>
-    </div>
-  );
-}
-
-/** The design's icons, drawn with currentColor so Tailwind text colours apply. */
-const ICON_PATHS = {
-  check: (
-    <>
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="m8.2 12.2 2.6 2.6 5-5.4" />
-    </>
-  ),
-  cross: (
-    <>
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M9 9l6 6M15 9l-6 6" />
-    </>
-  ),
-  alert: (
-    <>
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 8v5M12 16h.01" />
-    </>
-  ),
-  info: (
-    <>
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 16v-5M12 8h.01" />
-    </>
-  ),
-  arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
-};
-
-function Icon({
-  name,
-  className,
-}: {
-  name: keyof typeof ICON_PATHS;
-  className?: string;
-}) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={name === "arrow" ? 2 : 1.9}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      {ICON_PATHS[name]}
-    </svg>
   );
 }
