@@ -1,42 +1,50 @@
 import Link from "next/link";
+import { AppShell } from "@/app/app-shell";
+import { DisconnectGmailButton } from "@/app/disconnect-gmail-button";
+import { CARD, EmptyCard, StatusLine } from "@/app/page-parts";
+import { SignOutButton } from "@/app/sign-out-button";
+import { SyncButton } from "@/app/sync-button";
+import { APP_NAME } from "@/lib/app-config";
 import { requireUser } from "@/lib/auth";
 import { displayName } from "@/lib/contacts/display";
-import { MAX_QUERY_LENGTH, ilikePattern, normaliseQuery } from "@/lib/contacts/search";
-import { avatarColors, countOf, daysAgo, initials } from "@/lib/format";
+import { avatarColors, countOf, initials, weekdayDayMonth } from "@/lib/format";
+import { todayIn } from "@/lib/relationship/dates";
+import { dateBadge } from "@/lib/relationship/describe";
+import { NO_MAIL, loadRelationships } from "@/lib/relationship/load";
+import { whoNeedsYou, type ComingUp, type OpenTouch, type Person } from "@/lib/relationship/today";
 import { supabaseError } from "@/lib/supabase/errors";
+import { readAll } from "@/lib/supabase/read-all";
 import { createClient } from "@/lib/supabase/server";
-import { lookbackDays } from "@/lib/sync/config";
-import { describeSync, type SyncLine, type SyncSummary } from "@/lib/sync/describe";
-import { AppShell } from "./app-shell";
-import { DisconnectGmailButton } from "./disconnect-gmail-button";
-import { SignOutButton } from "./sign-out-button";
-import { SyncButton } from "./sync-button";
+import { describeSync, type SyncSummary } from "@/lib/sync/describe";
+
+export const metadata = { title: `Who needs you today · ${APP_NAME}` };
 
 /**
- * The home page: your contacts, most recent contact first — never A–Z
- * (AGENTS.md, core premise).
+ * Home: "Who needs you today", built from design/Main.dc.html — Your turn and
+ * Going quiet on the left, Coming up and Seen once on the right
+ * (docs/slice-3-plan.md, decision C). The answer to "who needs me today",
+ * never "here are your contacts, A–Z" (AGENTS.md, core premise).
  *
- * Built from design/ContactList.dc.html: the Contacts / Seen once tabs, the
- * search box and "Add contact" on the top row, the table card. The status
- * line comes from design/Main.dc.html.
- *
- * Differences from ContactList, on purpose:
- *   - Whose turn and Warmth columns, the filter chips and the sort menu: slice 3.
- *     "Messages" stands in, since slice 2 can count them.
- *   - A white Sync now pill sits where the design's sort menu is — the
- *     temporary button (slice-1-plan.md, decision 5).
- *   - The design has no visible heading; the page has a hidden one, so screen
- *     readers still get a title.
+ * Differences from the design, on purpose:
+ *   - Your turn's second line is the latest subject, where the design has an
+ *     AI summary ("Asked about your thesis timeline"). Summaries are slice 6;
+ *     the subject is what's stored. Going quiet uses the design's own
+ *     computed wording, "You wrote 24 days ago. No answer since."
+ *   - No "Draft reply" button: drafts are slice 5.
+ *   - Long lists stop at a few rows with a link to the full, filtered contact
+ *     list; the design is a fixed 900px frame and never had to say.
+ *   - Coming up: a touch that's due or overdue has an orange badge, so it
+ *     doesn't read like a future date.
+ *   - Seen once says "people", not "new people": nothing yet knows who is new
+ *     (lib/sync/describe.ts has the same reason).
+ *   - The temporary Sync now pill sits beside the date (slice-1-plan.md,
+ *     decision 5), and the header's page switcher, search and bell are left
+ *     out as on the other pages (app/app-shell.tsx).
  */
 
-const PAGE_SIZE = 50;
-const MAX_ROWS = 1_000;
-
-const CARD =
-  "rounded-[18px] bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
-
-const DARK_PILL =
-  "flex items-center gap-[7px] rounded-full bg-ink-deep px-4 py-[9px] text-[12.5px] font-semibold text-white transition hover:bg-ink/85";
+const YOUR_TURN_ROWS = 8;
+const GOING_QUIET_ROWS = 5;
+const COMING_UP_ROWS = 6;
 
 type ContactRow = {
   id: string;
@@ -44,16 +52,16 @@ type ContactRow = {
   last_name: string | null;
   company: string | null;
   primary_email: string | null;
-  message_count: number;
-  last_contact_at: string | null;
 };
 
-export default async function Home({ searchParams }: PageProps<"/">) {
+const DARK_PILL =
+  "flex items-center gap-[7px] rounded-full bg-ink-deep px-4 py-[9px] text-[12.5px] font-semibold text-white transition hover:bg-ink/85";
+
+export default async function Home() {
   const user = await requireUser();
   const supabase = await createClient();
+  const now = new Date();
 
-  // Signed-in client, so RLS applies. The user_id filters are there anyway:
-  // queries that scope themselves stay correct if the client ever changes.
   const { data: gmail, error: gmailError } = await supabase
     .from("google_accounts")
     .select("email")
@@ -61,17 +69,15 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     .maybeSingle();
   if (gmailError) throw supabaseError(gmailError, "Couldn't check the Gmail connection");
 
-  const signOut = <SignOutButton />;
-
   if (!gmail) {
     return (
-      <AppShell userEmail={user.email} headerRight={signOut}>
-        <main className="flex flex-1 flex-col gap-[22px] px-4 pt-2 pb-[26px] sm:px-[30px]">
-          <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.035em]">Contacts</h1>
+      <AppShell userEmail={user.email} active="home" headerRight={<SignOutButton />}>
+        <main className="flex flex-1 flex-col gap-[22px] px-4 pt-2 pb-[30px] sm:px-[30px]">
+          <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.035em]">Who needs you today</h1>
           <EmptyCard title="Connect Gmail to begin">
             <p>
-              Once Gmail is connected, everyone you&rsquo;ve written to and
-              heard back from shows up here, most recent first.
+              Once Gmail is connected, this page shows who is waiting on a reply from you, whose
+              threads are going quiet, and who you meant to get back to.
             </p>
             <Link href="/connect" className={`${DARK_PILL} mt-5 self-start`}>
               Connect Gmail
@@ -82,353 +88,313 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     );
   }
 
-  const { show, q } = await searchParams;
-  const query = normaliseQuery(q);
-  const requested = typeof show === "string" ? Number.parseInt(show, 10) : NaN;
-  const limit = requested > 0 ? Math.min(requested, MAX_ROWS) : PAGE_SIZE;
+  const today = todayIn("Europe/Stockholm", now);
 
-  let contactsQuery = supabase
-    .from("contact_list")
-    .select("id, first_name, last_name, company, primary_email, message_count, last_contact_at", {
-      count: "exact",
-    })
-    .eq("user_id", user.id)
-    .order("last_contact_at", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (query) contactsQuery = contactsQuery.ilike("search_text", ilikePattern(query));
-
-  const [syncQuery, contactsResult, seenOnceResult, allContactsResult] = await Promise.all([
+  const [contacts, relationships, touchesResult, syncResult, seenOnceResult] = await Promise.all([
+    readAll<ContactRow>(
+      (from, to) =>
+        supabase
+          .from("contact_list")
+          .select("id, first_name, last_name, company, primary_email")
+          .eq("user_id", user.id)
+          .order("id")
+          .range(from, to),
+      "Couldn't load contacts",
+    ),
+    loadRelationships(supabase, user.id, { now }),
+    supabase
+      .from("next_touches")
+      .select("id, contact_id, due_on, reason")
+      .eq("user_id", user.id)
+      .eq("status", "open")
+      .order("due_on")
+      .limit(200)
+      .returns<OpenTouch[]>(),
     supabase
       .from("gmail_sync_state")
       .select("status, message_count, last_synced_at, last_error")
       .eq("user_id", user.id)
       .maybeSingle(),
-    contactsQuery,
     supabase
       .from("person_tiers")
       .select("email", { count: "exact", head: true })
       .eq("user_id", user.id)
       .eq("tier", "seen_once")
       .is("contact_id", null),
-    // While searching, the tab still shows how many contacts there are in all.
-    query
-      ? supabase.from("contacts").select("id", { count: "exact", head: true }).eq("user_id", user.id)
-      : null,
   ]);
-  if (syncQuery.error) throw supabaseError(syncQuery.error, "Couldn't load the sync status");
-  if (contactsResult.error) throw supabaseError(contactsResult.error, "Couldn't load contacts");
+  if (touchesResult.error) throw supabaseError(touchesResult.error, "Couldn't load next touches");
+  if (syncResult.error) throw supabaseError(syncResult.error, "Couldn't load the sync status");
   if (seenOnceResult.error) throw supabaseError(seenOnceResult.error, "Couldn't count Seen once");
-  if (allContactsResult?.error) {
-    throw supabaseError(allContactsResult.error, "Couldn't count contacts");
-  }
 
-  const sync = syncQuery.data as SyncSummary | null;
-  const contacts = (contactsResult.data ?? []) as ContactRow[];
-  const matching = contactsResult.count ?? contacts.length;
-  const totalContacts = allContactsResult?.count ?? matching;
+  const sync = syncResult.data as SyncSummary | null;
   const seenOnce = seenOnceResult.count ?? 0;
+
+  const people: Person<ContactRow>[] = contacts.map((contact) => ({
+    contact,
+    relationship: relationships.get(contact.id) ?? NO_MAIL,
+  }));
+  const { yours, quiet, comingUp } = whoNeedsYou(people, touchesResult.data, today);
 
   return (
     <AppShell
       userEmail={user.email}
+      active="home"
       seenOnceCount={seenOnce}
       headerRight={
         <>
           <span className="hidden text-[13px] text-ink-faint md:inline">{gmail.email}</span>
           <DisconnectGmailButton />
-          {signOut}
+          <SignOutButton />
         </>
       }
     >
-      <main className="flex flex-1 flex-col gap-4 px-4 pt-2 pb-[26px] sm:px-[30px]">
-        <h1 className="sr-only">Contacts</h1>
-
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <ListTabs contacts={totalContacts} seenOnce={seenOnce} />
-
-          <div className="flex w-full flex-wrap items-start gap-2 sm:w-auto">
-            <SearchBox query={query} />
+      <main className="flex flex-1 flex-col gap-[22px] px-4 pt-2 pb-[30px] sm:px-[30px]">
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.035em]">Who needs you today</h1>
+            <StatusLine line={describeSync(sync, contacts.length, now)} />
+          </div>
+          <div className="flex items-center gap-3 pb-1">
+            <p className="text-[13px] font-medium text-ink-faint">{weekdayDayMonth(now)}</p>
             {sync?.status === "needs_reconnect" ? (
               <Link
                 href="/connect"
-                className="flex items-center rounded-full bg-white px-4 py-[9px] text-[12.5px] font-semibold text-ink shadow-[0_1px_2px_rgba(20,20,25,.04)] hover:bg-paper-tint"
+                className="rounded-full bg-white px-[14px] py-2 text-[12.5px] font-semibold shadow-[0_1px_2px_rgba(20,20,25,.04)] hover:bg-paper-tint"
               >
                 Reconnect Gmail
               </Link>
             ) : (
               <SyncButton />
             )}
-            <Link href="/contacts/new" className={DARK_PILL}>
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" className="size-3.5">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              Add contact
-            </Link>
           </div>
         </div>
 
-        <StatusLine line={describeSync(sync, totalContacts)} />
+        <div className="flex flex-col gap-5 lg:flex-row">
+          <div className="flex min-w-0 flex-1 flex-col gap-[18px]">
+            <PeopleCard
+              title="Your turn"
+              dot="bg-accent"
+              subtitle={
+                yours.length > 0
+                  ? `${countOf(yours.length, "person is", "people are")} waiting on a reply from you`
+                  : "Nobody is waiting on a reply from you"
+              }
+              empty="When someone writes and you haven't answered, they show up here — longest wait first."
+              rows={yours.slice(0, YOUR_TURN_ROWS).map((person) => ({
+                person,
+                line: subjectOf(person),
+                daysClass: "text-accent",
+              }))}
+              more={
+                yours.length > YOUR_TURN_ROWS
+                  ? { href: "/contacts?filter=yours", text: `See all ${yours.length}` }
+                  : null
+              }
+            />
 
-        {contacts.length > 0 ? (
-          <ContactTable contacts={contacts} total={matching} limit={limit} query={query} />
-        ) : query ? (
-          <EmptyCard title={`No contacts match “${query}”`}>
-            <p>Search looks at names, companies, roles, tags and every address.</p>
-            <Link href="/" className="mt-3 self-start font-semibold text-ink hover:text-ink-soft">
-              Clear the search
-            </Link>
-          </EmptyCard>
-        ) : (
-          <NoContactsYet sync={sync} seenOnce={seenOnce} />
-        )}
+            <PeopleCard
+              title="Going quiet"
+              dot="bg-ink-faint"
+              subtitle="You spoke last and nothing came back"
+              empty="Nothing yet. A thread shows up here when you wrote last and two weeks pass without an answer."
+              rows={quiet.slice(0, GOING_QUIET_ROWS).map((person) => ({
+                person,
+                line: quietLine(person),
+                daysClass: "text-ink-faint",
+              }))}
+              more={
+                quiet.length > GOING_QUIET_ROWS
+                  ? { href: "/contacts?filter=quiet", text: `See all ${quiet.length}` }
+                  : null
+              }
+            />
+          </div>
+
+          <div className="flex flex-col gap-[18px] lg:w-[296px] lg:shrink-0">
+            <ComingUpCard touches={comingUp} />
+
+            <section className={`${CARD} flex flex-col gap-[11px] px-5 py-[18px]`}>
+              <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Seen once</h2>
+              {seenOnce > 0 ? (
+                <>
+                  <p className="text-[12.5px] leading-[1.5] text-ink-soft">
+                    {countOf(seenOnce, "person", "people")} wrote to you — or you wrote to them — but
+                    never both. They&rsquo;re waiting out of the way.
+                  </p>
+                  <Link
+                    href="/seen-once"
+                    className="self-start rounded-full bg-chip px-4 py-[9px] text-[12.5px] font-semibold transition-colors hover:bg-chip-track"
+                  >
+                    Review them
+                  </Link>
+                </>
+              ) : (
+                <p className="text-[12.5px] leading-[1.5] text-ink-soft">
+                  Nobody waiting. People you&rsquo;ve only exchanged one-way mail with land here.
+                </p>
+              )}
+            </section>
+          </div>
+        </div>
       </main>
     </AppShell>
   );
 }
 
-/** ContactList's segmented tabs. The Seen once tab leads to the review queue. */
-function ListTabs({ contacts, seenOnce }: { contacts: number; seenOnce: number }) {
-  return (
-    <nav aria-label="Lists" className="flex items-center gap-[3px] rounded-full bg-chip-track p-[3px]">
-      <span
-        aria-current="page"
-        className="flex items-center gap-[7px] rounded-full bg-white px-[15px] py-[7px] shadow-[0_1px_2px_rgba(20,20,25,.06)]"
-      >
-        <span className="text-[13px] font-semibold tracking-[-0.01em]">Contacts</span>
-        <span className="text-[11.5px] font-semibold text-ink-faint tabular-nums">
-          {contacts.toLocaleString("en-GB")}
-        </span>
-      </span>
-      <Link
-        href="/seen-once"
-        className="flex items-center gap-[7px] rounded-full px-[15px] py-[7px] transition-colors hover:bg-white/60"
-      >
-        <span className="text-[13px] font-medium text-ink-soft">Seen once</span>
-        <span className="text-[11.5px] font-semibold text-ink-hush tabular-nums">
-          {seenOnce.toLocaleString("en-GB")}
-        </span>
-      </Link>
-    </nav>
-  );
+function subjectOf({ relationship: { turn } }: Person<ContactRow>): string {
+  return turn.kind === "none" ? "" : (turn.subject ?? "No subject");
 }
 
-/**
- * A plain GET form: pressing Enter loads /?q=…, so search works without any
- * JavaScript and the address can be bookmarked.
- */
-function SearchBox({ query }: { query: string }) {
-  return (
-    <form
-      role="search"
-      action="/"
-      className="flex w-full items-center gap-2 rounded-full bg-white px-[15px] py-2 shadow-[0_1px_2px_rgba(20,20,25,.04)] focus-within:ring-2 focus-within:ring-ink/10 sm:w-[206px]"
-    >
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.9}
-        strokeLinecap="round"
-        className="size-[15px] shrink-0 text-ink-hush"
-      >
-        <circle cx="10.5" cy="10.5" r="6.5" />
-        <path d="m15.4 15.4 4.1 4.1" />
-      </svg>
-      <label htmlFor="contact-search" className="sr-only">
-        Search contacts
-      </label>
-      <input
-        id="contact-search"
-        name="q"
-        type="search"
-        defaultValue={query}
-        maxLength={MAX_QUERY_LENGTH}
-        placeholder="Search name, company, tag"
-        className="w-full min-w-0 bg-transparent text-[12.5px] text-ink outline-none placeholder:text-ink-hush"
-      />
-    </form>
-  );
+function quietLine(person: Person<ContactRow>): string {
+  const { turn } = person.relationship;
+  if (turn.kind === "none") return "";
+  return `You wrote ${turn.days} days ago. No answer since.`;
 }
 
-const DOT: Record<SyncLine["tone"], string> = {
-  ok: "bg-affirm",
-  busy: "bg-info animate-pulse",
-  problem: "bg-accent",
-  idle: "bg-ink-faint",
-};
+type Row = { person: Person<ContactRow>; line: string; daysClass: string };
 
-function StatusLine({ line }: { line: SyncLine }) {
-  return (
-    <div className="flex items-center gap-[9px]">
-      <span aria-hidden="true" className={`size-1.5 shrink-0 rounded-full ${DOT[line.tone]}`} />
-      <p role="status" className="text-[12.5px] font-medium text-ink-quiet">
-        {line.text}
-      </p>
-    </div>
-  );
-}
-
-function ContactTable({
-  contacts,
-  total,
-  limit,
-  query,
+/** One of Main's left-hand cards: a coloured dot, a title, and people. */
+function PeopleCard({
+  title,
+  dot,
+  subtitle,
+  empty,
+  rows,
+  more,
 }: {
-  contacts: ContactRow[];
-  total: number;
-  limit: number;
-  query: string;
+  title: string;
+  dot: string;
+  subtitle: string;
+  empty: string;
+  rows: Row[];
+  more: { href: string; text: string } | null;
 }) {
-  const heading = "px-2 pt-[11px] pb-[9px] text-[10.5px] font-bold tracking-[0.07em] text-ink-ghost uppercase";
+  return (
+    <section className={`${CARD} overflow-hidden`}>
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 px-[22px] pt-[17px] pb-[13px]">
+        <span aria-hidden="true" className={`size-[7px] rounded-full ${dot}`} />
+        <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">{title}</h2>
+        <span className="text-[12px] font-semibold text-ink-faint">{subtitle}</span>
+      </div>
 
-  const more = new URLSearchParams({ show: String(limit + PAGE_SIZE) });
-  if (query) more.set("q", query);
+      {rows.length > 0 ? (
+        <ul className="pb-[5px]">
+          {rows.map(({ person, line, daysClass }) => (
+            <PersonRow key={person.contact.id} person={person} line={line} daysClass={daysClass} />
+          ))}
+        </ul>
+      ) : (
+        <p className="px-[22px] pb-[18px] text-[12.5px] leading-[1.5] text-ink-soft">{empty}</p>
+      )}
+
+      {more && (
+        <div className="border-t border-line-soft px-[22px] py-2.5">
+          <Link href={more.href} className="text-[11.5px] font-semibold text-ink-muted hover:text-ink">
+            {more.text}
+          </Link>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function PersonRow({ person, line, daysClass }: Row) {
+  const { contact, relationship } = person;
+  const name = displayName(contact);
+  const hasName = Boolean(contact.first_name?.trim() || contact.last_name?.trim());
+  const days = relationship.turn.kind === "none" ? null : relationship.turn.days;
 
   return (
-    <div className={`${CARD} overflow-hidden`}>
-      <table className="w-full table-fixed border-collapse">
-        <colgroup>
-          <col />
-          <col className="hidden w-[186px] md:table-column" />
-          <col className="hidden w-[128px] md:table-column" />
-          <col className="w-[74px]" />
-        </colgroup>
+    <li className="relative flex items-center gap-[13px] px-[22px] py-[11px] transition-colors hover:bg-paper-tint">
+      <span
+        aria-hidden="true"
+        style={avatarColors(contact.primary_email ?? contact.id)}
+        className="flex size-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+      >
+        {initials(hasName ? name : null, contact.primary_email ?? name)}
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <div className="flex min-w-0 items-baseline gap-2">
+          {/* The link stretches over the whole row (after:inset-0). */}
+          <Link
+            href={`/contacts/${contact.id}`}
+            className="truncate text-[14px] font-semibold tracking-[-0.01em] outline-none after:absolute after:inset-0 after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-ink/20 focus-visible:after:ring-inset"
+          >
+            {name}
+          </Link>
+          {contact.company && (
+            <span className="hidden truncate text-[12.5px] text-ink-faint sm:inline">{contact.company}</span>
+          )}
+        </div>
+        <span className="truncate text-[12.5px] text-ink-soft">{line}</span>
+      </div>
+      {days !== null && (
+        <span className={`w-[34px] shrink-0 text-right text-[12.5px] font-semibold tabular-nums ${daysClass}`}>
+          {days === 0 ? "today" : `${days}d`}
+        </span>
+      )}
+    </li>
+  );
+}
 
-        <thead>
-          <tr>
-            <th scope="col" className={`${heading} pl-[22px] text-left`}>Name</th>
-            <th scope="col" className={`${heading} hidden text-left md:table-cell`}>Company</th>
-            <th scope="col" className={`${heading} hidden text-left md:table-cell`}>Messages</th>
-            <th scope="col" className={`${heading} pr-[22px] text-right`}>Last</th>
-          </tr>
-        </thead>
+function ComingUpCard({ touches }: { touches: ComingUp<ContactRow>[] }) {
+  const shown = touches.slice(0, COMING_UP_ROWS);
 
-        <tbody>
-          {contacts.map((contact) => {
-            const name = displayName(contact);
-            const hasName = Boolean(contact.first_name?.trim() || contact.last_name?.trim());
-            const colors = avatarColors(contact.primary_email ?? contact.id);
+  return (
+    <section className={`${CARD} flex flex-col gap-[15px] px-5 py-[18px]`}>
+      <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Coming up</h2>
 
+      {shown.length === 0 ? (
+        <p className="-mt-1.5 text-[12.5px] leading-[1.5] text-ink-soft">
+          No next touches set. Give a contact one from their page, and it shows up here.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-[15px]">
+          {shown.map((touch) => {
+            const { day, month } = dateBadge(touch.due_on);
+            const due = touch.overdue || touch.dueToday;
             return (
-              // The name's link stretches over the whole row (after:inset-0),
-              // so anywhere on the row opens the contact.
-              <tr
-                key={contact.id}
-                className="relative h-[38px] border-t border-line-soft transition-colors hover:bg-paper-tint"
-              >
-                <td className="py-0 pr-2 pl-[22px]">
-                  <div className="flex min-w-0 items-center gap-[11px]">
-                    <span
-                      aria-hidden="true"
-                      style={colors}
-                      className="flex size-6 shrink-0 items-center justify-center rounded-full text-[9.5px] font-bold"
-                    >
-                      {initials(
-                        hasName ? name : null,
-                        contact.primary_email ?? contact.first_name ?? "?",
-                      )}
+              <li key={touch.id} className="relative flex items-start gap-3">
+                <div
+                  className={`flex w-10 shrink-0 flex-col items-center rounded-[10px] py-[5px] ${
+                    due ? "bg-accent-tint text-accent" : "bg-chip"
+                  }`}
+                >
+                  <span className="text-[14px] leading-[1.1] font-bold">{day.padStart(2, "0")}</span>
+                  <span
+                    className={`text-[9.5px] font-semibold tracking-[0.05em] uppercase ${
+                      due ? "text-accent" : "text-ink-quiet"
+                    }`}
+                  >
+                    {month}
+                  </span>
+                </div>
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <Link
+                    href={`/contacts/${touch.contact.id}`}
+                    className="truncate text-[13.5px] font-semibold tracking-[-0.01em] outline-none after:absolute after:inset-0 after:content-[''] hover:text-ink-soft"
+                  >
+                    {displayName(touch.contact)}
+                  </Link>
+                  {touch.reason ? (
+                    <span className="text-[12px] leading-[1.4] break-words text-ink-soft">
+                      &ldquo;{touch.reason}&rdquo;
                     </span>
-                    <Link
-                      href={`/contacts/${contact.id}`}
-                      className="truncate text-[13.5px] font-semibold tracking-[-0.01em] outline-none after:absolute after:inset-0 after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-ink/20 focus-visible:after:ring-inset"
-                    >
-                      {name}
-                    </Link>
-                  </div>
-                </td>
-                <td className="hidden truncate px-2 text-[12.5px] text-ink-muted md:table-cell">
-                  {contact.company ?? <span className="text-ink-hush">—</span>}
-                </td>
-                <td className="hidden px-2 text-[12.5px] font-semibold tabular-nums md:table-cell">
-                  {contact.message_count}
-                </td>
-                <td className="pr-[22px] pl-2 text-right text-[12px] font-semibold text-ink-muted">
-                  {contact.last_contact_at ? (
-                    <time dateTime={contact.last_contact_at}>{daysAgo(contact.last_contact_at)}</time>
                   ) : (
-                    <span className="text-ink-hush">—</span>
+                    <span className="text-[12px] leading-[1.4] text-ink-hush">No reason written down</span>
                   )}
-                </td>
-              </tr>
+                </div>
+              </li>
             );
           })}
-        </tbody>
-      </table>
+        </ul>
+      )}
 
-      <div className="flex items-center justify-between border-t border-line-soft px-[22px] py-2.5">
-        <span className="text-[11.5px] font-medium text-ink-ghost">
-          Showing {contacts.length.toLocaleString("en-GB")} of {countOf(total, "contact")}
-        </span>
-        {contacts.length < total && limit < MAX_ROWS && (
-          <Link
-            href={`/?${more}`}
-            scroll={false}
-            className="text-[11.5px] font-semibold text-ink-muted hover:text-ink"
-          >
-            Load more
-          </Link>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function NoContactsYet({ sync, seenOnce }: { sync: SyncSummary | null; seenOnce: number }) {
-  const days = lookbackDays();
-
-  if (sync?.status === "backfilling" || sync?.status === "incremental") {
-    return (
-      <EmptyCard title="Reading your mail…">
-        <p>
-          Contacts appear when the sync finishes: everyone you&rsquo;ve written
-          to and heard back from.
+      {touches.length > shown.length && (
+        <p className="text-[11.5px] font-medium text-ink-ghost">
+          and {touches.length - shown.length} more later
         </p>
-      </EmptyCard>
-    );
-  }
-
-  if (sync?.status === "synced") {
-    return (
-      <EmptyCard title="No contacts yet">
-        <p>
-          Nobody in the last {days} days both wrote to you and got a reply.
-          {seenOnce > 0 && " People who only wrote once are waiting in Seen once."}
-        </p>
-        {seenOnce > 0 && (
-          <Link href="/seen-once" className="mt-3 self-start font-semibold text-ink hover:text-ink-soft">
-            Review {countOf(seenOnce, "person", "people")}
-          </Link>
-        )}
-      </EmptyCard>
-    );
-  }
-
-  if (sync?.status === "needs_reconnect" || sync?.status === "error") {
-    return (
-      <EmptyCard title="Nobody to show yet">
-        <p>The sync stopped before it found anyone — see the line above for why.</p>
-      </EmptyCard>
-    );
-  }
-
-  return (
-    <EmptyCard title="Nothing synced yet">
-      <p>
-        Press Sync now to read the last {days} days of email headers. Everyone
-        you&rsquo;ve written to and heard back from becomes a contact. Nothing
-        else is read.
-      </p>
-    </EmptyCard>
-  );
-}
-
-function EmptyCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className={`${CARD} flex max-w-xl flex-col px-[22px] py-6 sm:px-8`}>
-      <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">{title}</h2>
-      <div className="mt-2 flex flex-col text-[13.5px] leading-[1.55] text-ink-soft">{children}</div>
+      )}
     </section>
   );
 }

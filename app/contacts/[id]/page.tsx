@@ -7,20 +7,38 @@ import { APP_NAME } from "@/lib/app-config";
 import { requireUser } from "@/lib/auth";
 import { isUuid } from "@/lib/contacts/contact-form";
 import { displayName } from "@/lib/contacts/display";
-import { avatarColors, countOf, dayMonth, initials } from "@/lib/format";
+import { avatarColors, countOf, dayMonth, dayMonthYear, initials } from "@/lib/format";
+import { todayIn } from "@/lib/relationship/dates";
+import {
+  lastContactCaption,
+  lastContactText,
+  replyRateCaption,
+  replySpeedText,
+  turnPill,
+  type TurnPill,
+} from "@/lib/relationship/describe";
+import { loadRelationship, type Relationship } from "@/lib/relationship/load";
+import { openNextTouch } from "@/lib/relationship/next-touch";
+import type { Band } from "@/lib/relationship/warmth";
 import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
+import { NextTouchCard } from "./next-touch-card";
 
 export const metadata = { title: `Contact · ${APP_NAME}` };
 
 /**
  * One contact, built from design/ContactDetail.dc.html: the header with avatar,
- * name, role · company and the contact line; "Your notes"; "Open thread".
+ * name, role · company, the contact line and the whose-turn pill; the warmth
+ * stat strip; "Your notes"; "Next touch"; "Open thread".
  *
  * Differences from the design, on purpose:
  *   - Website and city aren't contact fields (slice-2-plan.md, decision C).
- *   - Warmth and its stat strip, the timeline, Next touch, "Your turn" and the
- *     Overview / Timeline / Threads / Notes switcher: slice 3.
+ *   - The Every touch timeline and the Overview / Timeline / Threads / Notes
+ *     switcher wait (docs/slice-3-plan.md, decision D).
+ *   - The pill also has the other turns — their turn, going quiet, no open
+ *     thread — in the contact list's colours; the design only shows "Your turn".
+ *   - No mail at all: one line saying there's no warmth yet, instead of five
+ *     empty stat cards.
  *   - "Draft reply" is slice 5. Its place holds Edit, the one action slice 2 has;
  *     the "···" menu has nothing to hold yet and is left out.
  *   - plan.md §3.2's "one line on what they do" and "how you know them" have no
@@ -68,7 +86,12 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
   if (!contact) notFound();
 
   const emails = emailsResult.data.map((row) => row.email as string);
-  const thread = await latestThread(supabase, user.id, emails);
+  const [thread, relationship, nextTouch] = await Promise.all([
+    latestThread(supabase, user.id, emails),
+    loadRelationship(supabase, user.id, contact.id),
+    openNextTouch(supabase, user.id, contact.id),
+  ]);
+  const pill = turnPill(relationship.turn);
 
   const name = displayName({ ...contact, primary_email: emails[0] ?? null });
   const hasName = Boolean(contact.first_name?.trim() || contact.last_name?.trim());
@@ -93,7 +116,7 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
     >
       <main className="flex flex-1 flex-col gap-5 px-4 pt-2.5 pb-7 sm:px-[30px]">
         <Link
-          href="/"
+          href="/contacts"
           aria-label="Back to contacts"
           className="flex size-[34px] items-center justify-center rounded-[11px] bg-white text-ink-body shadow-[0_1px_2px_rgba(20,20,25,.05)] transition-colors hover:text-ink"
         >
@@ -150,14 +173,19 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
             </div>
           </div>
 
-          <Link
-            href={`/contacts/${id}/edit`}
-            className="flex shrink-0 items-center gap-2 rounded-full bg-ink-deep px-[18px] py-2.5 text-[13px] font-semibold text-white transition hover:bg-ink/85"
-          >
-            <PencilIcon className="size-[15px]" />
-            Edit
-          </Link>
+          <div className="flex shrink-0 flex-wrap items-center gap-[9px] pt-1">
+            {pill && <TurnPillBadge pill={pill} />}
+            <Link
+              href={`/contacts/${id}/edit`}
+              className="flex items-center gap-2 rounded-full bg-ink-deep px-[18px] py-2.5 text-[13px] font-semibold text-white transition hover:bg-ink/85"
+            >
+              <PencilIcon className="size-[15px]" />
+              Edit
+            </Link>
+          </div>
         </div>
+
+        <StatStrip relationship={relationship} hasEmails={emails.length > 0} />
 
         <div className="flex flex-col gap-[18px] lg:flex-row">
           <section className={`${CARD} flex min-w-0 flex-1 flex-col gap-[11px] px-[22px] py-[18px]`}>
@@ -195,36 +223,40 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
             </div>
           </section>
 
-          <section className={`${CARD} flex flex-col gap-[11px] px-5 py-[17px] lg:w-[392px] lg:shrink-0`}>
-            <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Open thread</h2>
-            {thread && gmailLink ? (
-              <>
-                <div className="flex flex-col gap-1">
-                  <span className="text-[13px] font-semibold tracking-[-0.01em] break-words">
-                    {thread.subject ?? "No subject"}
-                  </span>
-                  <span className="text-[12px] leading-[1.45] text-ink-muted">
-                    {countOf(thread.messageCount, "message")} · {thread.lastFrom === "you" ? "you" : "they"} wrote
-                    last on {dayMonth(thread.lastAt)}
-                  </span>
-                </div>
-                <a href={gmailLink} target="_blank" rel="noopener noreferrer" className={`${GHOST_PILL} mt-auto`}>
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" className="size-[13px] text-ink-muted">
-                    <path d="M14 4h6v6" />
-                    <path d="M20 4 11 13" />
-                    <path d="M18 14v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" />
-                  </svg>
-                  Open in Gmail
-                </a>
-              </>
-            ) : (
-              <p className="text-[13px] leading-[1.5] text-ink-soft">
-                {emails.length > 0
-                  ? "No mail with this contact in the synced window yet."
-                  : "Add an email address, and the latest thread with them shows up here."}
-              </p>
-            )}
-          </section>
+          <div className="flex flex-col gap-3.5 lg:w-[392px] lg:shrink-0">
+            <NextTouchCard contactId={contact.id} touch={nextTouch} today={todayIn()} />
+
+            <section className={`${CARD} flex flex-1 flex-col gap-[11px] px-5 py-[17px]`}>
+              <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Open thread</h2>
+              {thread && gmailLink ? (
+                <>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[13px] font-semibold tracking-[-0.01em] break-words">
+                      {thread.subject ?? "No subject"}
+                    </span>
+                    <span className="text-[12px] leading-[1.45] text-ink-muted">
+                      {countOf(thread.messageCount, "message")} · {thread.lastFrom === "you" ? "you" : "they"} wrote
+                      last on {dayMonth(thread.lastAt)}
+                    </span>
+                  </div>
+                  <a href={gmailLink} target="_blank" rel="noopener noreferrer" className={`${GHOST_PILL} mt-auto`}>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" className="size-[13px] text-ink-muted">
+                      <path d="M14 4h6v6" />
+                      <path d="M20 4 11 13" />
+                      <path d="M18 14v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" />
+                    </svg>
+                    Open in Gmail
+                  </a>
+                </>
+              ) : (
+                <p className="text-[13px] leading-[1.5] text-ink-soft">
+                  {emails.length > 0
+                    ? "No mail with this contact in the synced window yet."
+                    : "Add an email address, and the latest thread with them shows up here."}
+                </p>
+              )}
+            </section>
+          </div>
         </div>
       </main>
     </AppShell>
@@ -274,6 +306,113 @@ async function latestThread(
     lastFrom: messages[0].direction === "outbound" ? "you" : "them",
     lastAt: messages[0].internal_date,
   };
+}
+
+const PILL: Record<TurnPill["tone"], { box: string; dot: string }> = {
+  yours: { box: "bg-accent-tint text-accent", dot: "bg-accent" },
+  quiet: { box: "bg-chip text-cooling", dot: "bg-cooling" },
+  theirs: { box: "bg-chip text-ink-soft", dot: "bg-ink-faint" },
+  closed: { box: "bg-chip text-ink-muted", dot: "bg-ink-ghost" },
+};
+
+function TurnPillBadge({ pill }: { pill: TurnPill }) {
+  const colors = PILL[pill.tone];
+  return (
+    <span className={`flex items-center gap-2 rounded-full px-[15px] py-2 ${colors.box}`}>
+      <span aria-hidden="true" className={`size-[7px] rounded-full ${colors.dot}`} />
+      <span className="text-[12.5px] font-bold whitespace-nowrap">{pill.text}</span>
+    </span>
+  );
+}
+
+const WARMTH_TEXT: Record<Band, string> = {
+  warm: "text-affirm",
+  cooling: "text-cooling",
+  cold: "text-ink-quiet",
+};
+
+const WARMTH_BAR: Record<Band, string> = {
+  warm: "bg-affirm",
+  cooling: "bg-cooling",
+  cold: "bg-ink-ghost",
+};
+
+const STAT =
+  "flex min-w-0 flex-col gap-[7px] rounded-2xl bg-white px-[17px] pt-[15px] pb-3.5 shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
+const STAT_LABEL = "text-[10px] font-bold tracking-[0.07em] text-ink-ghost uppercase";
+const STAT_VALUE = "text-[21px] leading-none font-bold tracking-[-0.03em]";
+
+/**
+ * Warmth and the four signals it's made of, with the line saying so — "a score
+ * with its inputs shown is a summary" (plan.md §3.5). Each card shows the
+ * signal itself; lib/relationship/warmth.ts turns them into points.
+ */
+function StatStrip({ relationship, hasEmails }: { relationship: Relationship; hasEmails: boolean }) {
+  const { warmth, turn } = relationship;
+
+  if (!warmth) {
+    return (
+      <p className="pl-0.5 text-[12.5px] font-medium text-ink-faint">
+        {hasEmails
+          ? "No warmth yet: it's counted from the mail between you, and there's none in the synced window."
+          : "No warmth yet: it's counted from email, and this contact has no address."}
+      </p>
+    );
+  }
+
+  const { replyRate, replySpeed, lastContact, exchanges } = warmth.signals;
+
+  return (
+    <div className="flex flex-col gap-[9px]">
+      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-5">
+        <div className={STAT}>
+          <span className={STAT_LABEL}>Warmth</span>
+          <span className={`${STAT_VALUE} ${WARMTH_TEXT[warmth.band]}`}>{warmth.score}</span>
+          <div className="h-[3px] w-full overflow-hidden rounded-full bg-line">
+            <div className={`h-full ${WARMTH_BAR[warmth.band]}`} style={{ width: `${warmth.score}%` }} />
+          </div>
+        </div>
+        <Stat
+          label="Reply rate"
+          value={replyRate.sent === 0 ? "—" : `${replyRate.answered} of ${replyRate.sent}`}
+          caption={replyRateCaption(replyRate.answered, replyRate.sent)}
+        />
+        <Stat
+          label="Usually replies"
+          value={replySpeed.medianMs === null ? "—" : replySpeedText(replySpeed.medianMs)}
+          caption={
+            replySpeed.medianMs === null
+              ? "no replies to you yet"
+              : `median across ${countOf(replySpeed.replies, "reply", "replies")}`
+          }
+        />
+        <Stat
+          label="Last contact"
+          value={lastContactText(lastContact.days)}
+          caption={lastContactCaption(lastContact.from, turn)}
+        />
+        <Stat
+          label="Exchanges"
+          value={String(exchanges.count)}
+          caption={`since ${dayMonthYear(exchanges.since)}`}
+        />
+      </div>
+      <p className="pl-0.5 text-[11.5px] font-medium text-ink-faint">
+        The {warmth.score} is these four numbers and nothing else — no AI opinion about how the
+        relationship is going.
+      </p>
+    </div>
+  );
+}
+
+function Stat({ label, value, caption }: { label: string; value: string; caption: string }) {
+  return (
+    <div className={STAT}>
+      <span className={STAT_LABEL}>{label}</span>
+      <span className={STAT_VALUE}>{value}</span>
+      <span className="text-[11.5px] font-medium text-ink-faint">{caption}</span>
+    </div>
+  );
 }
 
 function MetaIcon({ children }: { children: React.ReactNode }) {

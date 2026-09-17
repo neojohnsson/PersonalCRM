@@ -41,6 +41,30 @@ export function dayMonth(date: Date | string, timeZone = "Europe/Stockholm"): st
   );
 }
 
+/** "Thursday, 11 September" — the date beside "Who needs you today". */
+export function weekdayDayMonth(date: Date | string, timeZone = "Europe/Stockholm"): string {
+  // Put together from parts: whether en-GB puts a comma after the weekday
+  // differs between ICU versions.
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone,
+  }).formatToParts(new Date(date));
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value;
+  return `${part("weekday")}, ${part("day")} ${part("month")}`;
+}
+
+/** "4 March 2026" — dayMonth with the year, for dates that may be long ago. */
+export function dayMonthYear(date: Date | string, timeZone = "Europe/Stockholm"): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone,
+  }).format(new Date(date));
+}
+
 /**
  * Avatar initials: first and last word of the name — "Maja Öberg" → "MÖ".
  * No name: the parts of the address before the @ — "karin.lindqvist@…" → "KL".

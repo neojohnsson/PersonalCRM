@@ -7,8 +7,8 @@ import { initials } from "@/lib/format";
  * and ReviewQueue.dc.html share it — a dark sidebar on the left, a header on top.
  *
  * Differences from the design, on purpose:
- *   - The sidebar holds only pages that exist: Contacts and Seen once. The
- *     design's Add, Home, Calendar and Settings icons arrive with their pages,
+ *   - The sidebar holds only pages that exist: Home, Contacts and Seen once.
+ *     The design's Add, Calendar and Settings icons arrive with their pages,
  *     because a nav item that goes nowhere would be a lie. The header's centred
  *     page switcher is left out for the same reason.
  *   - The header's search and notification icons are left out — nothing
@@ -31,7 +31,7 @@ export function AppShell({
   userEmail: string | undefined;
   headerRight?: React.ReactNode;
   /** Which sidebar entry is the current page. */
-  active?: "contacts" | "seen-once";
+  active?: "home" | "contacts" | "seen-once";
   /** People waiting in Seen once; the design's orange dot shows when above 0. */
   seenOnceCount?: number;
   children: React.ReactNode;
@@ -49,7 +49,11 @@ export function AppShell({
         </div>
 
         <nav aria-label="Main" className="flex flex-col items-center gap-[3px]">
-          <NavItem href="/" label="Contacts" active={active === "contacts"}>
+          <NavItem href="/" label="Who needs you today" active={active === "home"}>
+            <path d="M3 10.5 12 3l9 7.5" />
+            <path d="M5.5 9.4V20h13V9.4" />
+          </NavItem>
+          <NavItem href="/contacts" label="Contacts" active={active === "contacts"}>
             <circle cx="9.5" cy="8" r="3.3" />
             <path d="M3.5 20c0-3.4 2.7-5.6 6-5.6s6 2.2 6 5.6" />
             <path d="M16.5 5.3a3.2 3.2 0 0 1 0 5.5" />

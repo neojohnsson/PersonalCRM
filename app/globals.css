@@ -82,6 +82,9 @@ html {
 
   /* ContactDetail's tag chips. */
   --color-chip: #f1f1ef;
+
+  /* Warmth's middle band, "cooling" — the amber in ContactList and ContactDetail. */
+  --color-cooling: #a5811f;
   /* Row dividers and the hover tint of the table. */
   --color-line-soft: #f4f4f2;
   --color-paper-tint: #faf9f7;

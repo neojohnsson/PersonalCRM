@@ -1,0 +1,79 @@
+import { daysBetweenDates } from "@/lib/relationship/dates";
+import type { Turn } from "@/lib/relationship/whose-turn";
+
+/**
+ * The words the contact page puts next to whose turn, warmth's signals and a
+ * next touch (design/ContactDetail.dc.html). Pure, so they're tested directly
+ * (tests/relationship-describe.test.ts).
+ */
+
+const DAY = 24 * 60 * 60 * 1000;
+
+const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
+
+export type TurnPill = { text: string; tone: "yours" | "quiet" | "theirs" | "closed" };
+
+/** The pill beside the name: "Your turn · 6 days". Nothing for a contact with no mail. */
+export function turnPill(turn: Turn): TurnPill | null {
+  switch (turn.kind) {
+    case "none":
+      return null;
+    case "closed":
+      return { text: "No open thread", tone: "closed" };
+    case "yours":
+      return { text: `Your turn · ${turn.days === 0 ? "today" : days(turn.days)}`, tone: "yours" };
+    case "theirs":
+      return turn.goingQuiet
+        ? { text: `Going quiet · ${days(turn.days)}`, tone: "quiet" }
+        : { text: `Their turn · ${turn.days === 0 ? "today" : days(turn.days)}`, tone: "theirs" };
+  }
+}
+
+/** "Usually replies": the median reply time, in the steps warmth scores it by. */
+export function replySpeedText(medianMs: number): string {
+  if (medianMs <= DAY) return "within a day";
+  if (medianMs <= 3 * DAY) return "within 3 days";
+  if (medianMs <= 7 * DAY) return "within a week";
+  return `after ${days(Math.round(medianMs / DAY))}`;
+}
+
+/** "Last contact": "today", "yesterday", "6 days ago". */
+export function lastContactText(daysAgo: number): string {
+  if (daysAgo === 0) return "today";
+  if (daysAgo === 1) return "yesterday";
+  return `${daysAgo} days ago`;
+}
+
+/** Under "Last contact": who wrote it — and, when it's your turn, that you haven't answered. */
+export function lastContactCaption(from: "you" | "them", turn: Turn): string {
+  if (turn.kind === "yours") return "they wrote, you didn't";
+  if (turn.kind === "theirs") return "you wrote, they haven't yet";
+  return from === "you" ? "you wrote last" : "they wrote last";
+}
+
+/** Under "Reply rate": "they answered 3 of your last 4". */
+export function replyRateCaption(answered: number, sent: number): string {
+  if (sent === 0) return "you haven't written to them";
+  return sent === 1
+    ? `they ${answered === 1 ? "answered" : "haven't answered"} your one message`
+    : `they answered ${answered} of your last ${sent}`;
+}
+
+/**
+ * A next touch's date as the design's little calendar badge: "20" over "SEP".
+ * Read straight from the YYYY-MM-DD string — it's a calendar day, not a moment.
+ */
+export function dateBadge(isoDate: string): { day: string; month: string } {
+  const [, month, day] = isoDate.split("-").map(Number);
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return { day: String(day), month: MONTHS[month - 1] };
+}
+
+/** How far off a next touch is: "today", "tomorrow", "in 4 days", "2 days overdue". */
+export function dueText(dueOn: string, today: string): { text: string; overdue: boolean } {
+  const n = daysBetweenDates(today, dueOn);
+  if (n === 0) return { text: "today", overdue: false };
+  if (n === 1) return { text: "tomorrow", overdue: false };
+  if (n > 1) return { text: `in ${n} days`, overdue: false };
+  return { text: `${days(-n)} overdue`, overdue: true };
+}
