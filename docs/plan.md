@@ -249,10 +249,10 @@ Ordered by how much they'd be worth.
 6. **Intro paths.** "You want to reach X. You already talk to Y at the same company." Genuinely useful and uses only data you already have.
 7. **Bounce handling.** Read bounce messages, mark the address invalid, surface the alternate. Cheap and it protects you from the 🟡 addresses.
 8. **Timeline view per contact.** Every touch in order, with your notes inline.
-10. **Read your own public GitHub** — through GitHub's official API, which allows it: repository names, descriptions and languages as Profile facts you approve. Unlike LinkedIn, no scraping and no login needed. _(added 2026-09-17)_
 9. **Snippets with variables.** Not full templates — just the three paragraphs you keep rewriting.
 10. **Browser extension to add a contact from a page.** Nice, and a whole separate review process, so: much later.
 11. **"About to go cold" nudge.** Warn *before* the relationship dies rather than after — but only inside the weekly brief, never as its own notification.
+12. **Read your own public GitHub** — through GitHub's official API, which allows it: repository names, descriptions and languages as Profile facts you approve. Unlike LinkedIn, no scraping and no login needed. _(added 2026-09-17)_
 
 ---
 
