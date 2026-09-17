@@ -77,7 +77,7 @@ Straight from your Notion list, plus what the sheet you already built by hand ne
 - Snooze, skip, mark done.
 - **Promise and deadline detection** — the AI reads a thread and proposes "follow up after September 20" as a *suggested* date you confirm. Suggestion, never a silent calendar entry.
 - **Suggested dates when the emails give none** (added 2026-09-17, the user's request) — the AI names the kind of timing and why ("a referral: follow up soon"), and plain rules in code turn that into a date, skipping weekends. Same case, same date; the form still decides.
-- **Referrals checked against your own mail** (added 2026-09-17) — "Martin referred you to Niklas Hedlund": the AI picks out the referral, and code — not the AI — checks whether you've written to Niklas since. Done → no touch; not done → "Contact Niklas Hedlund (Martin's referral)". Other contacts' mail is never sent to the AI for this.
+- **Referrals checked against your own mail** (added 2026-09-17) — "Martin referred you to Niklas Hedlund": the AI picks out the referral, and code — not the AI — checks whether you've written to Niklas since. Done → no touch; not done → "Contact Niklas Hedlund (Martin's referral)". Other contacts' mail is never sent to the AI for this. _Built early, 2026-09-17 (branch `referral-check`): a referral named in a summary is checked each time the contact page opens._
 - Overdue list on the front page.
 
 ### 3.5 Relationship warmth
@@ -280,7 +280,7 @@ The relationship summary. Editable, dated, linked to source. One feature, done p
 Generate into Gmail drafts, in the thread's language, with a tone setting.
 
 **Slice 6 — the loop closes**
-Weekly brief, promise/deadline detection — including referrals checked against your own mail (§3.4) — stalled-conversation flags, duplicate merge.
+Weekly brief, promise/deadline detection across every thread (the referral check from a summary is already built, §3.4), stalled-conversation flags, duplicate merge.
 
 **Slice 7 — the part that makes it a portfolio piece**
 Privacy page, export, real deletion, the written-up compliance decision. Then record a 90-second demo.

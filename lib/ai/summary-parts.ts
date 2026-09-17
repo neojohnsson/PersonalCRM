@@ -9,7 +9,7 @@ export const SUMMARY_PARTS = ["who_they_are", "how_you_know", "discussed", "next
 export type SummaryPart = (typeof SUMMARY_PARTS)[number];
 
 /** What a summary can suggest for the contact itself (docs/slice-4-plan.md, Part 7). */
-export const SUGGESTIONS = ["company", "role", "next_touch"] as const;
+export const SUGGESTIONS = ["company", "role", "next_touch", "referral"] as const;
 export type Suggestion = (typeof SUGGESTIONS)[number];
 
 /** Longest text kept for one part — the database allows no more. */
@@ -40,6 +40,11 @@ export type SavedSummary = {
   suggested_touch_why: string | null;
   /** The date is only a rough guess: "pick a better date". */
   suggested_touch_rough: boolean;
+  /** Someone the contact referred you to, checked against your mail on the page. */
+  suggested_referral_name: string | null;
+  suggested_referral_email: string | null;
+  /** When the email with the referral was sent. */
+  suggested_referral_since: string | null;
   as_of: string;
   edited: boolean;
   model: string;
@@ -49,4 +54,4 @@ export type SavedSummary = {
 };
 
 export const SUMMARY_COLUMNS =
-  "id, contact_id, status, who_they_are, how_you_know, discussed, next_step, sources, suggested_company, suggested_role, suggested_touch_reason, suggested_touch_on, suggested_touch_why, suggested_touch_rough, as_of, edited, model, created_at, updated_at, approved_at";
+  "id, contact_id, status, who_they_are, how_you_know, discussed, next_step, sources, suggested_company, suggested_role, suggested_touch_reason, suggested_touch_on, suggested_touch_why, suggested_touch_rough, suggested_referral_name, suggested_referral_email, suggested_referral_since, as_of, edited, model, created_at, updated_at, approved_at";

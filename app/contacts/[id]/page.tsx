@@ -22,6 +22,7 @@ import {
 } from "@/lib/relationship/describe";
 import { loadRelationship, type Relationship } from "@/lib/relationship/load";
 import { openNextTouch } from "@/lib/relationship/next-touch";
+import { checkReferral, type ReferralStatus } from "@/lib/relationship/referral";
 import type { Band } from "@/lib/relationship/warmth";
 import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
@@ -109,6 +110,20 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
     spentThisMonth(supabase, user.id),
   ]);
   const budget: AiBudget = { spentUsd, capUsd: monthlyCapUsd(), ready: aiIsReady() };
+
+  // A summary that names a referral: have you written to that person since?
+  // Worked out now, from your mail — not stored, so it's never out of date.
+  const referrals: Record<string, ReferralStatus> = {};
+  await Promise.all(
+    [summaries.approved, summaries.pending].map(async (summary) => {
+      if (!summary?.suggested_referral_name || !summary.suggested_referral_since) return;
+      referrals[summary.id] = await checkReferral(supabase, user.id, {
+        name: summary.suggested_referral_name,
+        email: summary.suggested_referral_email,
+        since: summary.suggested_referral_since,
+      });
+    }),
+  );
 
   // "Fill in next touch" on the summary links here with ?touch=<summary id>.
   // Only an id travels in the address; the suggestion is read from the database.
@@ -234,6 +249,7 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
           gmailEmail={gmailResult.data?.email ?? null}
           contact={{ id: contact.id, company: contact.company, role: contact.role, hasNextTouch: nextTouch !== null }}
           askNow={askForSummary}
+          referrals={referrals}
         />
 
         <div className="flex flex-col gap-[18px] lg:flex-row">

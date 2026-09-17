@@ -85,7 +85,8 @@ The suggestions, which the user may copy onto the contact:
   - they_will_get_back: they said they would come back to the user.
   - later_event: it depends on something later, like "when your internship approaches" or "in the spring". Put the month in "month" as YYYY-MM only if the messages name one.
   - nothing_open: nothing is left to do. Then "reason" is null.
-  "why" is one short sentence explaining that timing, based on the messages. Leave "date" and "month" null unless the rules above say to fill them. Never make up a date. Watch for negations: "I can't before the 20th" is not a promise for the 20th. You don't pick the day — the app does, from the timing.`;
+  "why" is one short sentence explaining that timing, based on the messages.
+- referral: if the contact pointed the user to another specific person to get in touch with, that person's "name" as written, and their "email" only if a message gives it. Cite the message where the referral was made. All null if there's no such person. Leave "date" and "month" null unless the rules above say to fill them. Never make up a date. Watch for negations: "I can't before the 20th" is not a promise for the 20th. You don't pick the day — the app does, from the timing.`;
 
 const TEXT_WITH_SOURCES: JsonSchema = {
   type: "object",
@@ -130,8 +131,18 @@ export const SUMMARY_SCHEMA: JsonSchema = {
           required: ["reason", "timing", "date", "month", "why", "sources"],
           additionalProperties: false,
         },
+        referral: {
+          type: "object",
+          properties: {
+            name: { type: ["string", "null"] },
+            email: { type: ["string", "null"] },
+            sources: { type: "array", items: { type: "string" } },
+          },
+          required: ["name", "email", "sources"],
+          additionalProperties: false,
+        },
       },
-      required: ["company", "role", "next_touch"],
+      required: ["company", "role", "next_touch", "referral"],
       additionalProperties: false,
     },
   },
@@ -146,6 +157,7 @@ export type RawSummary = Record<SummaryPart, Cited<"text">> & {
     company: Cited<"value">;
     role: Cited<"value">;
     next_touch: Cited<"reason" | "date" | "month" | "why"> & { timing: string };
+    referral: Cited<"name" | "email">;
   };
 };
 
@@ -187,6 +199,9 @@ export type CheckedSummary = {
     touchOn: string | null;
     touchWhy: string | null;
     touchRough: boolean;
+    referralName: string | null;
+    referralEmail: string | null;
+    referralSince: string | null;
   };
   sources: Partial<Record<SummaryPart | Suggestion, SourceRef[]>>;
   /** What was thrown out because none of its citations were real. */
@@ -265,7 +280,7 @@ export function checkSummary(
     parts[part] = text !== null && realSources(part, raw[part]?.sources ?? [], false) ? text : null;
   }
 
-  const { company, role, next_touch: touch } = raw.suggestions ?? {};
+  const { company, role, next_touch: touch, referral } = raw.suggestions ?? {};
 
   let suggestedCompany = clean(company?.value, MAX_SUGGESTED_FIELD_CHARS);
   if (suggestedCompany !== null) {
@@ -303,9 +318,35 @@ export function checkSummary(
     }
   }
 
+  // The referral: a name, cited from a real message; its date is that message's.
+  let referralName = clean(referral?.name, MAX_SUGGESTED_FIELD_CHARS);
+  let referralEmail: string | null = null;
+  let referralSince: string | null = null;
+  if (referralName !== null) {
+    const found = realSources("referral", referral!.sources, false);
+    if (found) {
+      const email = referral!.email?.trim().toLowerCase() ?? "";
+      referralEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 320 ? email : null;
+      const cited = conversation.filter((m) => found.some((s) => "messageId" in s && s.messageId === m.messageId));
+      referralSince = cited.map((m) => m.at.toISOString()).sort().at(-1) ?? null;
+    } else {
+      referralName = null;
+    }
+  }
+
   return {
     parts,
-    suggestions: { company: suggestedCompany, role: suggestedRole, touchReason, touchOn, touchWhy, touchRough },
+    suggestions: {
+      company: suggestedCompany,
+      role: suggestedRole,
+      touchReason,
+      touchOn,
+      touchWhy,
+      touchRough,
+      referralName,
+      referralEmail,
+      referralSince,
+    },
     sources,
     dropped,
   };
@@ -424,6 +465,9 @@ export async function generateSummary(
     suggested_touch_on: checked.suggestions.touchOn,
     suggested_touch_why: checked.suggestions.touchWhy,
     suggested_touch_rough: checked.suggestions.touchRough,
+    suggested_referral_name: checked.suggestions.referralName,
+    suggested_referral_email: checked.suggestions.referralEmail,
+    suggested_referral_since: checked.suggestions.referralSince,
     sources: checked.sources,
     as_of: newest.toISOString(),
     model: config.model,
@@ -437,6 +481,9 @@ type PendingRow = Record<SummaryPart, string | null> & {
   suggested_touch_on: string | null;
   suggested_touch_why: string | null;
   suggested_touch_rough: boolean;
+  suggested_referral_name: string | null;
+  suggested_referral_email: string | null;
+  suggested_referral_since: string | null;
   sources: CheckedSummary["sources"];
   as_of: string;
   model: string;
