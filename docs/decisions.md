@@ -14,7 +14,8 @@ _What was decided, and why. Revise when a decision turns out wrong — the histo
 
 | Question | Decision | Why |
 |---|---|---|
-| Ambition | A portfolio piece that works | The compliance cost only makes sense with revenue, and there is none |
+| Ambition | A portfolio piece that works — and, since 2026-09-17, released later with paid plans | The compliance cost (Google verification, CASA, GDPR as processor) only makes sense with revenue. First the portfolio; the release is slice 9, and features are built so plans can switch them (per-user settings, the monthly AI cap) |
+| LinkedIn in drafts | Never read by the app; upload LinkedIn's own PDF export instead | LinkedIn forbids automated access and would need your login, risking your account. Its export is yours to upload, and becomes facts you approve (slice 5b) |
 | Audience | Researchers and networkers, with the author as user zero | Real problem, underserved, not the crowded sales-CRM market |
 | Gmail permissions | Read + create drafts | Never sends on its own — a bad automated email to a CEO undoes the whole project |
 | Contact scope | Everything professional | Matches how a mailbox actually works |
