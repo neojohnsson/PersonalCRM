@@ -17,8 +17,13 @@ everything before it keeps working with the AI switched off.
       regenerate do what Part 4 says
 - [ ] Cap tests pass: at the monthly cap, no request reaches OpenAI — and two presses
       at once can't both slip under it
+- [ ] Suggestion tests pass: a suggested company, role or next-touch date with no real
+      source, or a date that isn't a real future date, is thrown out; using a suggestion
+      changes only that one field, and never replaces a value you typed without asking
 - [ ] On the Vercel preview with a real mailbox: a contact gets a summary, every part
-      opens its source in Gmail, and approving, editing and regenerating work
+      opens its source in Gmail, and approving, editing and regenerating work; a new
+      contact asks whether to generate one; company, role and next touch can be taken
+      from the summary with one click
 
 **Who writes what** (`AGENTS.md`): Claude writes the code, explained before and walked
 through after. Most depth goes to **what is sent to OpenAI and what is kept**, the
@@ -113,6 +118,58 @@ It sits on the contact page above "Your notes". Said so in a comment.
 
 ---
 
+## Part 7 — Suggestions for the contact (added 2026-09-17, at the user's request)
+
+The same request that writes the summary also suggests:
+
+| Suggestion | Taken from | Where it goes, with one click |
+|---|---|---|
+| **Company** | What the emails state, and the contact's own address (`par.burman@fortnox.se` suggests Fortnox). Signatures are cut before the AI reads anything, so a company that only appears there isn't found | The contact's Company field |
+| **Role** | What the emails state | The contact's Role field |
+| **Next touch** | The next step: a short reason, and a date **only if the emails give one** | The Next touch card's form, filled in, for you to check and save |
+
+- **One click, never automatic** (`AGENTS.md`: nothing AI-generated writes straight to a
+  contact record; `decisions.md` principle 3: a human approves follow-up dates). Each
+  suggestion has its own button, and each button changes only its own field.
+- **Your words win.** If the field already holds something different, the button says
+  "Replace Fortnox AB with Fortnox?" instead of overwriting. The same value shows as
+  "already set".
+- **Every suggestion cites its emails**, like the summary parts; code drops one without a
+  real source.
+- **No invented dates.** "When your internship approaches" gives a reason and no date —
+  you pick it. Code drops a date that isn't a real calendar date from today to five
+  years ahead. The plan's warning stands: "I *can't* before the 20th" and "after the
+  20th" look alike, which is why the date lands in a form you check, not in the record.
+- Stored on the summary row (migration `0011`), so they're approved, discarded and
+  regenerated together with it.
+
+## Part 8 — Asking right after a contact is added (added 2026-09-17)
+
+- **Adding a contact by hand** lands on its page, as today. If that contact has mail,
+  the summary card opens with the question: **"Generate a summary now?"** — Generate or
+  Not now.
+- The same question shows on any contact that has mail, no summary, and was added in
+  the last 7 days — so contacts added from Seen once, or found by the sync, ask too
+  when you open them.
+- **It asks; it doesn't run by itself.** Generating sends the emails to OpenAI and
+  costs money, so it stays a click (`plan.md` §5.4: "generate summaries on demand
+  rather than on sync"). Adding several people at once in Seen once never starts
+  several requests.
+
+## Later, not this slice
+
+Kept in mind, and where they belong in `plan.md`:
+
+- **Next touches from every thread, not just the summary's next step** — promise and
+  deadline detection, slice 6 (§3.4).
+- **Next touches and warmth from Google Calendar** — a meeting that ended with no
+  follow-up. `docs/calendar-and-profile.md`; no slice yet (§6.4). Needs one more Google
+  permission.
+- **"3 new emails since this summary"** on the card, so you know when to regenerate —
+  small and AI-free; worth adding with the weekly brief, slice 6.
+- **Phone numbers and other details from signatures** — not planned: signatures are cut
+  before anything reaches the AI, and `decisions.md` principle 5 says store less.
+
 ## Decisions
 
 - **A. OpenAI, a cheap GPT model.** The user's choice, for cost. All calls go through one
@@ -150,5 +207,9 @@ Drafting (slice 5) · promise detection, weekly brief (slice 6) · web research
 5. Generating a summary: the prompt, schema, citation check, saved as pending
 6. Approve, discard, edit, regenerate
 7. The summary card on the contact page
-8. `privacy.md` and `decisions.md` updated
-9. Preview check with a real mailbox, PR
+8. Migration `0011`: suggestion columns on `contact_summaries` — with tests
+9. Suggestions from the model: schema, instructions, source and date checks
+10. The suggestion buttons: set company and role, fill in the next touch
+11. Asking to generate right after a contact is added
+12. `privacy.md` and `decisions.md` updated
+13. Preview check with a real mailbox, PR
