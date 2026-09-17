@@ -22,6 +22,7 @@ import { openNextTouch } from "@/lib/relationship/next-touch";
 import type { Band } from "@/lib/relationship/warmth";
 import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
+import { DismissContact } from "./dismiss-contact";
 import { NextTouchCard } from "./next-touch-card";
 
 export const metadata = { title: `Contact · ${APP_NAME}` };
@@ -41,6 +42,9 @@ export const metadata = { title: `Contact · ${APP_NAME}` };
  *     empty stat cards.
  *   - "Draft reply" is slice 5. Its place holds Edit, the one action slice 2 has;
  *     the "···" menu has nothing to hold yet and is left out.
+ *   - A "Dismiss" button beside Edit, with a confirm card (./dismiss-contact.tsx).
+ *     No design has it; it only shows for a contact with an address, because
+ *     dismissing is about skipping someone's mail.
  *   - plan.md §3.2's "one line on what they do" and "how you know them" have no
  *     place in the design: the first sits under role · company, the second in
  *     the notes card.
@@ -182,6 +186,7 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
               <PencilIcon className="size-[15px]" />
               Edit
             </Link>
+            {emails.length > 0 && <DismissContact contactId={contact.id} name={name} />}
           </div>
         </div>
 

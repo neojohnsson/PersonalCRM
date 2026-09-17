@@ -152,13 +152,16 @@ export async function getMailboxHistoryId(accessToken: string): Promise<string> 
  *
  * `newer_than:90d` rather than `after:<date>`: it's Gmail's documented
  * relative form, so there's no date arithmetic or timezone to get wrong.
+ *
+ * `search` narrows it with more of Gmail's search words, such as
+ * `from:karin@example.se`.
  */
 export async function listMessageIds(
   accessToken: string,
-  options: { lookbackDays: number; pageToken?: string; pageSize?: number },
+  options: { lookbackDays: number; search?: string; pageToken?: string; pageSize?: number },
 ): Promise<IdPage> {
   const params = new URLSearchParams({
-    q: `newer_than:${options.lookbackDays}d`,
+    q: [`newer_than:${options.lookbackDays}d`, options.search].filter(Boolean).join(" "),
     maxResults: String(options.pageSize ?? 100),
   });
   if (options.pageToken) params.set("pageToken", options.pageToken);
