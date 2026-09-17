@@ -8,10 +8,19 @@
 export const SUMMARY_PARTS = ["who_they_are", "how_you_know", "discussed", "next_step"] as const;
 export type SummaryPart = (typeof SUMMARY_PARTS)[number];
 
+/** What a summary can suggest for the contact itself (docs/slice-4-plan.md, Part 7). */
+export const SUGGESTIONS = ["company", "role", "next_touch"] as const;
+export type Suggestion = (typeof SUGGESTIONS)[number];
+
 /** Longest text kept for one part — the database allows no more. */
 export const MAX_PART_CHARS = 2_000;
 
-export type SourceRef = { messageId: string; threadId: string };
+/** The contact fields' limits (lib/contacts/contact-form.ts) and a next touch's reason (0009). */
+export const MAX_SUGGESTED_FIELD_CHARS = 200;
+export const MAX_SUGGESTED_REASON_CHARS = 300;
+
+/** Where something came from: one email, or the contact's own address. */
+export type SourceRef = { messageId: string; threadId: string } | { address: string };
 
 export type SavedSummary = {
   id: string;
@@ -21,7 +30,12 @@ export type SavedSummary = {
   how_you_know: string | null;
   discussed: string | null;
   next_step: string | null;
-  sources: Partial<Record<SummaryPart, SourceRef[]>>;
+  sources: Partial<Record<SummaryPart | Suggestion, SourceRef[]>>;
+  suggested_company: string | null;
+  suggested_role: string | null;
+  suggested_touch_reason: string | null;
+  /** YYYY-MM-DD, only when the emails gave a date. */
+  suggested_touch_on: string | null;
   as_of: string;
   edited: boolean;
   model: string;
@@ -31,4 +45,4 @@ export type SavedSummary = {
 };
 
 export const SUMMARY_COLUMNS =
-  "id, contact_id, status, who_they_are, how_you_know, discussed, next_step, sources, as_of, edited, model, created_at, updated_at, approved_at";
+  "id, contact_id, status, who_they_are, how_you_know, discussed, next_step, sources, suggested_company, suggested_role, suggested_touch_reason, suggested_touch_on, as_of, edited, model, created_at, updated_at, approved_at";

@@ -2,7 +2,13 @@
 
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { MAX_PART_CHARS, SUMMARY_PARTS, type SavedSummary, type SummaryPart } from "@/lib/ai/summary-parts";
+import {
+  MAX_PART_CHARS,
+  SUMMARY_PARTS,
+  type SavedSummary,
+  type SourceRef,
+  type SummaryPart,
+} from "@/lib/ai/summary-parts";
 import {
   approveSummaryAction,
   discardSummaryAction,
@@ -272,27 +278,38 @@ function Parts({ summary, gmailEmail }: { summary: SavedSummary; gmailEmail: str
               ) : (
                 <span className="text-[13px] leading-[1.55] text-ink-hush">Not in these emails</span>
               )}
-              {text && sources.length > 0 && (
-                <span className="flex flex-wrap items-center gap-x-2 text-[11px] font-medium text-ink-faint">
-                  Sources:
-                  {sources.map((source, index) => (
-                    <a
-                      key={source.messageId}
-                      href={gmailLink(source.messageId, gmailEmail)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-semibold text-ink-muted underline decoration-line-strong underline-offset-2 hover:text-ink"
-                    >
-                      email {index + 1}
-                    </a>
-                  ))}
-                </span>
-              )}
+              {text && <Sources sources={sources} gmailEmail={gmailEmail} />}
             </dd>
           </div>
         );
       })}
     </dl>
+  );
+}
+
+/** "Sources: email 1, email 2" linking to Gmail, or "their address …" for one taken from an address. */
+function Sources({ sources, gmailEmail }: { sources: SourceRef[]; gmailEmail: string | null }) {
+  if (sources.length === 0) return null;
+  let emailNumber = 0;
+  return (
+    <span className="flex flex-wrap items-center gap-x-2 text-[11px] font-medium text-ink-faint">
+      Sources:
+      {sources.map((source) =>
+        "address" in source ? (
+          <span key={`address:${source.address}`}>their address {source.address}</span>
+        ) : (
+          <a
+            key={source.messageId}
+            href={gmailLink(source.messageId, gmailEmail)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-ink-muted underline decoration-line-strong underline-offset-2 hover:text-ink"
+          >
+            email {++emailNumber}
+          </a>
+        ),
+      )}
+    </span>
   );
 }
 

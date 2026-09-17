@@ -207,6 +207,42 @@ describe("AI summaries and spending", () => {
       expect((await anonClient().from("contact_summaries").select("*")).data ?? []).toEqual([]);
     });
 
+    it("keeps suggestions for the contact on the summary, within the contact fields' limits (0011)", async () => {
+      const { data, error } = await aliceClient
+        .from("contact_summaries")
+        .insert({
+          ...summary(alice.id, karinId),
+          suggested_company: "Fortnox",
+          suggested_role: "Head of platform",
+          suggested_touch_reason: "Ask about the thesis decision",
+          suggested_touch_on: "2026-10-01",
+          sources: { company: [{ messageId: "m1", threadId: "t1" }] },
+        })
+        .select("suggested_company, suggested_role, suggested_touch_reason, suggested_touch_on")
+        .single();
+      expect(error).toBeNull();
+      expect(data).toEqual({
+        suggested_company: "Fortnox",
+        suggested_role: "Head of platform",
+        suggested_touch_reason: "Ask about the thesis decision",
+        suggested_touch_on: "2026-10-01",
+      });
+
+      expect((await bobClient.from("contact_summaries").select("suggested_company")).data).toEqual([]);
+
+      await aliceClient.from("contact_summaries").delete().eq("user_id", alice.id);
+      for (const tooMuch of [
+        { suggested_company: "x".repeat(201) },
+        { suggested_touch_reason: "x".repeat(301) },
+        { suggested_touch_on: "2026-10-01" }, // a date with no reason
+      ]) {
+        const { error: refused } = await aliceClient
+          .from("contact_summaries")
+          .insert({ ...summary(alice.id, karinId), ...tooMuch });
+        expect(refused).not.toBeNull();
+      }
+    });
+
     it("can't be hung off someone else's contact", async () => {
       const { error: ownId } = await bobClient.from("contact_summaries").insert(summary(bob.id, karinId));
       expect(ownId?.code).toBe(FOREIGN_KEY_VIOLATION);

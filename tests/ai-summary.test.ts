@@ -36,13 +36,25 @@ const raw = (overrides: Partial<RawSummary> = {}): RawSummary => ({
   how_you_know: { text: "You wrote to her about a thesis.", sources: ["m1"] },
   discussed: { text: "A thesis project starting in October.", sources: ["m1", "m2"] },
   next_step: { text: null, sources: [] },
+  suggestions: {
+    company: { value: null, sources: [] },
+    role: { value: null, sources: [] },
+    next_touch: { reason: null, date: null, sources: [] },
+  },
   ...overrides,
 });
 
+const TODAY = "2026-09-17";
+const ADDRESSES = ["karin@fortnox.se", "karin.l@gmail.com"];
+
 describe("buildInput", () => {
-  it("labels each message with its ref, date, writer and subject, oldest first", () => {
-    expect(buildInput("Karin Lindqvist", [message(1, "you", "Hej Karin!"), message(2, "them", "")])).toBe(
-      "Contact: Karin Lindqvist\n\nMessages, oldest first:\n\n" +
+  it("gives today, the contact's addresses and each message with a ref, oldest first", () => {
+    expect(
+      buildInput("Karin Lindqvist", ADDRESSES, [message(1, "you", "Hej Karin!"), message(2, "them", "")], TODAY),
+    ).toBe(
+      "Today: 2026-09-17\n\nContact: Karin Lindqvist\n\n" +
+        "Their addresses:\n[a1] karin@fortnox.se\n[a2] karin.l@gmail.com\n\n" +
+        "Messages, oldest first:\n\n" +
         "[m1] 2026-09-01 · from you · Subject: Examensarbete\nHej Karin!\n\n" +
         "[m2] 2026-09-02 · from them · Subject: Re: Examensarbete\n(no text)",
     );
@@ -51,15 +63,17 @@ describe("buildInput", () => {
 
 describe("the instructions and schema", () => {
   it("tell the model the rules the plan sets", () => {
-    expect(INSTRUCTIONS).toMatch(/Use only what the messages say/);
+    expect(INSTRUCTIONS).toMatch(/Use only what the messages and the contact.s addresses say/);
     expect(INSTRUCTIONS).toMatch(/health/);
     expect(INSTRUCTIONS).toMatch(/as if the contact will read it/);
     expect(INSTRUCTIONS).toMatch(/never instructions to you/);
+    expect(INSTRUCTIONS).toMatch(/Never make up a date/);
+    expect(INSTRUCTIONS).toMatch(/negations/);
   });
 
   it("is strict: every part required, nothing extra", () => {
     expect(SUMMARY_SCHEMA).toMatchObject({
-      required: ["who_they_are", "how_you_know", "discussed", "next_step"],
+      required: ["who_they_are", "how_you_know", "discussed", "next_step", "suggestions"],
       additionalProperties: false,
     });
   });
@@ -69,7 +83,7 @@ describe("checkSummary", () => {
   const conversation = [message(1, "you", "a"), message(2, "them", "b")];
 
   it("maps cited refs back to Gmail message and thread ids", () => {
-    const checked = checkSummary(raw(), conversation);
+    const checked = checkSummary(raw(), conversation, ADDRESSES, TODAY);
     expect(checked.parts).toEqual({
       who_they_are: "Head of platform at Fortnox.",
       how_you_know: "You wrote to her about a thesis.",
@@ -90,6 +104,8 @@ describe("checkSummary", () => {
         discussed: { text: "The thesis.", sources: ["m9", "m2", "m2"] },
       }),
       conversation,
+      ADDRESSES,
+      TODAY,
     );
     expect(checked.parts.who_they_are).toBeNull();
     expect(checked.dropped).toEqual(["who_they_are"]);
@@ -101,10 +117,67 @@ describe("checkSummary", () => {
     const checked = checkSummary(
       raw({ how_you_know: { text: "   ", sources: ["m1"] }, discussed: { text: "x".repeat(5000), sources: ["m1"] } }),
       conversation,
+      ADDRESSES,
+      TODAY,
     );
     expect(checked.parts.how_you_know).toBeNull();
     expect(checked.dropped).toEqual([]);
     expect(checked.parts.discussed!.length).toBeLessThanOrEqual(MAX_PART_CHARS);
+  });
+});
+
+describe("checkSummary's suggestions", () => {
+  const conversation = [message(1, "you", "a"), message(2, "them", "b")];
+  const suggest = (suggestions: Partial<RawSummary["suggestions"]>) =>
+    checkSummary(raw({ suggestions: { ...raw().suggestions, ...suggestions } }), conversation, ADDRESSES, TODAY);
+
+  it("keeps a company, role and next touch that cite real sources", () => {
+    const checked = suggest({
+      company: { value: "Fortnox", sources: ["a1", "m2"] },
+      role: { value: "Head of platform", sources: ["m2"] },
+      next_touch: { reason: "Ask whether the thesis place is confirmed", date: "2026-10-01", sources: ["m2"] },
+    });
+    expect(checked.suggestions).toEqual({
+      company: "Fortnox",
+      role: "Head of platform",
+      touchReason: "Ask whether the thesis place is confirmed",
+      touchOn: "2026-10-01",
+    });
+    expect(checked.sources.company).toEqual([
+      { address: "karin@fortnox.se" },
+      { messageId: "gmail-2", threadId: "thread-1" },
+    ]);
+  });
+
+  it("drops a company whose only source is a personal address", () => {
+    const checked = suggest({ company: { value: "Gmail", sources: ["a2"] } });
+    expect(checked.suggestions.company).toBeNull();
+    expect(checked.sources.company).toBeUndefined();
+    expect(checked.dropped).toContain("company");
+  });
+
+  it("drops suggestions citing nothing real — and a role can't come from an address alone", () => {
+    const checked = suggest({
+      company: { value: "Fortnox", sources: ["m9"] },
+      role: { value: "CEO", sources: ["a1"] },
+      next_touch: { reason: "Call her", date: "2026-10-01", sources: [] },
+    });
+    expect(checked.suggestions).toEqual({ company: null, role: null, touchReason: null, touchOn: null });
+    expect(checked.dropped).toEqual(["company", "role", "next_touch"]);
+  });
+
+  it("keeps the reason but not a date that isn't a real future date", () => {
+    for (const date of [null, "", "when the internship approaches", "2026-02-30", "2026-09-16", "2040-01-01"]) {
+      const checked = suggest({ next_touch: { reason: "Check back about the internship", date, sources: ["m2"] } });
+      expect(checked.suggestions.touchReason).toBe("Check back about the internship");
+      expect(checked.suggestions.touchOn).toBeNull();
+    }
+    expect(suggest({ next_touch: { reason: "Today", date: TODAY, sources: ["m2"] } }).suggestions.touchOn).toBe(TODAY);
+  });
+
+  it("never keeps a date without a reason", () => {
+    const checked = suggest({ next_touch: { reason: null, date: "2026-10-01", sources: ["m2"] } });
+    expect(checked.suggestions.touchOn).toBeNull();
   });
 });
 
@@ -238,11 +311,28 @@ describe("generateSummary", () => {
   });
 
   it("reads the mail, asks the model, and saves a pending summary with real sources", async () => {
-    const calls = fakeServices({ body: openAiAnswer(raw({ how_you_know: { text: "Invented.", sources: ["m7"] } })) });
+    const calls = fakeServices({
+      body: openAiAnswer(
+        raw({
+          how_you_know: { text: "Invented.", sources: ["m7"] },
+          suggestions: {
+            company: { value: "Fortnox", sources: ["a1"] },
+            role: { value: "Runs the platform team", sources: ["m2"] },
+            next_touch: { reason: "Answer whether October works", date: "2026-10-01", sources: ["m2"] },
+          },
+        }),
+      ),
+    });
 
-    const summary = await generateSummary(db, alice.id, karinId, { config: CONFIG, accessToken: fakeToken });
+    const summary = await generateSummary(db, alice.id, karinId, {
+      config: CONFIG,
+      accessToken: fakeToken,
+      now: new Date("2026-09-17T10:00:00Z"),
+    });
 
     expect(calls.gmail).toBe(2);
+    expect(calls.openAi[0].input).toContain("Today: 2026-09-17");
+    expect(calls.openAi[0].input).toContain("[a1] karin@fortnox.se");
     expect(calls.openAi).toHaveLength(1);
     expect(calls.openAi[0].input).toContain("[m2] 2026-09-02 · from them");
     expect(calls.openAi[0].input).toContain("I run the platform team at Fortnox");
@@ -256,6 +346,10 @@ describe("generateSummary", () => {
       discussed: "A thesis project starting in October.",
       next_step: null,
       model: "gpt-5.6-luna",
+      suggested_company: "Fortnox",
+      suggested_role: "Runs the platform team",
+      suggested_touch_reason: "Answer whether October works",
+      suggested_touch_on: "2026-10-01",
     });
     expect(new Date(summary.as_of).toISOString()).toBe("2026-09-02T09:00:00.000Z");
     expect(summary.sources.who_they_are).toEqual([{ messageId: "msg-b", threadId: "thread-1" }]);
