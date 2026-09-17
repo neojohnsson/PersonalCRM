@@ -15,6 +15,10 @@
  *     userRateLimitExceeded) or 429, and the fix is to wait and retry
  *
  * Server-side only in practice: an access token is a live key to a mailbox.
+ *
+ * Slice 4 adds a fifth, getMessageFull, for the AI summary: the one request
+ * that reads a message's text. Its result is used in memory and never stored
+ * (docs/slice-4-plan.md, Part 1).
  */
 
 const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me";
@@ -192,6 +196,33 @@ export async function getMessageMetadata(
     accessToken,
     `/messages/${encodeURIComponent(id)}`,
     params,
+  );
+}
+
+/** One MIME part of a full message: the body, or a nested multipart. */
+export type GmailPart = {
+  mimeType?: string;
+  filename?: string;
+  headers?: GmailHeader[];
+  /** `data` is base64url; absent for attachments, which carry attachmentId. */
+  body?: { size?: number; data?: string; attachmentId?: string };
+  parts?: GmailPart[];
+};
+
+export type GmailFullMessage = Omit<GmailMessage, "payload"> & { payload?: GmailPart };
+
+/**
+ * One whole message: format=full, headers and body parts. Attachments come
+ * back as ids only, and nothing here fetches them.
+ *
+ * Only for the AI summary, one contact at a time. The caller keeps the text
+ * in memory for that request — the sync never uses this.
+ */
+export async function getMessageFull(accessToken: string, id: string): Promise<GmailFullMessage> {
+  return gmailGet<GmailFullMessage>(
+    accessToken,
+    `/messages/${encodeURIComponent(id)}`,
+    new URLSearchParams({ format: "full" }),
   );
 }
 

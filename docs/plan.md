@@ -76,6 +76,8 @@ Straight from your Notion list, plus what the sheet you already built by hand ne
 - **Next contact date + a reason** ("said to check back after the budget in October").
 - Snooze, skip, mark done.
 - **Promise and deadline detection** — the AI reads a thread and proposes "follow up after September 20" as a *suggested* date you confirm. Suggestion, never a silent calendar entry.
+- **Suggested dates when the emails give none** (added 2026-09-17, the user's request) — the AI names the kind of timing and why ("a referral: follow up soon"), and plain rules in code turn that into a date, skipping weekends. Same case, same date; the form still decides.
+- **Referrals checked against your own mail** (added 2026-09-17) — "Martin referred you to Niklas Hedlund": the AI picks out the referral, and code — not the AI — checks whether you've written to Niklas since. Done → no touch; not done → "Contact Niklas Hedlund (Martin's referral)". Other contacts' mail is never sent to the AI for this.
 - Overdue list on the front page.
 
 ### 3.5 Relationship warmth
@@ -242,7 +244,7 @@ Ordered by how much they'd be worth.
 1. **Email-address confidence badges — your own invention.** Your Växjö sheet already grades addresses ✅ published / 🟡 format-confirmed / 🚩 check first, and records the domain's format rule. No personal CRM does this. Guess an address from a proven company format, show the confidence, learn the format from addresses you've actually corresponded with, and downgrade on bounce. This is the most distinctive idea in your whole project and it came from you, not from the AI.
 2. **Import a contact sheet.** Paste or upload a markdown/CSV list like `vaxjo-companies.md` and have it become contacts. Instantly makes the app useful on day one instead of after a month of syncing.
 3. **Company view.** Group contacts by company, see everyone you know there, whose turn it is at that company as a whole. Your sheet is already organised this way.
-4. **Calendar signal.** A meeting in the calendar is the strongest warmth signal that exists — far stronger than email. One extra scope, big accuracy win.
+4. **Calendar signal.** A meeting in the calendar is the strongest warmth signal that exists — far stronger than email. One extra scope, big accuracy win. Also lets suggested next-touch dates avoid full days and notice a meeting already booked with the person (the user's request, 2026-09-17). Page designed: `docs/calendar-and-profile.md`.
 5. **Meeting notes → follow-ups.** You listed this and it's good; it needs a notes source to exist first, so it's a v2 feature that plugs into the promise-detection you already built.
 6. **Intro paths.** "You want to reach X. You already talk to Y at the same company." Genuinely useful and uses only data you already have.
 7. **Bounce handling.** Read bounce messages, mark the address invalid, surface the alternate. Cheap and it protects you from the 🟡 addresses.
@@ -278,7 +280,7 @@ The relationship summary. Editable, dated, linked to source. One feature, done p
 Generate into Gmail drafts, in the thread's language, with a tone setting.
 
 **Slice 6 — the loop closes**
-Weekly brief, promise/deadline detection, stalled-conversation flags, duplicate merge.
+Weekly brief, promise/deadline detection — including referrals checked against your own mail (§3.4) — stalled-conversation flags, duplicate merge.
 
 **Slice 7 — the part that makes it a portfolio piece**
 Privacy page, export, real deletion, the written-up compliance decision. Then record a 90-second demo.

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { touchesByContact, type ContactAddress, type StoredMessage } from "@/lib/relationship/touches";
+import { touchesByContact, type ContactAddress, type StoredMessage, type Touch } from "@/lib/relationship/touches";
 import { warmth, type Warmth } from "@/lib/relationship/warmth";
 import { whoseTurn, type Turn } from "@/lib/relationship/whose-turn";
 import { supabaseError } from "@/lib/supabase/errors";
@@ -90,6 +90,22 @@ export async function loadRelationship(
   options: { now?: Date; pageSize?: number } = {},
 ): Promise<Relationship> {
   const now = options.now ?? new Date();
+  const touches = await contactTouches(db, userId, contactId, options);
+  if (!touches) return NO_MAIL;
+
+  return { turn: whoseTurn(touches, now), warmth: warmth(touches, now), messageCount: touches.length };
+}
+
+/**
+ * Every touch with one contact, oldest first — null if there are none. Used
+ * by loadRelationship, and by the AI summary to pick which messages to read.
+ */
+export async function contactTouches(
+  db: SupabaseClient,
+  userId: string,
+  contactId: string,
+  options: { pageSize?: number } = {},
+): Promise<Touch[] | null> {
   const pageSize = options.pageSize ?? DEFAULT_PAGE_SIZE;
 
   const { data: addresses, error } = await db
@@ -99,7 +115,7 @@ export async function loadRelationship(
     .eq("contact_id", contactId)
     .returns<ContactAddress[]>();
   if (error) throw supabaseError(error, "Couldn't load the contact's addresses");
-  if (addresses.length === 0) return NO_MAIL;
+  if (addresses.length === 0) return null;
 
   const list = postgrestList(addresses.map((address) => address.email));
   const messages = await readAll<StoredMessage>(
@@ -115,10 +131,7 @@ export async function loadRelationship(
     pageSize,
   );
 
-  const touches = touchesByContact(messages, addresses).get(contactId);
-  if (!touches) return NO_MAIL;
-
-  return { turn: whoseTurn(touches, now), warmth: warmth(touches, now), messageCount: touches.length };
+  return touchesByContact(messages, addresses).get(contactId) ?? null;
 }
 
 /**

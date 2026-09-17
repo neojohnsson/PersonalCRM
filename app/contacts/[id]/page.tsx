@@ -4,6 +4,9 @@ import { AppShell } from "@/app/app-shell";
 import { DisconnectGmailButton } from "@/app/disconnect-gmail-button";
 import { SignOutButton } from "@/app/sign-out-button";
 import { APP_NAME } from "@/lib/app-config";
+import { AiNotConfigured, aiConfig, monthlyCapUsd } from "@/lib/ai/config";
+import { spentThisMonth } from "@/lib/ai/spend";
+import { summariesFor } from "@/lib/ai/summary-record";
 import { requireUser } from "@/lib/auth";
 import { isUuid } from "@/lib/contacts/contact-form";
 import { displayName } from "@/lib/contacts/display";
@@ -24,13 +27,15 @@ import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 import { DismissContact } from "./dismiss-contact";
 import { NextTouchCard } from "./next-touch-card";
+import { SummaryCard, type AiBudget } from "./summary-card";
 
 export const metadata = { title: `Contact · ${APP_NAME}` };
 
 /**
  * One contact, built from design/ContactDetail.dc.html: the header with avatar,
  * name, role · company, the contact line and the whose-turn pill; the warmth
- * stat strip; "Your notes"; "Next touch"; "Open thread".
+ * stat strip; the AI relationship summary; "Your notes"; "Next touch"; "Open
+ * thread".
  *
  * Differences from the design, on purpose:
  *   - Website and city aren't contact fields (slice-2-plan.md, decision C).
@@ -40,6 +45,8 @@ export const metadata = { title: `Contact · ${APP_NAME}` };
  *     thread — in the contact list's colours; the design only shows "Your turn".
  *   - No mail at all: one line saying there's no warmth yet, instead of five
  *     empty stat cards.
+ *   - The relationship summary card (slice 4) has no design; it's built from
+ *     this page's own cards, and says so in app/contacts/[id]/summary-card.tsx.
  *   - "Draft reply" is slice 5. Its place holds Edit, the one action slice 2 has;
  *     the "···" menu has nothing to hold yet and is left out.
  *   - A "Dismiss" button beside Edit, with a confirm card (./dismiss-contact.tsx).
@@ -50,14 +57,18 @@ export const metadata = { title: `Contact · ${APP_NAME}` };
  *     the notes card.
  */
 
+/** How long a new contact keeps asking whether to generate a summary. */
+const ASK_FOR_SUMMARY_DAYS = 7;
+
 const CARD =
   "rounded-[18px] bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
 
 const GHOST_PILL =
   "flex items-center gap-[7px] self-start rounded-full bg-line-soft px-[13px] py-[7px] text-[12px] font-semibold text-ink-body transition-colors hover:bg-chip-track";
 
-export default async function ContactPage({ params }: PageProps<"/contacts/[id]">) {
+export default async function ContactPage({ params, searchParams }: PageProps<"/contacts/[id]">) {
   const { id } = await params;
+  const { touch: suggestionFrom } = await searchParams;
   const user = await requireUser();
   if (!isUuid(id)) notFound();
 
@@ -90,11 +101,29 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
   if (!contact) notFound();
 
   const emails = emailsResult.data.map((row) => row.email as string);
-  const [thread, relationship, nextTouch] = await Promise.all([
+  const [thread, relationship, nextTouch, summaries, spentUsd] = await Promise.all([
     latestThread(supabase, user.id, emails),
     loadRelationship(supabase, user.id, contact.id),
     openNextTouch(supabase, user.id, contact.id),
+    summariesFor(supabase, user.id, contact.id),
+    spentThisMonth(supabase, user.id),
   ]);
+  const budget: AiBudget = { spentUsd, capUsd: monthlyCapUsd(), ready: aiIsReady() };
+
+  // "Fill in next touch" on the summary links here with ?touch=<summary id>.
+  // Only an id travels in the address; the suggestion is read from the database.
+  // A contact added in the last week, with mail and no summary, asks whether to
+  // generate one (docs/slice-4-plan.md, Part 8). Adding one by hand lands here.
+  const askForSummary =
+    relationship.messageCount > 0 &&
+    !summaries.approved &&
+    !summaries.pending &&
+    addedWithinDays(contact.created_at, ASK_FOR_SUMMARY_DAYS);
+
+  const suggestion = [summaries.approved, summaries.pending].find((s) => s && s.id === suggestionFrom);
+  const touchPrefill = suggestion?.suggested_touch_reason
+    ? { due_on: suggestion.suggested_touch_on ?? "", reason: suggestion.suggested_touch_reason }
+    : null;
   const pill = turnPill(relationship.turn);
 
   const name = displayName({ ...contact, primary_email: emails[0] ?? null });
@@ -192,6 +221,17 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
 
         <StatStrip relationship={relationship} hasEmails={emails.length > 0} />
 
+        <SummaryCard
+          contactId={contact.id}
+          approved={summaries.approved}
+          pending={summaries.pending}
+          hasMail={relationship.messageCount > 0}
+          budget={budget}
+          gmailEmail={gmailResult.data?.email ?? null}
+          contact={{ id: contact.id, company: contact.company, role: contact.role, hasNextTouch: nextTouch !== null }}
+          askNow={askForSummary}
+        />
+
         <div className="flex flex-col gap-[18px] lg:flex-row">
           <section className={`${CARD} flex min-w-0 flex-1 flex-col gap-[11px] px-[22px] py-[18px]`}>
             <div className="flex items-center justify-between gap-3">
@@ -229,7 +269,14 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
           </section>
 
           <div className="flex flex-col gap-3.5 lg:w-[392px] lg:shrink-0">
-            <NextTouchCard contactId={contact.id} touch={nextTouch} today={todayIn()} />
+            <NextTouchCard
+              // A new key when a suggestion arrives, so the form opens fresh with it.
+              key={touchPrefill ? `prefill:${suggestion!.id}` : "touch"}
+              contactId={contact.id}
+              touch={nextTouch}
+              today={todayIn()}
+              prefill={touchPrefill}
+            />
 
             <section className={`${CARD} flex flex-1 flex-col gap-[11px] px-5 py-[17px]`}>
               <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Open thread</h2>
@@ -266,6 +313,22 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
       </main>
     </AppShell>
   );
+}
+
+/** Whether a contact was added within the last `days` days. */
+function addedWithinDays(createdAt: string, days: number, now: Date = new Date()): boolean {
+  return now.getTime() - new Date(createdAt).getTime() < days * 24 * 60 * 60 * 1000;
+}
+
+/** Whether the server has what the AI needs. The key itself never leaves the server. */
+function aiIsReady(): boolean {
+  try {
+    aiConfig();
+    return true;
+  } catch (error) {
+    if (error instanceof AiNotConfigured) return false;
+    throw error;
+  }
 }
 
 type Thread = {

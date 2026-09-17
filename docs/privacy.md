@@ -15,7 +15,9 @@ Roles, when other people use it: the user is the data controller, this applicati
 | Contact details: name, email, phone, company, role | Message bodies, by default |
 | Message metadata: sender, recipients, timestamp, subject, thread id | Attachments |
 | Your own notes and tags | Anything from automated senders — newsletters, no-reply addresses, calendar invites |
-| An editable AI relationship summary | Anything from someone you dismissed, beyond their address |
+| An editable AI relationship summary, with the message ids it came from | Anything from someone you dismissed, beyond their address |
+| The summary's suggestions for company, role and next touch, until you take or discard them | The email text sent to the AI |
+| What each AI request cost: model, token counts, dollars | |
 | Touch history — when contact happened and in which direction | |
 
 ### What the Gmail sync keeps, person by person
@@ -33,7 +35,32 @@ Mail you sent is always kept, including mail to someone you later dismissed: it'
 
 The filters decide from the sender and the headers only — never from a message body.
 
-Message bodies are fetched live from Gmail when they're needed on screen and are not persisted, **except** for contacts where the user explicitly opts in. That retention has a visible period and a delete control, and the period is enforced by a scheduled job — a retention policy that isn't actually enforced is a lie in a privacy policy.
+Message bodies are fetched live from Gmail when they're needed and are not persisted, **except** for contacts where the user explicitly opts in (not built yet). That retention has a visible period and a delete control, and the period is enforced by a scheduled job — a retention policy that isn't actually enforced is a lie in a privacy policy.
+
+### What the AI summary sends, and what it keeps
+
+_Since slice 4 (`docs/slice-4-plan.md`, Parts 1 and 7)._
+
+Nothing is sent until you press **Generate summary** on one contact. Then:
+
+1. The server reads your **last 20 emails** with that contact from Gmail.
+2. It keeps only what each sender wrote this time — **quoted replies and signatures are
+   cut** — and at most 2,000 characters per email.
+3. That text, the contact's name and email addresses, and today's date go to OpenAI in
+   **one request**.
+4. **Only the answer is saved**: four short parts, suggestions for company, role and a
+   next touch, and which emails each came from. The email text was held in memory for
+   that one request — never written to the database, never logged. A test checks that
+   the code reading it has no way to write it anywhere.
+5. The answer waits as **pending** until you approve it. Suggestions change the contact
+   only when you press their button; a next touch only when you save its form.
+
+The instructions tell the model to leave out health, family matters, religion, politics,
+union membership, sexuality, ethnicity and money troubles, and to write as if the
+person will read it. Code can't check that — you can, before approving.
+
+Spending is capped per user per month (`LLM_MONTHLY_CAP_USD`, $2 to start), checked in
+the database before any request is sent.
 
 ## Gmail access
 
@@ -67,6 +94,24 @@ Email threads mention sick leave, politics, union membership, religion. A summar
 ## Sub-processors
 
 Email content is sent to an LLM provider for summarising and drafting. That is a transfer to a third party, named explicitly in the privacy policy, covered by a data processing agreement.
+
+| Sub-processor | What it gets | Since |
+|---|---|---|
+| **OpenAI** (API, `gpt-5.6-luna` by default) | The text of up to 20 emails with one contact, their name and addresses, per summary you ask for | Slice 4 |
+
+What OpenAI's API documentation says, checked 2026-09-17
+(https://developers.openai.com/api/docs/guides/your-data):
+
+- API data is **not used to train** their models unless the account opts in.
+- Requests are sent with **`store: false`**, so the response isn't kept for later
+  retrieval.
+- They may keep request data **up to 30 days for abuse monitoring**. Zero data retention
+  exists but has to be approved for the account.
+- Most likely processed in the **United States** — a transfer outside the EU.
+
+While the app has one user, its author, that user is sending their own mail. Before
+anyone else uses it: sign OpenAI's data processing agreement, and name OpenAI in a real
+privacy policy. _Verify OpenAI's current terms rather than trusting this list._
 
 ## User controls
 

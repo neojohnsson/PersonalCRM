@@ -27,6 +27,11 @@ _What was decided, and why. Revise when a decision turns out wrong — the histo
 | Gmail scope timing | Read-only from Slice 1, draft scope added in Slice 5 | Ask for the smallest permission the current code uses |
 | Google API client | Plain `fetch`, no `googleapis` | Every OAuth request is visible and understood, not hidden in a library |
 | Sync trigger | Scheduled, no button | A tool you have to remember to refresh is one you stop opening. Slice 1 uses a temporary button while the sync is built |
+| AI provider | OpenAI, `gpt-5.6-luna` by default, through one module with plain `fetch` | Cheapest capable model for short summaries (about half a cent each at most). One file knows OpenAI, so switching provider is one file |
+| AI spending | $2 a month per user, checked in the database before every request | Set before the first bill, not after. A reservation under a lock, so two clicks can't both slip under |
+| When the AI runs | Only when you press Generate, one contact at a time | Cost, and sending mail to a third party should be a choice. A new contact asks; it doesn't run |
+| AI summary input | Last 20 emails, quotes and signatures cut, 2,000 characters each | Recent enough to be right, small enough to stay cheap, and nothing credited to the wrong email |
+| AI suggestions | Company, role and next touch suggested with the summary, each taken with one click | Useful straight away, but nothing AI-made reaches the contact without a person pressing its button. Dates only when the emails give one |
 
 ## Trade-offs accepted
 
@@ -51,5 +56,5 @@ Chat with your inbox · mobile app · teams and shared workspaces · calendar, S
 ## Open
 
 - The name.
-- Which model for which job, and the monthly spend cap.
+- The larger model for drafting (`LLM_MODEL_GOOD`), in slice 5.
 - Whether the two-tier import and whose-turn logic are worth reusing elsewhere.
