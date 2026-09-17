@@ -8,16 +8,16 @@ everything before it keeps working with the AI switched off.
 
 **Done when** a test proves it — not when it renders:
 
-- [ ] Two-user RLS tests pass for every new table and function
-- [ ] Email text tests pass: the readable text is found in a Gmail message, quoted
+- [x] Two-user RLS tests pass for every new table and function
+- [x] Email text tests pass: the readable text is found in a Gmail message, quoted
       replies and signatures are cut, and nothing from a body is ever written to the
       database
-- [ ] Summary tests pass, with a fake OpenAI: a claim citing a message that wasn't sent
+- [x] Summary tests pass, with a fake OpenAI: a claim citing a message that wasn't sent
       is thrown out; the result lands as **pending**; approve, edit, reject and
       regenerate do what Part 4 says
-- [ ] Cap tests pass: at the monthly cap, no request reaches OpenAI — and two presses
+- [x] Cap tests pass: at the monthly cap, no request reaches OpenAI — and two presses
       at once can't both slip under it
-- [ ] Suggestion tests pass: a suggested company, role or next-touch date with no real
+- [x] Suggestion tests pass: a suggested company, role or next-touch date with no real
       source, or a date that isn't a real future date, is thrown out; using a suggestion
       changes only that one field, and never replaces a value you typed without asking
 - [ ] On the Vercel preview with a real mailbox: a contact gets a summary, every part
