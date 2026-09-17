@@ -31,7 +31,7 @@ export function AppShell({
   userEmail: string | undefined;
   headerRight?: React.ReactNode;
   /** Which sidebar entry is the current page. */
-  active?: "home" | "contacts" | "seen-once";
+  active?: "home" | "contacts" | "seen-once" | "profile";
   /** People waiting in Seen once; the design's orange dot shows when above 0. */
   seenOnceCount?: number;
   children: React.ReactNode;
@@ -73,16 +73,27 @@ export function AppShell({
         <div className="flex-grow" />
 
         {userEmail && (
-          <div
-            title={userEmail}
-            // A rounded square like the logo tile, not the design's circle:
-            // changed at the user's request, 2026-09-16.
-            className="mt-1.5 flex size-[30px] items-center justify-center rounded-[9px] bg-rail-avatar"
+          // Opens Profile, as in design/Profile.dc.html, which also shows its
+          // active state: a lighter tile behind the avatar with a white ring.
+          <Link
+            href="/profile"
+            title={`Profile · ${userEmail}`}
+            aria-current={active === "profile" ? "page" : undefined}
+            className={`mt-1.5 flex size-9 items-center justify-center rounded-[11px] transition-colors ${
+              active === "profile" ? "bg-rail-active" : "hover:bg-rail-active"
+            }`}
           >
-            <span className="text-[10.5px] font-bold text-white">
-              {initials(null, userEmail)}
+            <span
+              // A rounded square like the logo tile, not the design's circle:
+              // changed at the user's request, 2026-09-16.
+              className={`flex items-center justify-center rounded-[9px] bg-rail-avatar ${
+                active === "profile" ? "size-7 ring-[1.5px] ring-white" : "size-[30px]"
+              }`}
+            >
+              <span className="text-[10.5px] font-bold text-white">{initials(null, userEmail)}</span>
+              <span className="sr-only">Profile</span>
             </span>
-          </div>
+          </Link>
         )}
       </aside>
 
