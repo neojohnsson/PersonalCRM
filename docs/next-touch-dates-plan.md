@@ -9,11 +9,11 @@ touch form as before — you change it, or don't save it.
 
 **Done when** a test proves it:
 
-- [ ] Each rule gives its date, including weekends moved to Monday and nothing before today
-- [ ] A stated date that isn't real, a month in the past, or a timing kind the app
+- [x] Each rule gives its date, including weekends moved to Monday and nothing before today
+- [x] A stated date that isn't real, a month in the past, or a timing kind the app
       doesn't know gives no date — never a made-up one
-- [ ] The suggestion's "why" and "rough guess" are saved and shown next to the date
-- [ ] On the preview: a summary like Martin's suggests "Contact Niklas Hedlund" with a date
+- [x] The suggestion's "why" and "rough guess" are saved and shown next to the date
+- [x] Locally with a real mailbox: Martin's summary suggests "Contact Niklas Hedlund" on Tue 22 Sep, a referral
 
 ## The rules
 

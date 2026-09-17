@@ -122,7 +122,11 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
 
   const suggestion = [summaries.approved, summaries.pending].find((s) => s && s.id === suggestionFrom);
   const touchPrefill = suggestion?.suggested_touch_reason
-    ? { due_on: suggestion.suggested_touch_on ?? "", reason: suggestion.suggested_touch_reason }
+    ? {
+        due_on: suggestion.suggested_touch_on ?? "",
+        reason: suggestion.suggested_touch_reason,
+        rough: suggestion.suggested_touch_rough,
+      }
     : null;
   const pill = turnPill(relationship.turn);
 

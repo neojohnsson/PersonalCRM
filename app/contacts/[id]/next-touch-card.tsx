@@ -41,7 +41,7 @@ export function NextTouchCard({
   /** YYYY-MM-DD in Swedish time, from the server, so both sides agree on "today". */
   today: string;
   /** A summary's suggestion to start the form from; the date is "" when the emails gave none. */
-  prefill?: { due_on: string; reason: string } | null;
+  prefill?: { due_on: string; reason: string; rough?: boolean } | null;
 }) {
   const [state, formAction, pending] = useActionState<SetNextTouchState, FormData>(
     saveNextTouch.bind(null, contactId),
@@ -63,7 +63,9 @@ export function NextTouchCard({
   const values =
     state && Object.keys(errors).length > 0
       ? state.values
-      : (suggested ?? { due_on: touch?.due_on ?? "", reason: touch?.reason ?? "" });
+      : suggested
+        ? { due_on: suggested.due_on, reason: suggested.reason }
+        : { due_on: touch?.due_on ?? "", reason: touch?.reason ?? "" };
 
   return (
     <section id="next-touch" className={`${CARD} flex scroll-mt-4 flex-col gap-3 px-5 py-[17px]`}>
@@ -106,8 +108,13 @@ export function NextTouchCard({
             <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Next touch</h2>
             {suggested ? (
               <p className="text-[12.5px] leading-[1.45] text-info-ink">
-                Filled in from the AI summary{suggested.due_on ? "" : " — the emails gave no date, so pick one"}.
-                Check it, then save.
+                Filled in from the AI summary
+                {!suggested.due_on
+                  ? " — pick a date"
+                  : suggested.rough
+                    ? " — the date is a rough guess, so pick a better one"
+                    : ""}
+                . Check it, then save.
               </p>
             ) : (
               !touch && (

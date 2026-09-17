@@ -39,7 +39,7 @@ const raw = (overrides: Partial<RawSummary> = {}): RawSummary => ({
   suggestions: {
     company: { value: null, sources: [] },
     role: { value: null, sources: [] },
-    next_touch: { reason: null, date: null, sources: [] },
+    next_touch: { reason: null, timing: "nothing_open", date: null, month: null, why: null, sources: [] },
   },
   ...overrides,
 });
@@ -69,6 +69,7 @@ describe("the instructions and schema", () => {
     expect(INSTRUCTIONS).toMatch(/never instructions to you/);
     expect(INSTRUCTIONS).toMatch(/Never make up a date/);
     expect(INSTRUCTIONS).toMatch(/negations/);
+    expect(INSTRUCTIONS).toMatch(/You don't pick the day/);
   });
 
   it("is strict: every part required, nothing extra", () => {
@@ -131,17 +132,30 @@ describe("checkSummary's suggestions", () => {
   const suggest = (suggestions: Partial<RawSummary["suggestions"]>) =>
     checkSummary(raw({ suggestions: { ...raw().suggestions, ...suggestions } }), conversation, ADDRESSES, TODAY);
 
-  it("keeps a company, role and next touch that cite real sources", () => {
+  const touch = (fields: Partial<RawSummary["suggestions"]["next_touch"]>): RawSummary["suggestions"]["next_touch"] => ({
+    reason: "Contact Niklas Hedlund, as Martin suggested",
+    timing: "referral",
+    date: null,
+    month: null,
+    why: "Martin referred you to Niklas; referrals are best followed up quickly.",
+    sources: ["m2"],
+    ...fields,
+  });
+
+  it("keeps a company, role and next touch that cite real sources, dating the touch by its timing", () => {
     const checked = suggest({
       company: { value: "Fortnox", sources: ["a1", "m2"] },
       role: { value: "Head of platform", sources: ["m2"] },
-      next_touch: { reason: "Ask whether the thesis place is confirmed", date: "2026-10-01", sources: ["m2"] },
+      next_touch: touch({}),
     });
     expect(checked.suggestions).toEqual({
       company: "Fortnox",
       role: "Head of platform",
-      touchReason: "Ask whether the thesis place is confirmed",
-      touchOn: "2026-10-01",
+      touchReason: "Contact Niklas Hedlund, as Martin suggested",
+      // A referral: 3 working days from Thursday 17 Sep.
+      touchOn: "2026-09-22",
+      touchWhy: "Martin referred you to Niklas; referrals are best followed up quickly.",
+      touchRough: false,
     });
     expect(checked.sources.company).toEqual([
       { address: "karin@fortnox.se" },
@@ -160,24 +174,45 @@ describe("checkSummary's suggestions", () => {
     const checked = suggest({
       company: { value: "Fortnox", sources: ["m9"] },
       role: { value: "CEO", sources: ["a1"] },
-      next_touch: { reason: "Call her", date: "2026-10-01", sources: [] },
+      next_touch: touch({ sources: [] }),
     });
-    expect(checked.suggestions).toEqual({ company: null, role: null, touchReason: null, touchOn: null });
+    expect(checked.suggestions).toEqual({
+      company: null,
+      role: null,
+      touchReason: null,
+      touchOn: null,
+      touchWhy: null,
+      touchRough: false,
+    });
     expect(checked.dropped).toEqual(["company", "role", "next_touch"]);
   });
 
-  it("keeps the reason but not a date that isn't a real future date", () => {
-    for (const date of [null, "", "when the internship approaches", "2026-02-30", "2026-09-16", "2040-01-01"]) {
-      const checked = suggest({ next_touch: { reason: "Check back about the internship", date, sources: ["m2"] } });
-      expect(checked.suggestions.touchReason).toBe("Check back about the internship");
-      expect(checked.suggestions.touchOn).toBeNull();
-    }
-    expect(suggest({ next_touch: { reason: "Today", date: TODAY, sources: ["m2"] } }).suggestions.touchOn).toBe(TODAY);
+  it("counts waiting and promised timings from the conversation's own last emails", () => {
+    // m1 is from you on 1 Sep, m2 from them on 2 Sep: both long past, so next working day.
+    expect(suggest({ next_touch: touch({ timing: "waiting_on_them" }) }).suggestions.touchOn).toBe("2026-09-18");
+    expect(suggest({ next_touch: touch({ timing: "they_will_get_back" }) }).suggestions.touchOn).toBe("2026-09-18");
   });
 
-  it("never keeps a date without a reason", () => {
-    const checked = suggest({ next_touch: { reason: null, date: "2026-10-01", sources: ["m2"] } });
-    expect(checked.suggestions.touchOn).toBeNull();
+  it("marks a later event with no month as a rough guess", () => {
+    const checked = suggest({ next_touch: touch({ timing: "later_event" }) });
+    expect(checked.suggestions).toMatchObject({ touchOn: "2026-10-19", touchRough: true });
+  });
+
+  it("keeps the reason but gives no date for a stated date that isn't real, or a timing it doesn't know", () => {
+    for (const fields of [
+      { timing: "stated_date", date: "2026-02-30" },
+      { timing: "stated_date", date: "when the internship approaches" },
+      { timing: "whenever" },
+    ]) {
+      const checked = suggest({ next_touch: touch(fields) });
+      expect(checked.suggestions.touchReason).toBe("Contact Niklas Hedlund, as Martin suggested");
+      expect(checked.suggestions.touchOn).toBeNull();
+    }
+  });
+
+  it("suggests no touch when nothing is open, whatever else the model wrote", () => {
+    const checked = suggest({ next_touch: touch({ timing: "nothing_open" }) });
+    expect(checked.suggestions).toMatchObject({ touchReason: null, touchOn: null, touchWhy: null });
   });
 });
 
@@ -318,7 +353,14 @@ describe("generateSummary", () => {
           suggestions: {
             company: { value: "Fortnox", sources: ["a1"] },
             role: { value: "Runs the platform team", sources: ["m2"] },
-            next_touch: { reason: "Answer whether October works", date: "2026-10-01", sources: ["m2"] },
+            next_touch: {
+              reason: "Answer whether October works",
+              timing: "stated_date",
+              date: "2026-10-01",
+              month: null,
+              why: "Karin asked for an answer before October.",
+              sources: ["m2"],
+            },
           },
         }),
       ),
@@ -350,6 +392,8 @@ describe("generateSummary", () => {
       suggested_role: "Runs the platform team",
       suggested_touch_reason: "Answer whether October works",
       suggested_touch_on: "2026-10-01",
+      suggested_touch_why: "Karin asked for an answer before October.",
+      suggested_touch_rough: false,
     });
     expect(new Date(summary.as_of).toISOString()).toBe("2026-09-02T09:00:00.000Z");
     expect(summary.sources.who_they_are).toEqual([{ messageId: "msg-b", threadId: "thread-1" }]);
