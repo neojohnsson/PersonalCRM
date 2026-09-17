@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { displayName } from "@/lib/contacts/display";
-import { MAX_QUERY_LENGTH, ilikePattern, normaliseQuery } from "@/lib/contacts/search";
+import { MAX_QUERY_LENGTH, ilikePattern, normaliseQuery, searchHref } from "@/lib/contacts/search";
 
 describe("normaliseQuery", () => {
   it("trims and collapses whitespace", () => {
@@ -45,5 +45,21 @@ describe("displayName", () => {
       "karin@fortnox.se",
     );
     expect(displayName(none)).toBe("Unnamed contact");
+  });
+});
+
+describe("searchHref", () => {
+  it("puts the cleaned-up text in ?q=", () => {
+    expect(searchHref("", "  karin  l ")).toBe("/contacts?q=karin+l");
+  });
+
+  it("keeps the chosen chip and tag, and starts again at the first page", () => {
+    expect(searchHref("?filter=yours&tag=vc&show=100", "karin")).toBe("/contacts?filter=yours&tag=vc&q=karin");
+    expect(searchHref("?q=old&filter=yours", "new")).toBe("/contacts?q=new&filter=yours");
+  });
+
+  it("drops ?q= when the box is emptied", () => {
+    expect(searchHref("?q=karin", "   ")).toBe("/contacts");
+    expect(searchHref("?q=karin&tag=vc", "")).toBe("/contacts?tag=vc");
   });
 });

@@ -23,3 +23,19 @@ export function ilikePattern(query: string): string {
   const escaped = query.toLowerCase().replace(/[\\%_]/g, (char) => `\\${char}`);
   return `%${escaped}%`;
 }
+
+/**
+ * The contact list's address after typing `typed` into the search box.
+ *
+ * The chip or tag being looked at stays, so a search narrows what's on screen
+ * instead of resetting it. `show` goes: a new search starts at the first page.
+ */
+export function searchHref(currentSearch: string, typed: string): string {
+  const params = new URLSearchParams(currentSearch);
+  const query = normaliseQuery(typed);
+  if (query) params.set("q", query);
+  else params.delete("q");
+  params.delete("show");
+  const search = params.toString();
+  return search ? `/contacts?${search}` : "/contacts";
+}
