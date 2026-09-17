@@ -1,7 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { isUuid } from "@/lib/contacts/contact-form";
 import { todayIn } from "@/lib/relationship/dates";
@@ -14,6 +14,7 @@ import {
   type NextTouchErrors,
   type NextTouchValues,
 } from "@/lib/relationship/next-touch";
+import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -34,6 +35,7 @@ export type SetNextTouchState = {
 } | null;
 
 const FOREIGN_KEY_VIOLATION = "23503";
+const NOT_FOUND = "P0002";
 
 /** "Set" / "Save": give the contact a next touch, or change the one they have. */
 export async function saveNextTouch(
@@ -85,6 +87,27 @@ export async function finishTouch(touchId: string, outcome: "done" | "skipped"):
   const supabase = await createClient();
   await closedIsFine(() => finishNextTouch(supabase, user.id, touchId, outcome));
   refresh();
+}
+
+/**
+ * "Dismiss" on the contact page: every address is remembered as dismissed, the
+ * mail they sent is deleted, and so is the contact (migration 0012). Then back
+ * to the contact list — this page no longer exists.
+ */
+export async function dismissContact(contactId: string): Promise<void> {
+  const user = await requireUser();
+  if (!isUuid(contactId)) notFound();
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("dismiss_contact", {
+    p_user_id: user.id,
+    p_contact_id: contactId,
+  });
+  // Already gone (another tab), or never theirs: the same answer either way.
+  if (error?.code === NOT_FOUND) notFound();
+  if (error) throw supabaseError(error, "Couldn't dismiss the contact");
+
+  redirect("/contacts");
 }
 
 /**
