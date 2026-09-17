@@ -135,6 +135,41 @@ async function gmailGet<T>(
   return (await response.json()) as T;
 }
 
+async function gmailPost<T>(accessToken: string, path: string, body: unknown): Promise<T> {
+  const response = await fetch(`${GMAIL_API}${path}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const parsed = await response
+      .json()
+      .then((json: GoogleErrorBody) => json)
+      .catch((): GoogleErrorBody => ({}));
+    const reason = parsed.error?.message;
+    const message = `Gmail ${path} failed with HTTP ${response.status}${reason ? `: ${reason}` : ""}`;
+    if (isRateLimit(response.status, parsed)) throw new GmailRateLimited(response.status, message);
+    throw new GmailApiError(response.status, message);
+  }
+
+  return (await response.json()) as T;
+}
+
+/**
+ * Create a draft in a thread. The only request in the app that writes to
+ * Gmail, and it writes a draft — never a sent message (AGENTS.md). Needs the
+ * gmail.compose permission.
+ */
+export async function createDraft(
+  accessToken: string,
+  draft: { raw: string; threadId: string },
+): Promise<{ id: string; message?: { id: string; threadId: string } }> {
+  return gmailPost(accessToken, "/drafts", {
+    message: { raw: draft.raw, threadId: draft.threadId },
+  });
+}
+
 /**
  * The mailbox's current history bookmark.
  *
