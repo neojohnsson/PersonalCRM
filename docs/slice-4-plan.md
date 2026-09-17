@@ -20,7 +20,7 @@ everything before it keeps working with the AI switched off.
 - [x] Suggestion tests pass: a suggested company, role or next-touch date with no real
       source, or a date that isn't a real future date, is thrown out; using a suggestion
       changes only that one field, and never replaces a value you typed without asking
-- [ ] On the Vercel preview with a real mailbox: a contact gets a summary, every part
+- [x] On the Vercel preview with a real mailbox: a contact gets a summary, every part
       opens its source in Gmail, and approving, editing and regenerating work; a new
       contact asks whether to generate one; company, role and next touch can be taken
       from the summary with one click
@@ -160,11 +160,15 @@ The same request that writes the summary also suggests:
 
 Kept in mind, and where they belong in `plan.md`:
 
+- **Suggested next-touch dates when the emails give none** — the AI names the kind of
+  timing and why, code turns it into a date. The user asked for it on the preview,
+  2026-09-17; a small branch right after this slice (§3.4).
 - **Next touches from every thread, not just the summary's next step** — promise and
-  deadline detection, slice 6 (§3.4).
+  deadline detection, slice 6 (§3.4). Includes checking a referral ("contact Niklas
+  Hedlund") against your own mail, in code, without sending other contacts' mail to the AI.
 - **Next touches and warmth from Google Calendar** — a meeting that ended with no
-  follow-up. `docs/calendar-and-profile.md`; no slice yet (§6.4). Needs one more Google
-  permission.
+  follow-up, and suggested dates that avoid full days. `docs/calendar-and-profile.md`;
+  no slice yet (§6.4). Needs one more Google permission.
 - **"3 new emails since this summary"** on the card, so you know when to regenerate —
   small and AI-free; worth adding with the weekly brief, slice 6.
 - **Phone numbers and other details from signatures** — not planned: signatures are cut
