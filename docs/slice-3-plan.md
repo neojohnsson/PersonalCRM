@@ -13,7 +13,7 @@ you at slice 3, the project is a success and everything after is upside."
 - [x] Warmth tests pass: each of the four signals on its own, the score from them, and
       the same history always giving the same score
 - [x] Next-touch tests pass: two-user RLS, and snooze / skip / mark done
-- [ ] On the Vercel preview with a real mailbox: `/` shows who is waiting on you today,
+- [x] On the Vercel preview with a real mailbox: `/` shows who is waiting on you today,
       and a contact's warmth shows the numbers it came from
 
 **Who writes what** (`AGENTS.md`): Claude writes the code, explained before and walked
