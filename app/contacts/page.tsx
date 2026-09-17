@@ -317,7 +317,11 @@ function ContactTable({ items, total, moreHref }: { items: Item[]; total: number
       <table className="w-full table-fixed border-collapse">
         <colgroup>
           <col />
-          <col className="hidden w-[186px] lg:table-column" />
+          {/* The design's 186px is the text; the cell's 8px padding each side comes on
+              top. From 1280px the column grows to 240px of text, because real company
+              names ("Länsstyrelsen i Kronobergs län") run longer than the mock ones and
+              the Name column has room to spare there. */}
+          <col className="hidden w-[202px] lg:table-column xl:w-[256px]" />
           <col className="w-[118px] sm:w-[128px]" />
           <col className="hidden w-[118px] md:table-column" />
           <col className="w-[64px]" />
@@ -359,7 +363,11 @@ function ContactTable({ items, total, moreHref }: { items: Item[]; total: number
                     </Link>
                   </div>
                 </td>
-                <td className="hidden truncate px-2 text-[12.5px] text-ink-muted lg:table-cell">
+                {/* One line, ending in "…" if it still doesn't fit; the full name on hover. */}
+                <td
+                  title={contact.company ?? undefined}
+                  className="hidden truncate px-2 text-[12.5px] text-ink-muted lg:table-cell"
+                >
                   {contact.company ?? <span className="text-ink-hush">—</span>}
                 </td>
                 <td className="px-2 whitespace-nowrap">
