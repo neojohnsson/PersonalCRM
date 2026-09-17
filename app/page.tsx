@@ -30,7 +30,10 @@ export const metadata = { title: `Who needs you today · ${APP_NAME}` };
  *     AI summary ("Asked about your thesis timeline"). Summaries are slice 6;
  *     the subject is what's stored. Going quiet uses the design's own
  *     computed wording, "You wrote 24 days ago. No answer since."
- *   - No "Draft reply" button: drafts are slice 5.
+ *   - Your turn rows have the design's "Draft reply" — a link to the contact's
+ *     draft panel, since the draft is read and edited there (slice 5a). The
+ *     design shows it on one row; here it appears on the row under the pointer
+ *     or keyboard focus, so a list of them doesn't read as nine black pills.
  *   - Long lists stop at a few rows with a link to the full, filtered contact
  *     list; the design is a fixed 900px frame and never had to say.
  *   - Coming up: a touch that's due or overdue has an orange badge, so it
@@ -184,6 +187,7 @@ export default async function Home() {
                 person,
                 line: subjectOf(person),
                 daysClass: "text-accent",
+                draftHref: `/contacts/${person.contact.id}#draft`,
               }))}
               more={
                 yours.length > YOUR_TURN_ROWS
@@ -251,7 +255,13 @@ function quietLine(person: Person<ContactRow>): string {
   return `You wrote ${turn.days} days ago. No answer since.`;
 }
 
-type Row = { person: Person<ContactRow>; line: string; daysClass: string };
+type Row = {
+  person: Person<ContactRow>;
+  line: string;
+  daysClass: string;
+  /** Set on Your turn rows: the design's "Draft reply" button. */
+  draftHref?: string;
+};
 
 /** One of Main's left-hand cards: a coloured dot, a title, and people. */
 function PeopleCard({
@@ -279,8 +289,8 @@ function PeopleCard({
 
       {rows.length > 0 ? (
         <ul className="pb-[5px]">
-          {rows.map(({ person, line, daysClass }) => (
-            <PersonRow key={person.contact.id} person={person} line={line} daysClass={daysClass} />
+          {rows.map((row) => (
+            <PersonRow key={row.person.contact.id} {...row} />
           ))}
         </ul>
       ) : (
@@ -298,14 +308,14 @@ function PeopleCard({
   );
 }
 
-function PersonRow({ person, line, daysClass }: Row) {
+function PersonRow({ person, line, daysClass, draftHref }: Row) {
   const { contact, relationship } = person;
   const name = displayName(contact);
   const hasName = Boolean(contact.first_name?.trim() || contact.last_name?.trim());
   const days = relationship.turn.kind === "none" ? null : relationship.turn.days;
 
   return (
-    <li className="relative flex items-center gap-[13px] px-[22px] py-[11px] transition-colors hover:bg-paper-tint">
+    <li className="group relative flex items-center gap-[13px] px-[22px] py-[11px] transition-colors hover:bg-paper-tint">
       <span
         aria-hidden="true"
         style={avatarColors(contact.primary_email ?? contact.id)}
@@ -331,6 +341,14 @@ function PersonRow({ person, line, daysClass }: Row) {
         </div>
         <span className="truncate text-[12.5px] text-ink-soft">{line}</span>
       </div>
+      {draftHref && (
+        <Link
+          href={draftHref}
+          className="relative z-10 hidden shrink-0 rounded-full bg-ink-deep px-3.5 py-[7px] text-[12px] font-semibold text-white opacity-0 transition hover:bg-ink/85 group-hover:opacity-100 focus-visible:opacity-100 sm:block"
+        >
+          Draft reply
+        </Link>
+      )}
       {days !== null && (
         <span className={`w-[34px] shrink-0 text-right text-[12.5px] font-semibold tabular-nums ${daysClass}`}>
           {days === 0 ? "today" : `${days}d`}
