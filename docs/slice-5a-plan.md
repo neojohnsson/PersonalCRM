@@ -9,14 +9,14 @@ from it.
 
 **Done when** a test proves it — not when it renders:
 
-- [ ] Two-user RLS tests pass for the profile and draft tables
-- [ ] Draft tests pass, with a fake OpenAI and fake Gmail: a draft lands in the app as
+- [x] Two-user RLS tests pass for the profile and draft tables
+- [x] Draft tests pass, with a fake OpenAI and fake Gmail: a draft lands in the app as
       **pending**; nothing reaches Gmail until "Save to Gmail drafts"; the saved draft
       is a reply in the right thread (`threadId`, `In-Reply-To`, `References`,
       `Re:` subject)
-- [ ] The monthly cap covers drafts too: at the cap, no request reaches OpenAI
-- [ ] A test proves there is no send: no code calls Gmail's send endpoints
-- [ ] Profile tests pass: fields saved, lengths checked, only your own profile readable
+- [x] The monthly cap covers drafts too: at the cap, no request reaches OpenAI
+- [x] A test proves there is no send: no code calls Gmail's send endpoints
+- [x] Profile tests pass: fields saved, lengths checked, only your own profile readable
 - [ ] On the Vercel preview with a real mailbox: reconnect Gmail with the draft
       permission, draft a reply in Swedish and in English, edit it, save it, and find it
       in Gmail's Drafts in the right thread

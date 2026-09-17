@@ -32,6 +32,10 @@ _What was decided, and why. Revise when a decision turns out wrong — the histo
 | AI spending | $2 a month per user, checked in the database before every request | Set before the first bill, not after. A reservation under a lock, so two clicks can't both slip under |
 | When the AI runs | Only when you press Generate, one contact at a time | Cost, and sending mail to a third party should be a choice. A new contact asks; it doesn't run |
 | AI summary input | Last 20 emails, quotes and signatures cut, 2,000 characters each | Recent enough to be right, small enough to stay cheap, and nothing credited to the wrong email |
+| Drafting | The AI writes a reply into the app; you read, edit and press Save to Gmail drafts, then send from Gmail | `AGENTS.md`: nothing AI-generated goes straight into a Gmail draft. Two people are involved in every email that leaves — the AI writes, a human approves |
+| Draft model | `gpt-5-mini` (`LLM_MODEL_GOOD`), bigger than the summary model | Drafts are read by another person, and small models write stiff, translated-sounding Swedish (`plan.md` §5.3). About a cent per draft |
+| What drafting knows about you | Your Profile page, your notes on the contact, and the approved summary — nothing else | One page to see, edit and delete. No mail from other contacts, and nothing fetched from a link |
+| Draft replies only | A reply in the contact's latest thread, never a new email | It lands in the right conversation, with In-Reply-To and References. New emails wait until there's a reason for them |
 | AI suggestions | Company, role and next touch suggested with the summary, each taken with one click | Useful straight away, but nothing AI-made reaches the contact without a person pressing its button. Dates only when the emails give one |
 
 ## Trade-offs accepted
