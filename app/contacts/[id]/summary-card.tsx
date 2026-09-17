@@ -9,6 +9,7 @@ import {
   type SourceRef,
   type SummaryPart,
 } from "@/lib/ai/summary-parts";
+import type { ReferralStatus } from "@/lib/relationship/referral";
 import Link from "next/link";
 import {
   applySuggestionAction,
@@ -80,6 +81,7 @@ export function SummaryCard({
   gmailEmail,
   contact,
   askNow,
+  referrals,
 }: {
   contactId: string;
   approved: SavedSummary | null;
@@ -90,6 +92,8 @@ export function SummaryCard({
   contact: ContactNow;
   /** A new contact with mail and no summary: ask whether to generate one now. */
   askNow: boolean;
+  /** For each shown summary with a referral: whether you've written to that person since. */
+  referrals: Record<string, ReferralStatus>;
 }) {
   const [notNow, setNotNow] = useState(false);
   const [generateState, generate, generating] = useActionState<GenerateState>(
@@ -177,22 +181,22 @@ export function SummaryCard({
           <div className="flex flex-col gap-3 rounded-[14px] border border-line px-4 py-3.5">
             <span className={LABEL}>Current{approved.edited ? " · edited by you" : ""}</span>
             <Parts summary={approved} gmailEmail={gmailEmail} />
-            <Suggestions summary={approved} gmailEmail={gmailEmail} contact={contact} />
+            <Suggestions summary={approved} gmailEmail={gmailEmail} contact={contact} referrals={referrals} />
             <form className="mt-auto">
               <PendingButton formAction={discardSummaryAction.bind(null, pending.id)} className={GHOST}>
                 Keep this one
               </PendingButton>
             </form>
           </div>
-          <Proposal summary={pending} gmailEmail={gmailEmail} contact={contact} approveLabel="Use the new one" />
+          <Proposal summary={pending} gmailEmail={gmailEmail} contact={contact} referrals={referrals} approveLabel="Use the new one" />
         </div>
       )}
 
       {pending && !approved && (
-        <Proposal summary={pending} gmailEmail={gmailEmail} contact={contact} approveLabel="Approve" />
+        <Proposal summary={pending} gmailEmail={gmailEmail} contact={contact} referrals={referrals} approveLabel="Approve" />
       )}
 
-      {approved && !pending && <ApprovedSummary summary={approved} gmailEmail={gmailEmail} contact={contact} />}
+      {approved && !pending && <ApprovedSummary summary={approved} gmailEmail={gmailEmail} contact={contact} referrals={referrals} />}
     </section>
   );
 }
@@ -211,11 +215,13 @@ function Proposal({
   summary,
   gmailEmail,
   contact,
+  referrals,
   approveLabel,
 }: {
   summary: SavedSummary;
   gmailEmail: string | null;
   contact: ContactNow;
+  referrals: Record<string, ReferralStatus>;
   approveLabel: string;
 }) {
   return (
@@ -224,7 +230,7 @@ function Proposal({
         New AI version · as of {shortDate(summary.as_of)} · waiting for you
       </span>
       <Parts summary={summary} gmailEmail={gmailEmail} />
-      <Suggestions summary={summary} gmailEmail={gmailEmail} contact={contact} />
+      <Suggestions summary={summary} gmailEmail={gmailEmail} contact={contact} referrals={referrals} />
       <p className="text-[11.5px] leading-[1.5] text-ink-muted">
         Check it against the sources before approving — the AI can be wrong about people.
       </p>
@@ -244,10 +250,12 @@ function ApprovedSummary({
   summary,
   gmailEmail,
   contact,
+  referrals,
 }: {
   summary: SavedSummary;
   gmailEmail: string | null;
   contact: ContactNow;
+  referrals: Record<string, ReferralStatus>;
 }) {
   const [state, save, saving] = useActionState<EditSummaryState, FormData>(
     editSummaryAction.bind(null, summary.id),
@@ -263,7 +271,7 @@ function ApprovedSummary({
     return (
       <>
         <Parts summary={summary} gmailEmail={gmailEmail} />
-        <Suggestions summary={summary} gmailEmail={gmailEmail} contact={contact} />
+        <Suggestions summary={summary} gmailEmail={gmailEmail} contact={contact} referrals={referrals} />
         <div>
           <button type="button" onClick={() => setOpenedAt(saves)} className={GHOST}>
             Edit
@@ -351,18 +359,23 @@ function Suggestions({
   summary,
   gmailEmail,
   contact,
+  referrals,
 }: {
   summary: SavedSummary;
   gmailEmail: string | null;
   contact: ContactNow;
+  referrals: Record<string, ReferralStatus>;
 }) {
   const fields = [
     { field: "company" as const, label: "Company", value: summary.suggested_company, current: contact.company },
     { field: "role" as const, label: "Role", value: summary.suggested_role, current: contact.role },
   ].filter((row) => row.value);
-  const touchReason = summary.suggested_touch_reason;
+  const referral = referrals[summary.id] ?? null;
+  // Already written to the person they referred you to: that's the next step done.
+  const referralDone = referral?.kind === "done";
+  const touchReason = referralDone ? null : summary.suggested_touch_reason;
 
-  if (fields.length === 0 && !touchReason) return null;
+  if (fields.length === 0 && !touchReason && !referral) return null;
 
   return (
     <div className="flex flex-col gap-2.5 border-t border-line-soft pt-3">
@@ -393,6 +406,11 @@ function Suggestions({
             </li>
           );
         })}
+        {referral && summary.suggested_referral_name && (
+          <li className="flex flex-col gap-0.5">
+            <ReferralLine name={summary.suggested_referral_name} status={referral} />
+          </li>
+        )}
         {touchReason && (
           <li className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
             <div className="flex min-w-0 flex-col gap-0.5">
@@ -418,6 +436,51 @@ function Suggestions({
       </ul>
     </div>
   );
+}
+
+/**
+ * What the referral check found in your mail: done, not yet, can't tell which
+ * person, or nobody by that name. Links to their page when they're a contact.
+ */
+function ReferralLine({ name, status }: { name: string; status: ReferralStatus }) {
+  const link = (contactId: string | null, text: string) =>
+    contactId ? (
+      <Link href={`/contacts/${contactId}`} className="font-semibold text-ink-body underline decoration-line-strong underline-offset-2 hover:text-ink">
+        {text}
+      </Link>
+    ) : (
+      <span className="font-semibold text-ink-body">{text}</span>
+    );
+
+  switch (status.kind) {
+    case "done":
+      return (
+        <span className="text-[13px] text-ink-body">
+          <span className="font-semibold text-affirm">✓</span> You wrote to {link(status.contactId, name)} on{" "}
+          {shortDate(status.at)}, after the referral — no next touch needed for it.
+        </span>
+      );
+    case "open":
+      return (
+        <span className="text-[13px] text-ink-body">
+          <span className="text-ink-muted">Referral:</span> you haven&rsquo;t written to {link(status.contactId, name)}{" "}
+          since.
+        </span>
+      );
+    case "ambiguous":
+      return (
+        <span className="text-[12.5px] text-ink-muted">
+          Referral to {name}: {status.count} different people in your mail have that name, so it can&rsquo;t tell
+          whether you&rsquo;ve written to the right one.
+        </span>
+      );
+    case "unknown":
+      return (
+        <span className="text-[12.5px] text-ink-muted">
+          Referral to {name}: nobody by that name in your synced mail yet.
+        </span>
+      );
+  }
 }
 
 /** "Sources: email 1, email 2" linking to Gmail, or "their address …" for one taken from an address. */

@@ -241,6 +241,8 @@ describe("AI summaries and spending", () => {
         { suggested_touch_reason: "x".repeat(301) },
         { suggested_touch_on: "2026-10-01" }, // a date with no reason
         { suggested_touch_why: "x".repeat(301) },
+        { suggested_referral_email: "niklas@combitech.com" }, // 0013: an address with no name
+        { suggested_referral_name: "x".repeat(201) },
       ]) {
         const { error: refused } = await aliceClient
           .from("contact_summaries")
