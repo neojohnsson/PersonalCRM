@@ -323,7 +323,10 @@ function PersonRow({ person, line, daysClass }: Row) {
             {name}
           </Link>
           {contact.company && (
-            <span className="hidden truncate text-[12.5px] text-ink-faint sm:inline">{contact.company}</span>
+            // One line, ending in "…"; the full name on hover.
+            <span title={contact.company} className="hidden min-w-0 truncate text-[12.5px] text-ink-faint sm:inline">
+              {contact.company}
+            </span>
           )}
         </div>
         <span className="truncate text-[12.5px] text-ink-soft">{line}</span>
