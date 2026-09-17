@@ -53,14 +53,18 @@ export const metadata = { title: `Contact · ${APP_NAME}` };
  *     the notes card.
  */
 
+/** How long a new contact keeps asking whether to generate a summary. */
+const ASK_FOR_SUMMARY_DAYS = 7;
+
 const CARD =
   "rounded-[18px] bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
 
 const GHOST_PILL =
   "flex items-center gap-[7px] self-start rounded-full bg-line-soft px-[13px] py-[7px] text-[12px] font-semibold text-ink-body transition-colors hover:bg-chip-track";
 
-export default async function ContactPage({ params }: PageProps<"/contacts/[id]">) {
+export default async function ContactPage({ params, searchParams }: PageProps<"/contacts/[id]">) {
   const { id } = await params;
+  const { touch: suggestionFrom } = await searchParams;
   const user = await requireUser();
   if (!isUuid(id)) notFound();
 
@@ -101,6 +105,21 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
     spentThisMonth(supabase, user.id),
   ]);
   const budget: AiBudget = { spentUsd, capUsd: monthlyCapUsd(), ready: aiIsReady() };
+
+  // "Fill in next touch" on the summary links here with ?touch=<summary id>.
+  // Only an id travels in the address; the suggestion is read from the database.
+  // A contact added in the last week, with mail and no summary, asks whether to
+  // generate one (docs/slice-4-plan.md, Part 8). Adding one by hand lands here.
+  const askForSummary =
+    relationship.messageCount > 0 &&
+    !summaries.approved &&
+    !summaries.pending &&
+    addedWithinDays(contact.created_at, ASK_FOR_SUMMARY_DAYS);
+
+  const suggestion = [summaries.approved, summaries.pending].find((s) => s && s.id === suggestionFrom);
+  const touchPrefill = suggestion?.suggested_touch_reason
+    ? { due_on: suggestion.suggested_touch_on ?? "", reason: suggestion.suggested_touch_reason }
+    : null;
   const pill = turnPill(relationship.turn);
 
   const name = displayName({ ...contact, primary_email: emails[0] ?? null });
@@ -204,6 +223,8 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
           hasMail={relationship.messageCount > 0}
           budget={budget}
           gmailEmail={gmailResult.data?.email ?? null}
+          contact={{ id: contact.id, company: contact.company, role: contact.role, hasNextTouch: nextTouch !== null }}
+          askNow={askForSummary}
         />
 
         <div className="flex flex-col gap-[18px] lg:flex-row">
@@ -243,7 +264,14 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
           </section>
 
           <div className="flex flex-col gap-3.5 lg:w-[392px] lg:shrink-0">
-            <NextTouchCard contactId={contact.id} touch={nextTouch} today={todayIn()} />
+            <NextTouchCard
+              // A new key when a suggestion arrives, so the form opens fresh with it.
+              key={touchPrefill ? `prefill:${suggestion!.id}` : "touch"}
+              contactId={contact.id}
+              touch={nextTouch}
+              today={todayIn()}
+              prefill={touchPrefill}
+            />
 
             <section className={`${CARD} flex flex-1 flex-col gap-[11px] px-5 py-[17px]`}>
               <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Open thread</h2>
@@ -280,6 +308,11 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
       </main>
     </AppShell>
   );
+}
+
+/** Whether a contact was added within the last `days` days. */
+function addedWithinDays(createdAt: string, days: number, now: Date = new Date()): boolean {
+  return now.getTime() - new Date(createdAt).getTime() < days * 24 * 60 * 60 * 1000;
 }
 
 /** Whether the server has what the AI needs. The key itself never leaves the server. */

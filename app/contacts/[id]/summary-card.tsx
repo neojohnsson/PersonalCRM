@@ -9,7 +9,9 @@ import {
   type SourceRef,
   type SummaryPart,
 } from "@/lib/ai/summary-parts";
+import Link from "next/link";
 import {
+  applySuggestionAction,
   approveSummaryAction,
   discardSummaryAction,
   editSummaryAction,
@@ -33,6 +35,12 @@ import {
  *   pending only       the AI's version, with Approve and Discard
  *   approved           the four parts, sources, Edit and Regenerate
  *   approved + pending the two side by side: keep yours, or use the new one
+ *
+ * Under a summary's parts: its suggestions for the contact (Part 7) — company
+ * and role with one click each, and a next touch that fills in the form.
+ *
+ * A contact added in the last week, with mail and no summary, asks straight
+ * away whether to generate one (Part 8). It asks; it never runs by itself.
  */
 
 const CARD =
@@ -53,6 +61,9 @@ const PART_LABELS: Record<SummaryPart, string> = {
   next_step: "Next step",
 };
 
+/** What the contact holds now, so a suggestion knows whether it would fill or replace. */
+export type ContactNow = { id: string; company: string | null; role: string | null; hasNextTouch: boolean };
+
 export type AiBudget = {
   spentUsd: number;
   capUsd: number;
@@ -67,6 +78,8 @@ export function SummaryCard({
   hasMail,
   budget,
   gmailEmail,
+  contact,
+  askNow,
 }: {
   contactId: string;
   approved: SavedSummary | null;
@@ -74,7 +87,11 @@ export function SummaryCard({
   hasMail: boolean;
   budget: AiBudget;
   gmailEmail: string | null;
+  contact: ContactNow;
+  /** A new contact with mail and no summary: ask whether to generate one now. */
+  askNow: boolean;
 }) {
+  const [notNow, setNotNow] = useState(false);
   const [generateState, generate, generating] = useActionState<GenerateState>(
     generateSummaryAction.bind(null, contactId),
     null,
@@ -83,6 +100,8 @@ export function SummaryCard({
   // A cent is more than any one summary costs (lib/ai/models.ts); below that,
   // the database would refuse the reservation anyway.
   const budgetLeft = budget.capUsd - budget.spentUsd >= 0.01;
+  // While the new-contact question shows, it holds the only Generate button.
+  const asking = askNow && !notNow && !approved && !pending;
   const canGenerate = hasMail && budget.ready && budgetLeft && !generating;
   const whyNot = !budget.ready
     ? "The AI isn't set up on this server."
@@ -111,7 +130,7 @@ export function SummaryCard({
           {approved && <Stamp summary={approved} />}
         </div>
         <div className="flex flex-col items-end gap-1">
-          {generateButton}
+          {!asking && generateButton}
           <span className="text-[11px] font-medium text-ink-faint">
             {whyNot ?? `AI budget: $${budget.spentUsd.toFixed(2)} of $${budget.capUsd.toFixed(2)} this month`}
           </span>
@@ -124,7 +143,27 @@ export function SummaryCard({
         </p>
       )}
 
-      {!approved && !pending && (
+      {asking && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] bg-info-tint/60 px-4 py-3.5">
+          <div className="flex max-w-[560px] flex-col gap-1">
+            <span className="text-[13.5px] font-semibold text-ink">Generate a summary now?</span>
+            <span className="text-[12.5px] leading-[1.5] text-ink-soft">
+              A new contact with mail. The AI can suggest who they are, their company and role, and a
+              next touch — all of it waits for you to check. Costs well under a cent.
+            </span>
+          </div>
+          <form action={generate} className="flex flex-wrap gap-[7px]">
+            <button type="submit" disabled={!canGenerate} className={SOLID}>
+              {generating ? "Reading your mail…" : "Generate summary"}
+            </button>
+            <button type="button" disabled={generating} onClick={() => setNotNow(true)} className={GHOST}>
+              Not now
+            </button>
+          </form>
+        </div>
+      )}
+
+      {!approved && !pending && !asking && (
         <p className="max-w-[640px] text-[13px] leading-[1.55] text-ink-soft">
           Who they are, how you know them, what you&rsquo;ve discussed and what&rsquo;s next — written
           by the AI from your last 20 emails with them, each part linked to the emails it came from.
@@ -138,19 +177,22 @@ export function SummaryCard({
           <div className="flex flex-col gap-3 rounded-[14px] border border-line px-4 py-3.5">
             <span className={LABEL}>Current{approved.edited ? " · edited by you" : ""}</span>
             <Parts summary={approved} gmailEmail={gmailEmail} />
+            <Suggestions summary={approved} gmailEmail={gmailEmail} contact={contact} />
             <form className="mt-auto">
               <PendingButton formAction={discardSummaryAction.bind(null, pending.id)} className={GHOST}>
                 Keep this one
               </PendingButton>
             </form>
           </div>
-          <Proposal summary={pending} gmailEmail={gmailEmail} approveLabel="Use the new one" />
+          <Proposal summary={pending} gmailEmail={gmailEmail} contact={contact} approveLabel="Use the new one" />
         </div>
       )}
 
-      {pending && !approved && <Proposal summary={pending} gmailEmail={gmailEmail} approveLabel="Approve" />}
+      {pending && !approved && (
+        <Proposal summary={pending} gmailEmail={gmailEmail} contact={contact} approveLabel="Approve" />
+      )}
 
-      {approved && !pending && <ApprovedSummary summary={approved} gmailEmail={gmailEmail} />}
+      {approved && !pending && <ApprovedSummary summary={approved} gmailEmail={gmailEmail} contact={contact} />}
     </section>
   );
 }
@@ -168,10 +210,12 @@ function Stamp({ summary }: { summary: SavedSummary }) {
 function Proposal({
   summary,
   gmailEmail,
+  contact,
   approveLabel,
 }: {
   summary: SavedSummary;
   gmailEmail: string | null;
+  contact: ContactNow;
   approveLabel: string;
 }) {
   return (
@@ -180,6 +224,7 @@ function Proposal({
         New AI version · as of {shortDate(summary.as_of)} · waiting for you
       </span>
       <Parts summary={summary} gmailEmail={gmailEmail} />
+      <Suggestions summary={summary} gmailEmail={gmailEmail} contact={contact} />
       <p className="text-[11.5px] leading-[1.5] text-ink-muted">
         Check it against the sources before approving — the AI can be wrong about people.
       </p>
@@ -195,7 +240,15 @@ function Proposal({
   );
 }
 
-function ApprovedSummary({ summary, gmailEmail }: { summary: SavedSummary; gmailEmail: string | null }) {
+function ApprovedSummary({
+  summary,
+  gmailEmail,
+  contact,
+}: {
+  summary: SavedSummary;
+  gmailEmail: string | null;
+  contact: ContactNow;
+}) {
   const [state, save, saving] = useActionState<EditSummaryState, FormData>(
     editSummaryAction.bind(null, summary.id),
     null,
@@ -210,6 +263,7 @@ function ApprovedSummary({ summary, gmailEmail }: { summary: SavedSummary; gmail
     return (
       <>
         <Parts summary={summary} gmailEmail={gmailEmail} />
+        <Suggestions summary={summary} gmailEmail={gmailEmail} contact={contact} />
         <div>
           <button type="button" onClick={() => setOpenedAt(saves)} className={GHOST}>
             Edit
@@ -284,6 +338,77 @@ function Parts({ summary, gmailEmail }: { summary: SavedSummary; gmailEmail: str
         );
       })}
     </dl>
+  );
+}
+
+/**
+ * The summary's suggestions for the contact, each with its own button:
+ * "Set as company" when the field is empty, "Replace …" when it holds something
+ * else, "already on the contact" when it's the same. The next touch opens the
+ * Next touch form, filled in — saving that is the click.
+ */
+function Suggestions({
+  summary,
+  gmailEmail,
+  contact,
+}: {
+  summary: SavedSummary;
+  gmailEmail: string | null;
+  contact: ContactNow;
+}) {
+  const fields = [
+    { field: "company" as const, label: "Company", value: summary.suggested_company, current: contact.company },
+    { field: "role" as const, label: "Role", value: summary.suggested_role, current: contact.role },
+  ].filter((row) => row.value);
+  const touchReason = summary.suggested_touch_reason;
+
+  if (fields.length === 0 && !touchReason) return null;
+
+  return (
+    <div className="flex flex-col gap-2.5 border-t border-line-soft pt-3">
+      <span className={LABEL}>Suggested for the contact</span>
+      <ul className="flex flex-col gap-2.5">
+        {fields.map(({ field, label, value, current }) => {
+          const same = (current ?? "").trim() === value!.trim();
+          return (
+            <li key={field} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <span className="text-[13px] text-ink-body">
+                  <span className="text-ink-muted">{label}:</span> {value}
+                </span>
+                <Sources sources={summary.sources[field] ?? []} gmailEmail={gmailEmail} />
+              </div>
+              {same ? (
+                <span className="text-[11.5px] font-medium text-ink-faint">Already on the contact</span>
+              ) : (
+                <form>
+                  <PendingButton
+                    formAction={applySuggestionAction.bind(null, summary.id, field, current)}
+                    className={GHOST}
+                  >
+                    {current ? `Replace “${current}”` : `Set as ${label.toLowerCase()}`}
+                  </PendingButton>
+                </form>
+              )}
+            </li>
+          );
+        })}
+        {touchReason && (
+          <li className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span className="text-[13px] text-ink-body">
+                <span className="text-ink-muted">Next touch:</span> {touchReason}
+                {summary.suggested_touch_on ? ` · ${shortDate(summary.suggested_touch_on)}` : " · no date in the emails"}
+              </span>
+              <Sources sources={summary.sources.next_touch ?? []} gmailEmail={gmailEmail} />
+            </div>
+            <Link href={`/contacts/${contact.id}?touch=${summary.id}#next-touch`} scroll={false} className={GHOST}>
+              {contact.hasNextTouch ? "Replace next touch…" : "Fill in next touch"}
+            </Link>
+          </li>
+        )}
+      </ul>
+    </div>
   );
 }
 

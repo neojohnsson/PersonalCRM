@@ -17,6 +17,9 @@ import { finishTouch, saveNextTouch, snoozeTouch, type SetNextTouchState } from 
  *     or move the date by hand, and a touch is set by hand in this slice.
  *   - No touch yet: the card holds the form. The design only shows a card with
  *     a touch in it; the form uses the add-contact form's inputs and labels.
+ *   - "Fill in next touch" on the AI summary opens this form pre-filled
+ *     (slice 4, docs/slice-4-plan.md Part 7). Nothing is saved until you press
+ *     Save — that press is the approval.
  */
 
 const CARD =
@@ -31,11 +34,14 @@ export function NextTouchCard({
   contactId,
   touch,
   today,
+  prefill = null,
 }: {
   contactId: string;
   touch: NextTouch | null;
   /** YYYY-MM-DD in Swedish time, from the server, so both sides agree on "today". */
   today: string;
+  /** A summary's suggestion to start the form from; the date is "" when the emails gave none. */
+  prefill?: { due_on: string; reason: string } | null;
 }) {
   const [state, formAction, pending] = useActionState<SetNextTouchState, FormData>(
     saveNextTouch.bind(null, contactId),
@@ -45,8 +51,11 @@ export function NextTouchCard({
   // The form is open while `openedAt` equals the number of saves so far: a
   // successful save bumps `state.saved`, and that closes it — no effect needed.
   const saves = state?.saved ?? 0;
-  const [openedAt, setOpenedAt] = useState<number | null>(null);
+  const [openedAt, setOpenedAt] = useState<number | null>(prefill ? 0 : null);
   const editing = touch === null || openedAt === saves;
+  // The suggestion fills the form it opened; "Change" later starts from the touch itself.
+  const [fromSuggestion, setFromSuggestion] = useState(prefill !== null);
+  const suggested = fromSuggestion && editing ? prefill : null;
 
   // A failed save leaves the form open with its errors and what was typed;
   // otherwise the form starts from the touch as it is.
@@ -54,10 +63,10 @@ export function NextTouchCard({
   const values =
     state && Object.keys(errors).length > 0
       ? state.values
-      : { due_on: touch?.due_on ?? "", reason: touch?.reason ?? "" };
+      : (suggested ?? { due_on: touch?.due_on ?? "", reason: touch?.reason ?? "" });
 
   return (
-    <section className={`${CARD} flex flex-col gap-3 px-5 py-[17px]`}>
+    <section id="next-touch" className={`${CARD} flex scroll-mt-4 flex-col gap-3 px-5 py-[17px]`}>
       {touch && !editing ? (
         <>
           <div className="flex items-start justify-between gap-3">
@@ -81,7 +90,10 @@ export function NextTouchCard({
             <GhostSubmit formAction={finishTouch.bind(null, touch.id, "done")}>Mark done</GhostSubmit>
             <button
               type="button"
-              onClick={() => setOpenedAt(saves)}
+              onClick={() => {
+                setFromSuggestion(false);
+                setOpenedAt(saves);
+              }}
               className="rounded-full px-[11px] py-1.5 text-[12px] font-semibold text-ink-muted transition-colors hover:text-ink"
             >
               Change
@@ -92,10 +104,17 @@ export function NextTouchCard({
         <form action={formAction} noValidate className="flex flex-col gap-3">
           <div className="flex flex-col gap-1">
             <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Next touch</h2>
-            {!touch && (
-              <p className="text-[12.5px] leading-[1.45] text-ink-soft">
-                Nothing planned. Pick a day to get back in touch, and why.
+            {suggested ? (
+              <p className="text-[12.5px] leading-[1.45] text-info-ink">
+                Filled in from the AI summary{suggested.due_on ? "" : " — the emails gave no date, so pick one"}.
+                Check it, then save.
               </p>
+            ) : (
+              !touch && (
+                <p className="text-[12.5px] leading-[1.45] text-ink-soft">
+                  Nothing planned. Pick a day to get back in touch, and why.
+                </p>
+              )
             )}
           </div>
 

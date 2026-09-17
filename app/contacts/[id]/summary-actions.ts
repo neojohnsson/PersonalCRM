@@ -15,6 +15,7 @@ import {
   type SummaryFormErrors,
   type SummaryFormValues,
 } from "@/lib/ai/summary-record";
+import { applySuggestedField, type SuggestedField } from "@/lib/ai/suggestions";
 import { requireUser } from "@/lib/auth";
 import { isUuid } from "@/lib/contacts/contact-form";
 import { GmailApiError } from "@/lib/google/gmail";
@@ -116,6 +117,25 @@ export async function editSummaryAction(
     Object.entries(parsed.parts).map(([part, text]) => [part, text ?? ""]),
   ) as SummaryFormValues;
   return { errors: {}, values, saved: saves + 1 };
+}
+
+/**
+ * "Set as company" / "Replace Fortnox AB": one field from the summary onto the
+ * contact. `expected` is what the button showed in that field; if it has
+ * changed since, nothing is written and the refreshed page shows the new value.
+ */
+export async function applySuggestionAction(
+  summaryId: string,
+  field: SuggestedField,
+  expected: string | null,
+): Promise<void> {
+  const user = await requireUser();
+  if (!isUuid(summaryId)) notFound();
+  if (field !== "company" && field !== "role") notFound();
+  if (expected !== null && (typeof expected !== "string" || expected.length > 200)) notFound();
+
+  await applySuggestedField(await createClient(), user.id, summaryId, field, expected);
+  refresh();
 }
 
 /** Already approved, discarded or replaced in another tab: the refresh shows how things stand. */
