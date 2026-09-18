@@ -21,11 +21,12 @@ import {
  * whole flow — against the real database, with fake Gmail and fake OpenAI.
  */
 
-const message = (n: number, from: "you" | "them", text: string): ConversationMessage => ({
+const message = (n: number, from: "you" | "them" | "other", text: string, who: string | null = null): ConversationMessage => ({
   ref: `m${n}`,
   messageId: `gmail-${n}`,
   threadId: "thread-1",
   from,
+  who,
   at: new Date(Date.UTC(2026, 8, n, 9)),
   subject: n === 1 ? "Examensarbete" : "Re: Examensarbete",
   text,
@@ -406,6 +407,10 @@ describe("generateSummary", () => {
     expect(calls.openAi[0].input).toContain("[a1] karin@fortnox.se");
     expect(calls.openAi).toHaveLength(1);
     expect(calls.openAi[0].input).toContain("[m2] 2026-09-02 · from them");
+    // A thread with someone else in it names them (docs/thread-context-plan.md).
+    expect(buildInput("Karin", ADDRESSES, [message(1, "other", "Hej!", "Pontus Berglund")], TODAY)).toContain(
+      "from Pontus Berglund",
+    );
     expect(calls.openAi[0].input).toContain("I run the platform team at Fortnox");
 
     expect(summary).toMatchObject({
