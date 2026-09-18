@@ -10,6 +10,7 @@ import { requireUser } from "@/lib/auth";
 import { displayName } from "@/lib/contacts/display";
 import { ilikePattern, normaliseQuery } from "@/lib/contacts/search";
 import { avatarColors, countOf, daysAgo, initials } from "@/lib/format";
+import { countDuplicates } from "@/lib/contacts/duplicate-list";
 import { FILTERS, countByFilter, hasTag, matchesFilter, parseFilter, topTags } from "@/lib/relationship/list";
 import { NO_MAIL, loadRelationships, type Relationship } from "@/lib/relationship/load";
 import type { Band } from "@/lib/relationship/warmth";
@@ -36,6 +37,8 @@ export const metadata = { title: `Contacts · ${APP_NAME}` };
  *   - A white Sync now pill beside Add contact — the temporary button
  *     (slice-1-plan.md, decision 5) — and the status line above the table.
  *   - "Sorted by Whose turn" is a label, not a menu: it's the only order.
+ *   - A line above the table when contacts look like the same person twice
+ *     (slice 6a), leading to /contacts/duplicates.
  *   - The design has no visible heading; the page has a hidden one.
  */
 
@@ -100,7 +103,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
   const requested = typeof params.show === "string" ? Number.parseInt(params.show, 10) : NaN;
   const limit = requested > 0 ? Math.min(requested, MAX_ROWS) : PAGE_SIZE;
 
-  const [contacts, relationships, syncResult, seenOnceResult, totalResult] = await Promise.all([
+  const [contacts, relationships, syncResult, seenOnceResult, totalResult, duplicates] = await Promise.all([
     readAll<ContactRow>((from, to) => {
       let page = supabase
         .from("contact_list")
@@ -122,6 +125,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
       .eq("tier", "seen_once")
       .is("contact_id", null),
     supabase.from("contacts").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    countDuplicates(supabase, user.id),
   ]);
   if (syncResult.error) throw supabaseError(syncResult.error, "Couldn't load the sync status");
   if (seenOnceResult.error) throw supabaseError(seenOnceResult.error, "Couldn't count Seen once");
@@ -226,7 +230,18 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
           ))}
         </nav>
 
-        <StatusLine line={describeSync(sync, totalContacts)} />
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <StatusLine line={describeSync(sync, totalContacts)} />
+          {duplicates > 0 && (
+            <Link
+              href="/contacts/duplicates"
+              className="text-[12.5px] font-medium text-ink-muted underline decoration-line-strong underline-offset-2 hover:text-ink"
+            >
+              {countOf(duplicates, "possible duplicate")} — look at{" "}
+              {duplicates === 1 ? "it" : "them"}
+            </Link>
+          )}
+        </div>
 
         {shown.length > 0 ? (
           <ContactTable
