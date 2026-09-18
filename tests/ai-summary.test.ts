@@ -56,6 +56,14 @@ describe("buildInput", () => {
     expect(
       buildInput("Karin", ADDRESSES, messages, TODAY, { due_on: "2026-09-20", reason: "Contact Pontus" }),
     ).toContain("Already planned by the user: Contact Pontus — 2026-09-20");
+
+    // Plans with other people in the same threads count too: Pontus's next
+    // touch lives on Pontus's contact, not on this one.
+    const withOthers = buildInput("Karin", ADDRESSES, messages, TODAY, null, [
+      "Pontus Berglund — 2026-09-21 — Follow up about the opportunity",
+    ]);
+    expect(withOthers).toContain("don't suggest contacting them again");
+    expect(withOthers).toContain("Pontus Berglund — 2026-09-21");
   });
 
   it("gives today, the contact's addresses and each message with a ref, oldest first", () => {
@@ -82,7 +90,7 @@ describe("the instructions and schema", () => {
     expect(INSTRUCTIONS).toMatch(/negations/);
     expect(INSTRUCTIONS).toMatch(/You don't pick the day/);
     expect(INSTRUCTIONS).toMatch(/referral:/);
-    expect(INSTRUCTIONS).toMatch(/don't repeat what they have planned/);
+    expect(INSTRUCTIONS).toMatch(/Don't repeat a plan they already have/);
   });
 
   it("is strict: every part required, nothing extra", () => {

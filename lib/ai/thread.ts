@@ -34,22 +34,29 @@ type ThreadRow = {
   direction: "inbound" | "outbound";
   from_email: string;
   from_name: string | null;
+  to_emails: string[];
+  cc_emails: string[];
   subject: string | null;
 };
 
-const COLUMNS = "gmail_message_id, thread_id, internal_date, direction, from_email, from_name, subject";
+const COLUMNS =
+  "gmail_message_id, thread_id, internal_date, direction, from_email, from_name, to_emails, cc_emails, subject";
 
-/** Every message of the threads this contact is in, oldest first. */
-export async function loadThreadMessages(
+/**
+ * Every message of the threads this contact is in, oldest first, and every
+ * address that took part in them — the people the conversation involves, which
+ * is how a summary knows whether you already have plans with them.
+ */
+export async function loadThreadContext(
   db: SupabaseClient,
   userId: string,
   contactId: string,
-): Promise<ThreadItem[]> {
+): Promise<{ items: ThreadItem[]; participants: string[] }> {
   const [touches, addresses] = await Promise.all([
     contactTouches(db, userId, contactId),
     contactAddresses(db, userId, contactId),
   ]);
-  if (!touches || touches.length === 0) return [];
+  if (!touches || touches.length === 0) return { items: [], participants: [] };
 
   const threadIds = [...new Set(touches.map((touch) => touch.threadId))];
   const rows = await readAll<ThreadRow>(
@@ -66,9 +73,26 @@ export async function loadThreadMessages(
 
   const theirs = new Set(addresses.map((address) => address.toLowerCase()));
 
-  return rows
-    .map((row) => label(row, theirs))
-    .sort((a, b) => a.at.getTime() - b.at.getTime());
+  const participants = new Set<string>();
+  for (const row of rows) {
+    for (const address of [row.from_email, ...(row.to_emails ?? []), ...(row.cc_emails ?? [])]) {
+      if (address) participants.add(address.toLowerCase());
+    }
+  }
+
+  return {
+    items: rows.map((row) => label(row, theirs)).sort((a, b) => a.at.getTime() - b.at.getTime()),
+    participants: [...participants],
+  };
+}
+
+/** Just the messages, for callers that don't care who else was on them. */
+export async function loadThreadMessages(
+  db: SupabaseClient,
+  userId: string,
+  contactId: string,
+): Promise<ThreadItem[]> {
+  return (await loadThreadContext(db, userId, contactId)).items;
 }
 
 function label(row: ThreadRow, theirs: Set<string>): ThreadItem {

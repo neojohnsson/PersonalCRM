@@ -1,8 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { aiConfig, type AiConfig } from "@/lib/ai/config";
 import { readConversation, type ConversationMessage } from "@/lib/ai/conversation";
-import { loadThreadMessages, writerOf } from "@/lib/ai/thread";
-import { openNextTouch } from "@/lib/relationship/next-touch";
+import { loadThreadContext, writerOf } from "@/lib/ai/thread";
+import { openNextTouch, openNextTouches } from "@/lib/relationship/next-touch";
 import { estimateTokens, maxCostOf } from "@/lib/ai/models";
 import { createStructuredResponse, type JsonSchema } from "@/lib/ai/openai";
 import { withSpendCap } from "@/lib/ai/spend";
@@ -91,7 +91,7 @@ The suggestions, which the user may copy onto the contact:
   - they_will_get_back: they said they would come back to the user.
   - later_event: it depends on something later, like "when your internship approaches" or "in the spring". Put the month in "month" as YYYY-MM only if the messages name one.
   - nothing_open: nothing is left to do. Then "reason" is null.
-  "why" is one short sentence explaining that timing, based on the messages. If the user already has a next touch planned (it is given below) that covers what needs doing, use timing "nothing_open" and null reason — don't repeat what they have planned. Only suggest one when it is about something else, or clearly needs a different date.
+  "why" is one short sentence explaining that timing, based on the messages. If the user already has a next touch planned — with this contact or with someone else in these threads, both given below — that covers what needs doing, use timing "nothing_open" and null reason. Don't repeat a plan they already have, and don't suggest contacting a person they already have a date for. Only suggest one when it is about something else, or clearly needs a different date.
 - referral: the people the contact pointed the user to, one entry each — "Oskar or Pontus" is two entries, not one name. Each has the "name" as written and an "email" only if a message gives it. Cite the message where the referral was made. An empty list when nobody was named. Leave "date" and "month" null unless the rules above say to fill them. Never make up a date. Watch for negations: "I can't before the 20th" is not a promise for the 20th. You don't pick the day — the app does, from the timing.`;
 
 const TEXT_WITH_SOURCES: JsonSchema = {
@@ -186,6 +186,8 @@ export function buildInput(
   today: string,
   /** What the user has already planned with this contact, if anything. */
   planned?: { due_on: string; reason: string | null } | null,
+  /** Plans with other people in these threads: "Pontus Berglund — 2026-09-21 — …". */
+  plannedWithOthers?: string[],
 ): string {
   const addressLines = addresses.map((address, index) => `[a${index + 1}] ${address}`);
   const messages = conversation.map((message) =>
@@ -202,8 +204,13 @@ export function buildInput(
     planned
       ? `Already planned by the user: ${planned.reason ?? "a next touch"} — ${planned.due_on}`
       : "Already planned by the user: nothing",
+    (plannedWithOthers ?? []).length > 0
+      ? `Already planned with other people in these threads — don't suggest contacting them again:\n${(plannedWithOthers ?? []).join("\n")}`
+      : null,
     `Messages, oldest first:\n\n${messages.join("\n\n")}`,
-  ].join("\n\n");
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 // ── Checking the answer ─────────────────────────────────────────────────────
@@ -381,6 +388,42 @@ function lastDays(conversation: ConversationMessage[]): { lastFromYou: string | 
   return { lastFromYou: last("you"), lastFromThem: last("them") };
 }
 
+/**
+ * What the user has already planned with the other people in these threads.
+ * Their own contacts hold those next touches, so a summary of one contact
+ * would otherwise tell you to contact someone you already have a date for.
+ */
+async function plannedWithParticipants(
+  db: SupabaseClient,
+  userId: string,
+  contactId: string,
+  participants: string[],
+): Promise<string[]> {
+  if (participants.length === 0) return [];
+
+  const { data: owners, error } = await db
+    .from("contact_emails")
+    .select("contact_id, email")
+    .eq("user_id", userId)
+    .in("email", participants);
+  if (error) throw supabaseError(error, "Couldn't load the people in these threads");
+
+  const otherIds = [...new Set(owners.map((row) => row.contact_id as string))].filter((id) => id !== contactId);
+  if (otherIds.length === 0) return [];
+
+  const [touches, names] = await Promise.all([
+    openNextTouches(db, userId, otherIds),
+    db.from("contact_list").select("id, first_name, last_name, primary_email").eq("user_id", userId).in("id", otherIds),
+  ]);
+  if (names.error) throw supabaseError(names.error, "Couldn't load the people in these threads");
+
+  return [...touches.entries()].map(([id, touch]) => {
+    const contact = names.data.find((row) => row.id === id);
+    const who = contact ? displayName(contact) : "someone in this thread";
+    return `${who} — ${touch.due_on} — ${touch.reason ?? "a next touch"}`;
+  });
+}
+
 /** An address the emails gave, or null if it isn't one. */
 function cleanEmail(value: string | null | undefined): string | null {
   const email = value?.trim().toLowerCase() ?? "";
@@ -450,18 +493,29 @@ export async function generateSummary(
   // The whole threads the contact is in, not only their own messages: a reply
   // from someone they copied in is part of the conversation
   // (docs/thread-context-plan.md, Part 1).
-  const thread = await loadThreadMessages(db, userId, contactId);
+  const { items: thread, participants } = await loadThreadContext(db, userId, contactId);
   if (thread.length === 0) throw new NoMailToSummarise();
 
   const token = await (options.accessToken ?? getAccessToken)(db, userId);
   const conversation = await readConversation(token, thread);
   if (conversation.length === 0) throw new NoMailToSummarise();
 
-  // What the user has already planned, so the model doesn't suggest it again
+  // What the user has already planned — with this contact, and with anyone
+  // else in these threads, so the model doesn't suggest what's already there
   // (docs/thread-context-plan.md, Part 3).
-  const planned = await openNextTouch(db, userId, contactId);
+  const [planned, plannedWithOthers] = await Promise.all([
+    openNextTouch(db, userId, contactId),
+    plannedWithParticipants(db, userId, contactId, participants),
+  ]);
 
-  const input = buildInput(displayName(contactResult.data), addresses, conversation, today, planned);
+  const input = buildInput(
+    displayName(contactResult.data),
+    addresses,
+    conversation,
+    today,
+    planned,
+    plannedWithOthers,
+  );
   const estimateUsd = maxCostOf(
     config.model,
     // The rules, the messages, and some room for the schema and formatting.
