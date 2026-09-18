@@ -34,7 +34,7 @@ Plain rules over data already stored. A pair is suggested when **any** of these 
 | Signal | Why it is safe |
 |---|---|
 | **Same full name** (ignoring case and accents) | "Carl-Johan Hultenheim" twice is one person, near enough to ask |
-| **A reply from a new address in your own thread** | You wrote to one address and someone answered from another in the same thread. The strongest signal there is, and exactly the Atea case |
+| **A reply from a new address in your own thread** | Only together with one of the others — sharing a thread alone is not evidence, since Pontus is in Carl-Johan's thread and is a different person. With a matching name it is the strongest signal there is, and exactly the Atea case |
 | **Same phone number** (digits only, last 9) | Typed by you, so it means what it says |
 | **Same name built from the address** — `carl-johan.hultenheim@` on both sides | Catches the unnamed half a sync creates |
 
