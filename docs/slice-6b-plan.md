@@ -16,15 +16,15 @@ nothing and can't be wrong about what someone said.
 
 **Done when** a test proves it — not when it renders:
 
-- [ ] Picking tests pass: the mix and the order, one person per reason, never more than
+- [x] Picking tests pass: the mix and the order, one person per reason, never more than
       8, never someone you have already planned a next touch with this week
-- [ ] Each line says why in words that come from the data ("you replied 24 days ago and
+- [x] Each line says why in words that come from the data ("you replied 24 days ago and
       nothing came back"), and the same person is never listed twice
-- [ ] "About to go cold" catches a warm relationship before it crosses into cold, and
+- [x] "About to go cold" catches a warm relationship before it crosses into cold, and
       not after
-- [ ] The week is Monday to Sunday in Swedish time, and "this week's brief" is the same
+- [x] The week is Monday to Sunday in Swedish time, and "this week's brief" is the same
       list all week
-- [ ] On the preview with a real mailbox: a brief with real people and real reasons
+- [x] On the preview with a real mailbox: a brief with real people and real reasons
 
 ## Part 1 — Who is in the brief
 
@@ -74,3 +74,20 @@ threads — that's 6c.
 2. Picking the brief, as pure functions with tests
 3. `/brief`, the sidebar entry and the Monday line on `/`
 4. Preview check, PR
+
+## What the preview showed — 2026-09-18
+
+The brief works as specified and the specification is too thin. On a real mailbox
+it listed people who need nothing:
+
+- a contact who handed the conversation to a colleague, after which the colleague
+  was written to — the old thread is finished, but "they wrote 9 days ago" is still
+  true, so he was Waiting on you;
+- a contact whose own summary says to get back to him when the thesis period
+  approaches, months away, listed as if he were owed a reply today;
+- a contact no reply is owed to at all.
+
+None of that is the picking rules. It's that whose-turn can only read message
+headers, and nothing in the app can tell it otherwise: no way to say a thread is
+finished, that a person is never chased, and a next touch silences the prompt only
+inside the brief. That is slice 6c, `docs/slice-6c-plan.md`.
