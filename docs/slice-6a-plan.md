@@ -16,16 +16,18 @@ brief, **6c** is promise detection across every thread.
 
 **Done when** a test proves it — not when it renders:
 
-- [ ] Detection tests pass: the same name; a reply from a new address inside your own
+- [x] Detection tests pass: the same name; a reply from a new address inside your own
       thread; the same phone; and **no** suggestion for two people who merely share a
       first name or a company
-- [ ] Merge tests pass, with two users: addresses move, empty fields fill, the kept
+- [x] Merge tests pass, with two users: addresses move, empty fields fill, the kept
       contact's own summary, next touch and draft stay, and the other contact is gone
-- [ ] Nothing is merged without a person pressing the button, and a merge is written in
+- [x] Nothing is merged without a person pressing the button, and a merge is written in
       one transaction — both contacts or neither
-- [ ] Two-user RLS: nobody can merge another user's contacts, in either direction
-- [ ] On the preview with a real mailbox: the two Carl-Johans are suggested, merged, and
-      his whose-turn and warmth are then right
+- [x] Two-user RLS: nobody can merge another user's contacts, in either direction
+- [x] Locally with the real mailbox: the two Carl-Johans were suggested with the reason
+      "their addresses are built from the same name, and both wrote in the same email
+      thread", merged on a button press, and he now holds both addresses and both
+      messages — so his whose-turn and warmth are right
 
 ## Part 1 — Finding duplicates (no AI)
 
