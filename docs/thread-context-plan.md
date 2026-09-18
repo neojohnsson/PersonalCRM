@@ -58,12 +58,6 @@ and only threads this contact is part of.
 - The suggested next touch names only the people still outstanding, and disappears when
   none are.
 
-## Not in this
-
-The same person on two addresses is still two contacts. **Duplicate detection and merge
-is slice 6** (`plan.md` §3.7): suggest, never merge on its own. A reply from a new
-address inside your own thread is a strong signal to feed it there.
-
 ## Part 3 — Knowing what you have already planned (added 2026-09-18)
 
 Found while testing the above: a summary suggested "Contact Pontus" when a next touch
@@ -75,6 +69,12 @@ for Pontus was already saved — on **Pontus's own contact**, which the summary 
   replaces it", and marks a referred person who has a next touch of their own.
 - A referred person who is already contacted **or** already planned drops out of "Still
   to contact"; when none are left, no next touch is suggested.
+
+## Not in this
+
+The same person on two addresses is still two contacts. **Duplicate detection and merge
+is slice 6** (`plan.md` §3.7): suggest, never merge on its own. A reply from a new
+address inside your own thread is a strong signal to feed it there.
 
 ## Commit order
 
