@@ -265,6 +265,10 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
         <StatStrip relationship={relationship} hasEmails={emails.length > 0} />
 
         <DraftCard
+          // A new key when the draft changes, so the panel's text box starts
+          // from the new draft instead of keeping the state it had before
+          // (a draft generated on this page left the box empty otherwise).
+          key={draft?.id ?? "no-draft"}
           contactId={contact.id}
           draft={draft}
           lastSaved={savedDraft}

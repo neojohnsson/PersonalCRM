@@ -77,6 +77,8 @@ export function DraftCard({
     null,
   );
 
+  // Starts from the draft this panel was rendered for; the page gives the
+  // component a new key when the draft changes, so this is always in step.
   const [body, setBody] = useState(draft?.body ?? "");
   const busy = generating || regenerating || saving;
   const error = saveState?.error ?? regenerateState?.error ?? generateState?.error ?? null;
