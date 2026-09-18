@@ -40,8 +40,6 @@ const FALLBACK_ERROR = "Something went wrong connecting Gmail. Try again.";
  * Layout and most wording are design/Connect.dc.html's. Differences, on
  * purpose — a privacy screen that describes what the app doesn't do would
  * mislead:
- *   - The permission is still read-only: drafts, and the design's line about
- *     the draft permission, arrive with slice 5.
  *   - No "opt in, one contact at a time" for keeping bodies: not built.
  *   - Summaries are "editable", not "editable and deletable": an approved
  *     summary can be changed, not yet deleted (slice 7).
@@ -92,8 +90,8 @@ export default async function ConnectPage({
               Message headers — who wrote, when, and the subject line
             </Item>
             <Item icon="check" tone="info">
-              Message bodies — only for the one contact you ask to summarise, and only when you
-              ask
+              Message bodies — only for the one contact you ask to summarise or reply to, and only
+              when you ask. Sent to OpenAI for that request, never stored
             </Item>
           </Section>
 
@@ -117,7 +115,8 @@ export default async function ConnectPage({
 
           <Section title="What it will never do">
             <Item icon="cross" tone="muted">
-              Send an email. The permission it asks for is read-only.
+              Send an email. Drafts land in Gmail and <span className="font-semibold">you</span>{" "}
+              press send.
             </Item>
             <Item icon="cross" tone="muted">
               Track whether anyone opened or read a message
@@ -126,11 +125,11 @@ export default async function ConnectPage({
         </div>
 
         <Callout icon="info">
-          Worth knowing: Google&rsquo;s read-only permission covers{" "}
-          <span className="font-semibold">every message</span>, whole. This app reads a
-          message&rsquo;s text only when you ask for a summary of that contact, sends it to OpenAI
-          for that one request, and doesn&rsquo;t store it — but you are granting more than that,
-          so you should hear it from me rather than notice it on the next screen.
+          Worth knowing: Google&rsquo;s draft permission also technically permits{" "}
+          <span className="font-semibold">sending</span>. There is no send endpoint anywhere in
+          this app — but you are granting the ability, so you should hear it from me rather than
+          notice it on the next screen. You can untick drafts there; everything but Draft reply
+          still works.
         </Callout>
 
         <div className="flex flex-wrap items-center gap-4">

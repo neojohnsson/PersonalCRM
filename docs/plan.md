@@ -8,7 +8,7 @@ _Planning doc, not code. Written 2026-09-11 from the Notion page "PROJECT: Keep 
 
 | Question | Decision |
 |---|---|
-| Who it's for | A real product shape, but the goal is **a portfolio piece that works**. Not chasing paying users. |
+| Who it's for | A real product shape, and first **a portfolio piece that works**. _Changed 2026-09-17:_ a public release with paid plans later is a goal too — built for, not chased yet (slice 9). |
 | First user type | **Researchers / networkers** — people keeping loose professional contacts warm |
 | Relation to DealFlow | **Totally separate project** |
 | Gmail permissions | **Read + create drafts.** Never sends on its own. |
@@ -252,6 +252,7 @@ Ordered by how much they'd be worth.
 9. **Snippets with variables.** Not full templates — just the three paragraphs you keep rewriting.
 10. **Browser extension to add a contact from a page.** Nice, and a whole separate review process, so: much later.
 11. **"About to go cold" nudge.** Warn *before* the relationship dies rather than after — but only inside the weekly brief, never as its own notification.
+12. **Read your own public GitHub** — through GitHub's official API, which allows it: repository names, descriptions and languages as Profile facts you approve. Unlike LinkedIn, no scraping and no login needed. _(added 2026-09-17)_
 
 ---
 
@@ -285,6 +286,17 @@ Weekly brief, promise/deadline detection across every thread (the referral check
 **Slice 7 — the part that makes it a portfolio piece**
 Privacy page, export, real deletion, the written-up compliance decision. Then record a 90-second demo.
 
+**Slice 8 — web research** _(added 2026-09-17)_
+§3.11 as written: a "research this person" button, one contact at a time, public web search only, every fact with its source link, dated, pending until approved. Never LinkedIn, never data brokers. Behind a **per-user setting**, so a paid plan can switch it on later without rebuilding it. Can also feed drafts and summaries — still one click, still sources.
+
+**Slice 9 — release, with plans** _(added 2026-09-17; only if the project goes public)_
+What letting strangers sign in with Gmail actually takes:
+- **Google OAuth verification and the yearly CASA security assessment** for restricted Gmail scopes (§5.1) — the biggest cost and the reason the app is in testing mode today.
+- **Plans**: for example Free (sync, whose turn, warmth, next touch), Pro (AI summaries and drafts, a higher monthly cap), Premium (web research). The monthly AI cap and the per-user settings already built are what plans switch.
+- **Payments** (e.g. Stripe), receipts and VAT.
+- **GDPR as a processor** for every customer: a data processing agreement, sub-processor list (OpenAI, Supabase, Vercel, Google), a real privacy policy — slice 7's work, made public.
+- Pricing that covers AI cost per user (§5.4) with margin.
+
 ---
 
 ## 8. Still open
@@ -293,4 +305,5 @@ Privacy page, export, real deletion, the written-up compliance decision. Then re
 - **How far back to sync by default** — 12 months is a guess; your own mailbox will tell you.
 - **Which model for which job** — small for extraction, large for drafting, and a hard monthly cap.
 - **Whether to use your own real outreach as the test data**, and when. Recommendation: not until slice 7's privacy work is done.
+- **Paid plans** — which features in which plan, and prices. Decided in slice 9, if the release happens; cost per user (§5.4) sets the floor.
 - **Whether any of this should feed back into DealFlow.** Keeping them separate is the right call for your data, but the two-tier import and the whose-turn logic are genuinely reusable ideas.

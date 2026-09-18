@@ -1,5 +1,5 @@
 import "server-only";
-import { DEFAULT_MODEL, isKnownModel } from "@/lib/ai/models";
+import { DEFAULT_DRAFT_MODEL, DEFAULT_MODEL, isKnownModel } from "@/lib/ai/models";
 
 /**
  * The AI settings, read from the server's environment. "server-only": the
@@ -10,7 +10,14 @@ import { DEFAULT_MODEL, isKnownModel } from "@/lib/ai/models";
 /** Decision C: $2 a month unless LLM_MONTHLY_CAP_USD says otherwise. */
 export const DEFAULT_MONTHLY_CAP_USD = 2;
 
-export type AiConfig = { apiKey: string; model: string; monthlyCapUsd: number };
+export type AiConfig = {
+  apiKey: string;
+  /** Summaries and other extraction: LLM_MODEL_FAST. */
+  model: string;
+  /** Drafts, which a person sends to another person: LLM_MODEL_GOOD. */
+  draftModel: string;
+  monthlyCapUsd: number;
+};
 
 /** The settings read — process.env by default; tests pass their own. */
 type Env = Record<string, string | undefined>;
@@ -32,7 +39,12 @@ export function aiConfig(env: Env = process.env): AiConfig {
     throw new AiNotConfigured(`LLM_MODEL_FAST is "${model}", which has no price in lib/ai/models.ts.`);
   }
 
-  return { apiKey, model, monthlyCapUsd: monthlyCapUsd(env) };
+  const draftModel = env.LLM_MODEL_GOOD?.trim() || DEFAULT_DRAFT_MODEL;
+  if (!isKnownModel(draftModel)) {
+    throw new AiNotConfigured(`LLM_MODEL_GOOD is "${draftModel}", which has no price in lib/ai/models.ts.`);
+  }
+
+  return { apiKey, model, draftModel, monthlyCapUsd: monthlyCapUsd(env) };
 }
 
 /** LLM_MONTHLY_CAP_USD as a number of dollars; the default if unset or not a number. */

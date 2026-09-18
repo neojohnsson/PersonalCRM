@@ -6,6 +6,7 @@ import { SignOutButton } from "@/app/sign-out-button";
 import { APP_NAME } from "@/lib/app-config";
 import { AiNotConfigured, aiConfig, monthlyCapUsd } from "@/lib/ai/config";
 import { spentThisMonth } from "@/lib/ai/spend";
+import { gmailDraftsUrl, lastSavedDraft, pendingDraft } from "@/lib/ai/draft-save";
 import { summariesFor } from "@/lib/ai/summary-record";
 import { requireUser } from "@/lib/auth";
 import { isUuid } from "@/lib/contacts/contact-form";
@@ -22,11 +23,14 @@ import {
 } from "@/lib/relationship/describe";
 import { loadRelationship, type Relationship } from "@/lib/relationship/load";
 import { openNextTouch } from "@/lib/relationship/next-touch";
+import { canDraft } from "@/lib/google/scopes";
+import { loadProfile } from "@/lib/profile/store";
 import { checkReferral, type ReferralStatus } from "@/lib/relationship/referral";
 import type { Band } from "@/lib/relationship/warmth";
 import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 import { DismissContact } from "./dismiss-contact";
+import { DraftCard } from "./draft-card";
 import { NextTouchCard } from "./next-touch-card";
 import { SummaryCard, type AiBudget } from "./summary-card";
 
@@ -48,6 +52,9 @@ export const metadata = { title: `Contact · ${APP_NAME}` };
  *     empty stat cards.
  *   - The relationship summary card (slice 4) has no design; it's built from
  *     this page's own cards, and says so in app/contacts/[id]/summary-card.tsx.
+ *   - The design's "Draft reply" button is here as the header's second action
+ *     (slice 5a); it jumps to the draft panel below, which has no design
+ *     either (app/contacts/[id]/draft-card.tsx).
  *   - "Draft reply" is slice 5. Its place holds Edit, the one action slice 2 has;
  *     the "···" menu has nothing to hold yet and is left out.
  *   - A "Dismiss" button beside Edit, with a confirm card (./dismiss-contact.tsx).
@@ -91,7 +98,7 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
       .eq("user_id", user.id)
       .order("is_primary", { ascending: false })
       .order("email"),
-    supabase.from("google_accounts").select("email").eq("user_id", user.id).maybeSingle(),
+    supabase.from("google_accounts").select("email, scopes").eq("user_id", user.id).maybeSingle(),
   ]);
   if (contactResult.error) throw supabaseError(contactResult.error, "Couldn't load the contact");
   if (emailsResult.error) throw supabaseError(emailsResult.error, "Couldn't load the contact's addresses");
@@ -109,6 +116,13 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
     summariesFor(supabase, user.id, contact.id),
     spentThisMonth(supabase, user.id),
   ]);
+
+  const [draft, savedDraft, profile] = await Promise.all([
+    pendingDraft(supabase, user.id, contact.id),
+    lastSavedDraft(supabase, user.id, contact.id),
+    loadProfile(supabase, user.id),
+  ]);
+  const gmailScopes = (gmailResult.data?.scopes as string[] | undefined) ?? [];
   const budget: AiBudget = { spentUsd, capUsd: monthlyCapUsd(), ready: aiIsReady() };
 
   // A summary that names a referral: have you written to that person since?
@@ -229,16 +243,42 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
             {pill && <TurnPillBadge pill={pill} />}
             <Link
               href={`/contacts/${id}/edit`}
-              className="flex items-center gap-2 rounded-full bg-ink-deep px-[18px] py-2.5 text-[13px] font-semibold text-white transition hover:bg-ink/85"
+              className="flex items-center gap-2 rounded-full bg-white px-[18px] py-2.5 text-[13px] font-semibold text-ink-body shadow-[0_1px_2px_rgba(20,20,25,.05)] transition hover:text-ink"
             >
               <PencilIcon className="size-[15px]" />
               Edit
+            </Link>
+            {/* design/ContactDetail.dc.html's primary action. It jumps to the panel
+                below, where the draft is written, read and saved. */}
+            <Link
+              href="#draft"
+              scroll
+              className="flex items-center gap-2 rounded-full bg-ink-deep px-[18px] py-2.5 text-[13px] font-semibold text-white transition hover:bg-ink/85"
+            >
+              <PencilIcon className="size-[15px]" />
+              Draft reply
             </Link>
             {emails.length > 0 && <DismissContact contactId={contact.id} name={name} />}
           </div>
         </div>
 
         <StatStrip relationship={relationship} hasEmails={emails.length > 0} />
+
+        <DraftCard
+          // A new key when the draft changes, so the panel's text box starts
+          // from the new draft instead of keeping the state it had before
+          // (a draft generated on this page left the box empty otherwise).
+          key={draft?.id ?? "no-draft"}
+          contactId={contact.id}
+          draft={draft}
+          lastSaved={savedDraft}
+          neverWrite={profile.never_write}
+          gmailDraftsUrl={gmailDraftsUrl(gmailResult.data?.email ?? null)}
+          canDraft={canDraft(gmailScopes)}
+          hasMail={relationship.messageCount > 0}
+          budgetLeft={budget.capUsd - budget.spentUsd >= 0.01}
+          aiReady={budget.ready}
+        />
 
         <SummaryCard
           contactId={contact.id}

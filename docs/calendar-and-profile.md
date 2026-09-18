@@ -77,7 +77,7 @@ makes it easy to see, edit and delete.
 | Section | What you do there | How drafts use it |
 |---|---|---|
 | **About you** | Name, where you're based, what you do, what you're looking for, signature, languages | Every draft gets this as background |
-| **Files** | Upload a CV or other document (PDF, Word, text, up to 10 MB). "Use in drafts" can be turned off per file | The text is read once, on upload. Drafts use approved facts, not the whole file (see the next row) |
+| **Files** | Upload a CV or other document (PDF, Word, text, up to 10 MB) — for example **LinkedIn's own "Save to PDF" export of your profile**, which is how LinkedIn gets into drafts without the app ever opening LinkedIn. "Use in drafts" can be turned off per file | The text is read once, on upload. Drafts use approved facts, not the whole file (see the next row) |
 | **Read from your CV** | The AI pulls short facts out of an uploaded file. Each fact shows its page. You approve, edit or discard it | Only **approved** facts go into drafts |
 | **How drafts sound** | Pick a tone: Professional, Friendly, Casual or Brief. Set length, how people are addressed, the sign-off, and a "never write" list | Turned into instructions for the drafting AI. Can be changed for a single draft |
 | **Links** | Add LinkedIn, GitHub and similar links, and choose which go in the signature | The AI gets the **address as text**. It can write "my LinkedIn is …" |

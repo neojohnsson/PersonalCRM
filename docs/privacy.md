@@ -17,6 +17,8 @@ Roles, when other people use it: the user is the data controller, this applicati
 | Your own notes and tags | Anything from automated senders — newsletters, no-reply addresses, calendar invites |
 | An editable AI relationship summary, with the message ids it came from | Anything from someone you dismissed, beyond their address |
 | The summary's suggestions for company, role and next touch, until you take or discard them | The email text sent to the AI |
+| Your Profile: what drafts may know about you, and how they should sound | Anything fetched from a link you added — the app never opens them |
+| A draft reply, only while it waits for you. Once saved, Gmail holds the text and the app keeps the Gmail draft id | The text of a draft after it is in Gmail |
 | What each AI request cost: model, token counts, dollars | |
 | Touch history — when contact happened and in which direction | |
 
@@ -62,10 +64,33 @@ person will read it. Code can't check that — you can, before approving.
 Spending is capped per user per month (`LLM_MONTHLY_CAP_USD`, $2 to start), checked in
 the database before any request is sent.
 
+### What drafting sends, and what it keeps
+
+_Since slice 5a (`docs/slice-5a-plan.md`)._
+
+Nothing is sent until you press **Draft reply** on one contact. Then:
+
+1. The server reads the **latest thread** with that contact from Gmail — its last
+   messages, with quoted replies and signatures cut.
+2. That text goes to OpenAI together with **your Profile**, your notes on the contact,
+   and the approved summary if there is one. **Nothing else about you.** Other contacts'
+   mail is never included.
+3. The reply comes back and waits **in the app**, where you read and edit it. It is not
+   in Gmail, and nobody but you can see it.
+4. **Save to Gmail drafts** creates a draft in that thread, with your edited text. The
+   app then deletes its copy: Gmail holds the draft, and the app keeps its id and the
+   time.
+5. **You press send in Gmail.** The app has no send endpoint, button or schedule, and
+   `tests/no-send.test.ts` reads every source file to prove it.
+
+The draft permission Google grants (`gmail.compose`) does technically permit sending.
+The Connect screen says so before you grant it. You can untick it, and everything but
+Draft reply keeps working.
+
 ## Gmail access
 
-- **Read** and **create drafts**. The application has no send path: no send endpoint, no send button, no scheduled send.
-- The draft scope generally also permits sending. The application asks for a permission it never uses, and the consent screen says so plainly rather than hoping nobody notices.
+- **Read** (`gmail.readonly`) and **create drafts** (`gmail.compose`, since slice 5a). The application has no send path: no send endpoint, no send button, no scheduled send.
+- The draft scope generally also permits sending. The application asks for a permission it never uses, and its own Connect screen says so plainly rather than hoping nobody notices. Which permissions were actually granted is stored on the connection, and drafting is refused without `gmail.compose`.
 - The scope needed is set by the AI features, not by what is stored. Summarising a thread requires reading the body, so the metadata-only Gmail scope is not an option. Storing less is still worth doing — it just doesn't buy a narrower permission.
 
 ## Why this is not publicly launched
@@ -98,6 +123,7 @@ Email content is sent to an LLM provider for summarising and drafting. That is a
 | Sub-processor | What it gets | Since |
 |---|---|---|
 | **OpenAI** (API, `gpt-5.6-luna` by default) | The text of up to 20 emails with one contact, their name and addresses, per summary you ask for | Slice 4 |
+| **OpenAI** (API, `gpt-5-mini` for drafts) | The last messages of one thread, your Profile, your notes on that contact and its approved summary, per draft you ask for | Slice 5a |
 
 What OpenAI's API documentation says, checked 2026-09-17
 (https://developers.openai.com/api/docs/guides/your-data):

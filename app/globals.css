@@ -89,6 +89,10 @@ html {
   --color-line-soft: #f4f4f2;
   --color-paper-tint: #faf9f7;
 
+  /* Profile: an unselected radio's ring, and a switch that's off. */
+  --color-radio-ring: #c5c7cc;
+  --color-switch-off: #e4e4e1;
+
   /* The left sidebar. */
   --color-rail-active: #303237;
   --color-rail-icon: #75777e;
