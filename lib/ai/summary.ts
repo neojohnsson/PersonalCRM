@@ -11,6 +11,7 @@ import {
   MAX_SUGGESTED_REASON_CHARS,
   SUMMARY_COLUMNS,
   SUMMARY_PARTS,
+  type ReferredPerson,
   type SavedSummary,
   type SourceRef,
   type Suggestion,
@@ -32,6 +33,9 @@ import { supabaseError } from "@/lib/supabase/errors";
 
 export { MAX_PART_CHARS, SUMMARY_COLUMNS, SUMMARY_PARTS } from "@/lib/ai/summary-parts";
 export type { SavedSummary, SourceRef, SummaryPart } from "@/lib/ai/summary-parts";
+
+/** At most this many referred people per summary, as the database allows. */
+export const MAX_REFERRALS = 5;
 
 /** The answer's ceiling, reasoning included. Also what the cost reservation assumes. */
 export const MAX_OUTPUT_TOKENS = 3_000;
@@ -87,7 +91,7 @@ The suggestions, which the user may copy onto the contact:
   - later_event: it depends on something later, like "when your internship approaches" or "in the spring". Put the month in "month" as YYYY-MM only if the messages name one.
   - nothing_open: nothing is left to do. Then "reason" is null.
   "why" is one short sentence explaining that timing, based on the messages.
-- referral: if the contact pointed the user to another specific person to get in touch with, that person's "name" as written, and their "email" only if a message gives it. Cite the message where the referral was made. All null if there's no such person. Leave "date" and "month" null unless the rules above say to fill them. Never make up a date. Watch for negations: "I can't before the 20th" is not a promise for the 20th. You don't pick the day — the app does, from the timing.`;
+- referral: the people the contact pointed the user to, one entry each — "Oskar or Pontus" is two entries, not one name. Each has the "name" as written and an "email" only if a message gives it. Cite the message where the referral was made. An empty list when nobody was named. Leave "date" and "month" null unless the rules above say to fill them. Never make up a date. Watch for negations: "I can't before the 20th" is not a promise for the 20th. You don't pick the day — the app does, from the timing.`;
 
 const TEXT_WITH_SOURCES: JsonSchema = {
   type: "object",
@@ -135,11 +139,18 @@ export const SUMMARY_SCHEMA: JsonSchema = {
         referral: {
           type: "object",
           properties: {
-            name: { type: ["string", "null"] },
-            email: { type: ["string", "null"] },
+            people: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: { name: { type: ["string", "null"] }, email: { type: ["string", "null"] } },
+                required: ["name", "email"],
+                additionalProperties: false,
+              },
+            },
             sources: { type: "array", items: { type: "string" } },
           },
-          required: ["name", "email", "sources"],
+          required: ["people", "sources"],
           additionalProperties: false,
         },
       },
@@ -158,7 +169,7 @@ export type RawSummary = Record<SummaryPart, Cited<"text">> & {
     company: Cited<"value">;
     role: Cited<"value">;
     next_touch: Cited<"reason" | "date" | "month" | "why"> & { timing: string };
-    referral: Cited<"name" | "email">;
+    referral: { people: { name: string | null; email: string | null }[]; sources: string[] };
   };
 };
 
@@ -200,8 +211,7 @@ export type CheckedSummary = {
     touchOn: string | null;
     touchWhy: string | null;
     touchRough: boolean;
-    referralName: string | null;
-    referralEmail: string | null;
+    referrals: ReferredPerson[];
     referralSince: string | null;
   };
   sources: Partial<Record<SummaryPart | Suggestion, SourceRef[]>>;
@@ -319,19 +329,23 @@ export function checkSummary(
     }
   }
 
-  // The referral: a name, cited from a real message; its date is that message's.
-  let referralName = clean(referral?.name, MAX_SUGGESTED_FIELD_CHARS);
-  let referralEmail: string | null = null;
+  // The referred people, cited from a real message; the date is that message's.
+  let referrals: ReferredPerson[] = (referral?.people ?? [])
+    .map((person) => ({
+      name: clean(person?.name, MAX_SUGGESTED_FIELD_CHARS),
+      email: cleanEmail(person?.email),
+    }))
+    .filter((person): person is ReferredPerson => person.name !== null)
+    .slice(0, MAX_REFERRALS);
+
   let referralSince: string | null = null;
-  if (referralName !== null) {
+  if (referrals.length > 0) {
     const found = realSources("referral", referral!.sources, false);
     if (found) {
-      const email = referral!.email?.trim().toLowerCase() ?? "";
-      referralEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 320 ? email : null;
       const cited = conversation.filter((m) => found.some((s) => "messageId" in s && s.messageId === m.messageId));
       referralSince = cited.map((m) => m.at.toISOString()).sort().at(-1) ?? null;
     } else {
-      referralName = null;
+      referrals = [];
     }
   }
 
@@ -344,8 +358,7 @@ export function checkSummary(
       touchOn,
       touchWhy,
       touchRough,
-      referralName,
-      referralEmail,
+      referrals,
       referralSince,
     },
     sources,
@@ -360,6 +373,12 @@ function lastDays(conversation: ConversationMessage[]): { lastFromYou: string | 
     return message ? todayIn("Europe/Stockholm", message.at) : null;
   };
   return { lastFromYou: last("you"), lastFromThem: last("them") };
+}
+
+/** An address the emails gave, or null if it isn't one. */
+function cleanEmail(value: string | null | undefined): string | null {
+  const email = value?.trim().toLowerCase() ?? "";
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 320 ? email : null;
 }
 
 /** Trimmed, cut to `max`, and null if nothing's left. */
@@ -469,8 +488,7 @@ export async function generateSummary(
     suggested_touch_on: checked.suggestions.touchOn,
     suggested_touch_why: checked.suggestions.touchWhy,
     suggested_touch_rough: checked.suggestions.touchRough,
-    suggested_referral_name: checked.suggestions.referralName,
-    suggested_referral_email: checked.suggestions.referralEmail,
+    suggested_referrals: checked.suggestions.referrals,
     suggested_referral_since: checked.suggestions.referralSince,
     sources: checked.sources,
     as_of: newest.toISOString(),
@@ -485,8 +503,7 @@ type PendingRow = Record<SummaryPart, string | null> & {
   suggested_touch_on: string | null;
   suggested_touch_why: string | null;
   suggested_touch_rough: boolean;
-  suggested_referral_name: string | null;
-  suggested_referral_email: string | null;
+  suggested_referrals: ReferredPerson[];
   suggested_referral_since: string | null;
   sources: CheckedSummary["sources"];
   as_of: string;

@@ -25,7 +25,8 @@ import { loadRelationship, type Relationship } from "@/lib/relationship/load";
 import { openNextTouch } from "@/lib/relationship/next-touch";
 import { canDraft } from "@/lib/google/scopes";
 import { loadProfile } from "@/lib/profile/store";
-import { checkReferral, type ReferralStatus } from "@/lib/relationship/referral";
+import { checkReferral } from "@/lib/relationship/referral";
+import type { ReferredStatus } from "./summary-card";
 import type { Band } from "@/lib/relationship/warmth";
 import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
@@ -127,15 +128,29 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
 
   // A summary that names a referral: have you written to that person since?
   // Worked out now, from your mail — not stored, so it's never out of date.
-  const referrals: Record<string, ReferralStatus> = {};
+  const referrals: Record<string, ReferredStatus[]> = {};
   await Promise.all(
     [summaries.approved, summaries.pending].map(async (summary) => {
-      if (!summary?.suggested_referral_name || !summary.suggested_referral_since) return;
-      referrals[summary.id] = await checkReferral(supabase, user.id, {
-        name: summary.suggested_referral_name,
-        email: summary.suggested_referral_email,
-        since: summary.suggested_referral_since,
-      });
+      if (!summary || !summary.suggested_referral_since) return;
+      // Summaries saved before migration 0015 hold one name in its own column.
+      const people =
+        summary.suggested_referrals.length > 0
+          ? summary.suggested_referrals
+          : summary.suggested_referral_name
+            ? [{ name: summary.suggested_referral_name, email: summary.suggested_referral_email }]
+            : [];
+      if (people.length === 0) return;
+
+      referrals[summary.id] = await Promise.all(
+        people.map(async (person) => ({
+          name: person.name,
+          status: await checkReferral(supabase, user.id, {
+            name: person.name,
+            email: person.email,
+            since: summary.suggested_referral_since!,
+          }),
+        })),
+      );
     }),
   );
 

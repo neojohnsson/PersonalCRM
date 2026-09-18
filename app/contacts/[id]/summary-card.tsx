@@ -10,6 +10,9 @@ import {
   type SummaryPart,
 } from "@/lib/ai/summary-parts";
 import type { ReferralStatus } from "@/lib/relationship/referral";
+
+/** One referred person, and what your own mail says about them. */
+export type ReferredStatus = { name: string; status: ReferralStatus };
 import Link from "next/link";
 import {
   applySuggestionAction,
@@ -92,8 +95,8 @@ export function SummaryCard({
   contact: ContactNow;
   /** A new contact with mail and no summary: ask whether to generate one now. */
   askNow: boolean;
-  /** For each shown summary with a referral: whether you've written to that person since. */
-  referrals: Record<string, ReferralStatus>;
+  /** For each shown summary: each referred person, and whether you've written to them since. */
+  referrals: Record<string, ReferredStatus[]>;
 }) {
   const [notNow, setNotNow] = useState(false);
   const [generateState, generate, generating] = useActionState<GenerateState>(
@@ -221,7 +224,7 @@ function Proposal({
   summary: SavedSummary;
   gmailEmail: string | null;
   contact: ContactNow;
-  referrals: Record<string, ReferralStatus>;
+  referrals: Record<string, ReferredStatus[]>;
   approveLabel: string;
 }) {
   return (
@@ -255,7 +258,7 @@ function ApprovedSummary({
   summary: SavedSummary;
   gmailEmail: string | null;
   contact: ContactNow;
-  referrals: Record<string, ReferralStatus>;
+  referrals: Record<string, ReferredStatus[]>;
 }) {
   const [state, save, saving] = useActionState<EditSummaryState, FormData>(
     editSummaryAction.bind(null, summary.id),
@@ -364,18 +367,19 @@ function Suggestions({
   summary: SavedSummary;
   gmailEmail: string | null;
   contact: ContactNow;
-  referrals: Record<string, ReferralStatus>;
+  referrals: Record<string, ReferredStatus[]>;
 }) {
   const fields = [
     { field: "company" as const, label: "Company", value: summary.suggested_company, current: contact.company },
     { field: "role" as const, label: "Role", value: summary.suggested_role, current: contact.role },
   ].filter((row) => row.value);
-  const referral = referrals[summary.id] ?? null;
-  // Already written to the person they referred you to: that's the next step done.
-  const referralDone = referral?.kind === "done";
-  const touchReason = referralDone ? null : summary.suggested_touch_reason;
+  const referred = referrals[summary.id] ?? [];
+  // Everyone they referred you to has been written to: the next step is done.
+  const allDone = referred.length > 0 && referred.every((person) => person.status.kind === "done");
+  const stillOpen = referred.filter((person) => person.status.kind !== "done").map((person) => person.name);
+  const touchReason = allDone ? null : summary.suggested_touch_reason;
 
-  if (fields.length === 0 && !touchReason && !referral) return null;
+  if (fields.length === 0 && !touchReason && referred.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-2.5 border-t border-line-soft pt-3">
@@ -406,11 +410,11 @@ function Suggestions({
             </li>
           );
         })}
-        {referral && summary.suggested_referral_name && (
-          <li className="flex flex-col gap-0.5">
-            <ReferralLine name={summary.suggested_referral_name} status={referral} />
+        {referred.map((person) => (
+          <li key={person.name} className="flex flex-col gap-0.5">
+            <ReferralLine name={person.name} status={person.status} />
           </li>
-        )}
+        ))}
         {touchReason && (
           <li className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
             <div className="flex min-w-0 flex-col gap-0.5">
@@ -424,6 +428,11 @@ function Suggestions({
                   {summary.suggested_touch_rough && (
                     <span className="text-cooling"> Rough guess — pick a better date.</span>
                   )}
+                </span>
+              )}
+              {stillOpen.length > 0 && stillOpen.length < referred.length && (
+                <span className="text-[11.5px] text-ink-muted">
+                  Still to contact: {stillOpen.join(", ")}.
                 </span>
               )}
               <Sources sources={summary.sources.next_touch ?? []} gmailEmail={gmailEmail} />
