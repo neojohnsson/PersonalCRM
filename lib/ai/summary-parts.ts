@@ -22,6 +22,9 @@ export const MAX_SUGGESTED_REASON_CHARS = 300;
 /** Where something came from: one email, or the contact's own address. */
 export type SourceRef = { messageId: string; threadId: string } | { address: string };
 
+/** Someone a contact pointed you to. `email` only when the emails gave one. */
+export type ReferredPerson = { name: string; email: string | null };
+
 export type SavedSummary = {
   id: string;
   contact_id: string;
@@ -40,7 +43,9 @@ export type SavedSummary = {
   suggested_touch_why: string | null;
   /** The date is only a rough guess: "pick a better date". */
   suggested_touch_rough: boolean;
-  /** Someone the contact referred you to, checked against your mail on the page. */
+  /** People the contact referred you to, checked against your mail on the page. */
+  suggested_referrals: ReferredPerson[];
+  /** The 0013 columns, kept for summaries saved before 0015. */
   suggested_referral_name: string | null;
   suggested_referral_email: string | null;
   /** When the email with the referral was sent. */
@@ -54,4 +59,4 @@ export type SavedSummary = {
 };
 
 export const SUMMARY_COLUMNS =
-  "id, contact_id, status, who_they_are, how_you_know, discussed, next_step, sources, suggested_company, suggested_role, suggested_touch_reason, suggested_touch_on, suggested_touch_why, suggested_touch_rough, suggested_referral_name, suggested_referral_email, suggested_referral_since, as_of, edited, model, created_at, updated_at, approved_at";
+  "id, contact_id, status, who_they_are, how_you_know, discussed, next_step, sources, suggested_company, suggested_role, suggested_touch_reason, suggested_touch_on, suggested_touch_why, suggested_touch_rough, suggested_referrals, suggested_referral_name, suggested_referral_email, suggested_referral_since, as_of, edited, model, created_at, updated_at, approved_at";

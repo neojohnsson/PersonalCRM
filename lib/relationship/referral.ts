@@ -17,6 +17,9 @@ import { readAll } from "@/lib/supabase/read-all";
  *        - an address made of the name: niklas.hedlund@, niklashedlund@,
  *          hedlund.niklas@ — Gmail doesn't keep the name of someone who has
  *          only been written to, so without this they'd never be found
+ *        - a first name on its own ("Pontus"), matching a first name or the
+ *          first part of an address. Common, so it often finds two people —
+ *          and then the caller says so rather than guessing
  *   2. One person → did you send them an email after the referral?
  *      Several → say so and don't guess. Nobody → nothing to check.
  *
@@ -53,12 +56,30 @@ export function normaliseName(text: string): string {
     .replace(/[^a-z0-9]/g, "");
 }
 
-/** Whether an address is built from the name: first.last, firstlast, last.first. */
+/**
+ * Whether an address is built from the name: first.last, firstlast, last.first.
+ * For a single word ("Pontus"), the address must *start* with it as its own
+ * part: pontus@ or pontus.berglund@, never pontusson@.
+ */
 export function addressMatchesName(email: string, name: string): boolean {
+  const local = email.slice(0, email.lastIndexOf("@"));
   const words = name.trim().split(/\s+/).map(normaliseName).filter(Boolean);
-  if (words.length < 2) return false; // "Niklas@" alone is far too common to mean him
-  const local = normaliseName(email.slice(0, email.lastIndexOf("@")));
-  return local === words.join("") || local === [...words].reverse().join("");
+  if (words.length === 0) return false;
+
+  if (words.length === 1) {
+    const [first] = local.toLowerCase().split(/[._+-]/);
+    return normaliseName(first ?? "") === words[0];
+  }
+
+  const whole = normaliseName(local);
+  return whole === words.join("") || whole === [...words].reverse().join("");
+}
+
+/** Whether a contact's or sender's name starts with this single first name. */
+function firstNameMatches(fullName: string | null, wantedWords: string[]): boolean {
+  if (wantedWords.length !== 1 || !fullName) return false;
+  const [first] = fullName.trim().split(/\s+/);
+  return normaliseName(first ?? "") === wantedWords[0];
 }
 
 /** Everyone the referral could mean, one entry per person. */
@@ -68,11 +89,13 @@ export function matchPeople(
   addresses: AddressCandidate[],
 ): Match[] {
   const wantedName = normaliseName(referral.name);
+  const wantedWords = referral.name.trim().split(/\s+/).map(normaliseName).filter(Boolean);
   const wantedEmail = referral.email?.trim().toLowerCase() || null;
 
   const addressMatches = (email: string, nameOnMail: string | null) =>
     (wantedEmail !== null && email.toLowerCase() === wantedEmail) ||
     (wantedName !== "" && nameOnMail !== null && normaliseName(nameOnMail) === wantedName) ||
+    firstNameMatches(nameOnMail, wantedWords) ||
     addressMatchesName(email, referral.name);
 
   const namesOnMail = new Map(addresses.map((a) => [a.email.toLowerCase(), a.name]));
@@ -83,7 +106,9 @@ export function matchPeople(
 
   for (const contact of contacts) {
     const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(" ");
-    const byName = wantedName !== "" && fullName !== "" && normaliseName(fullName) === wantedName;
+    const byName =
+      (wantedName !== "" && fullName !== "" && normaliseName(fullName) === wantedName) ||
+      firstNameMatches(contact.first_name, wantedWords);
     const byAddress = contact.emails.some((email) => addressMatches(email, namesOnMail.get(email.toLowerCase()) ?? null));
     if (byName || byAddress) {
       matches.set(`contact:${contact.id}`, {

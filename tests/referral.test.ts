@@ -29,12 +29,12 @@ describe("matching a referral to people", () => {
     expect(normaliseName("NIKLAS  hedlund")).toBe("niklashedlund");
   });
 
-  it("matches addresses built from the name, in either order, but not a first name alone", () => {
+  it("matches addresses built from a full name, in either order", () => {
     for (const email of ["niklas.hedlund@combitech.com", "niklashedlund@x.se", "hedlund.niklas@x.se", "Niklas_Hedlund@x.se"]) {
       expect(addressMatchesName(email, "Niklas Hedlund")).toBe(true);
     }
+    // A full name needs the whole address to be built from it.
     expect(addressMatchesName("niklas@combitech.com", "Niklas Hedlund")).toBe(false);
-    expect(addressMatchesName("niklas@combitech.com", "Niklas")).toBe(false);
     expect(addressMatchesName("nhedlund@combitech.com", "Niklas Hedlund")).toBe(false);
     expect(addressMatchesName("asa.oberg@x.se", "Åsa Öberg")).toBe(true);
   });
@@ -75,6 +75,36 @@ describe("matching a referral to people", () => {
       [{ email: "niklas.hedlund@saab.se", name: null }],
     );
     expect(matches).toHaveLength(2);
+  });
+
+  it("matches a first name on its own — the Pontus case", () => {
+    const matches = matchPeople(
+      { name: "Pontus", email: null },
+      [contact("c1", "Pontus", "Berglund", ["pontus.berglund@atea.se"])],
+      [],
+    );
+    expect(matches).toEqual([
+      { contactId: "c1", label: "Pontus Berglund", emails: ["pontus.berglund@atea.se"] },
+    ]);
+  });
+
+  it("returns both Oskars, so the caller refuses to guess", () => {
+    const matches = matchPeople(
+      { name: "Oskar", email: null },
+      [],
+      [
+        { email: "oskar.sunesson@softhouse.se", name: null },
+        { email: "oskar@stilta.com", name: null },
+      ],
+    );
+    expect(matches).toHaveLength(2);
+  });
+
+  it("a first name matches only a whole part of an address", () => {
+    expect(addressMatchesName("pontus@atea.se", "Pontus")).toBe(true);
+    expect(addressMatchesName("pontus.berglund@atea.se", "Pontus")).toBe(true);
+    expect(addressMatchesName("pontusson@atea.se", "Pontus")).toBe(false);
+    expect(addressMatchesName("carl-johan.hultenheim@atea.se", "Pontus")).toBe(false);
   });
 
   it("finds nobody when nothing matches", () => {

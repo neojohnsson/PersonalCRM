@@ -1,10 +1,13 @@
 import { messageText } from "@/lib/google/body";
 import { GmailApiError, getMessageFull } from "@/lib/google/gmail";
-import type { Touch } from "@/lib/relationship/touches";
+import type { ThreadItem } from "@/lib/ai/thread";
 
 /**
- * The text of your last messages with a contact, read from Gmail for one AI
- * request (docs/slice-4-plan.md, Part 1; decision B).
+ * The text of a contact's recent messages, read from Gmail for one AI request
+ * (docs/slice-4-plan.md, Part 1; docs/thread-context-plan.md, Part 1).
+ *
+ * It reads whatever messages it is handed — the whole thread, including anyone
+ * else who wrote in it, each already labelled by lib/ai/thread.ts.
  *
  * This module has no database client and imports nothing that writes: the
  * text it returns can only live in the memory of the request that asked for
@@ -22,23 +25,25 @@ export type ConversationMessage = {
   ref: string;
   messageId: string;
   threadId: string;
-  from: "you" | "them";
+  from: "you" | "them" | "other";
+  /** For "other": who wrote it — their name from the header, or their address. */
+  who: string | null;
   at: Date;
   subject: string | null;
   text: string;
 };
 
 /**
- * Reads the newest `limit` of `touches` from Gmail, oldest first in the
- * result. A message that's gone from Gmail (deleted since the sync) is left
- * out; any other Gmail failure stops the request.
+ * Reads the newest `limit` of `items` from Gmail, oldest first in the result.
+ * A message that's gone from Gmail (deleted since the sync) is left out; any
+ * other Gmail failure stops the request.
  */
 export async function readConversation(
   accessToken: string,
-  touches: Touch[],
+  items: ThreadItem[],
   limit = MESSAGES_PER_SUMMARY,
 ): Promise<ConversationMessage[]> {
-  const newest = [...touches].sort((a, b) => a.at.getTime() - b.at.getTime()).slice(-limit);
+  const newest = [...items].sort((a, b) => a.at.getTime() - b.at.getTime()).slice(-limit);
   const texts: (string | null)[] = new Array(newest.length).fill(null);
 
   let next = 0;
@@ -57,16 +62,17 @@ export async function readConversation(
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, newest.length) }, worker));
 
   const conversation: ConversationMessage[] = [];
-  newest.forEach((touch, index) => {
+  newest.forEach((item, index) => {
     const text = texts[index];
     if (text === null) return;
     conversation.push({
       ref: `m${conversation.length + 1}`,
-      messageId: touch.messageId,
-      threadId: touch.threadId,
-      from: touch.direction === "outbound" ? "you" : "them",
-      at: touch.at,
-      subject: touch.subject,
+      messageId: item.messageId,
+      threadId: item.threadId,
+      from: item.from,
+      who: item.who,
+      at: item.at,
+      subject: item.subject,
       text,
     });
   });

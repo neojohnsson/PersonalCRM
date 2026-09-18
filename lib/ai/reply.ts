@@ -1,8 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { messageText } from "@/lib/google/body";
 import { getMessageFull, type GmailHeader } from "@/lib/google/gmail";
-import { contactTouches } from "@/lib/relationship/load";
-import type { Touch } from "@/lib/relationship/touches";
+import { latestThread, loadThreadMessages, writerOf, type ThreadItem } from "@/lib/ai/thread";
 import { supabaseError } from "@/lib/supabase/errors";
 
 /**
@@ -26,7 +25,9 @@ export const REPLY_MESSAGES = 10;
 export type ReplyMessage = {
   ref: string;
   messageId: string;
-  from: "you" | "them";
+  from: "you" | "them" | "other";
+  /** For "other": who wrote it. */
+  who: string | null;
   at: Date;
   text: string;
 };
@@ -42,7 +43,7 @@ export type ReplyContext = {
   /** The thread's newest messages, oldest first. */
   messages: ReplyMessage[];
   /** Who wrote last in the thread. */
-  lastFrom: "you" | "them";
+  lastFrom: "you" | "them" | "other";
 };
 
 /** No thread to reply to: no stored mail with this contact. */
@@ -86,14 +87,14 @@ export async function loadReplyContext(
   accessToken: string,
   options: { limit?: number } = {},
 ): Promise<ReplyContext> {
-  const touches = await contactTouches(db, userId, contactId);
-  if (!touches || touches.length === 0) throw new NoThreadToReplyTo();
+  // The whole latest thread, including anyone else in it: a reply has to answer
+  // the conversation as it stands (docs/thread-context-plan.md, Part 1).
+  const all = await loadThreadMessages(db, userId, contactId);
+  if (all.length === 0) throw new NoThreadToReplyTo();
 
-  const newest = touches.reduce((latest, touch) => (touch.at > latest.at ? touch : latest));
-  const thread = touches
-    .filter((touch) => touch.threadId === newest.threadId)
-    .sort((a, b) => a.at.getTime() - b.at.getTime())
-    .slice(-(options.limit ?? REPLY_MESSAGES));
+  const whole = latestThread(all).sort((a, b) => a.at.getTime() - b.at.getTime());
+  const newest = whole[whole.length - 1];
+  const thread = whole.slice(-(options.limit ?? REPLY_MESSAGES));
 
   const addresses = await contactAddresses(db, userId, contactId);
 
@@ -105,20 +106,22 @@ export async function loadReplyContext(
     subject: newest.subject,
   };
 
-  for (const touch of thread) {
-    const message = await getMessageFull(accessToken, touch.messageId);
+  for (const item of thread) {
+    const message = await getMessageFull(accessToken, item.messageId);
     const headers = message.payload?.headers;
     messages.push({
       ref: `m${messages.length + 1}`,
-      messageId: touch.messageId,
-      from: touch.direction === "outbound" ? "you" : "them",
-      at: touch.at,
+      messageId: item.messageId,
+      from: item.from,
+      who: item.who,
+      at: item.at,
       text: messageText(message.payload),
     });
 
-    // The last message in the thread is the one being answered.
+    // The reply goes to the contact — the address they last wrote from. The
+    // headers that thread it come from the last message, whoever wrote it.
     answered = {
-      to: touch.direction === "inbound" ? replyToAddress(headers) : answered.to,
+      to: item.from === "them" ? replyToAddress(headers) : answered.to,
       messageId: headerValue(headers, "Message-ID"),
       references: headerValue(headers, "References"),
       subject: headerValue(headers, "Subject") ?? answered.subject,
@@ -140,7 +143,7 @@ export async function loadReplyContext(
     inReplyTo: answered.messageId,
     references: buildReferences(answered.references, answered.messageId),
     messages,
-    lastFrom: thread[thread.length - 1].direction === "outbound" ? "you" : "them",
+    lastFrom: thread[thread.length - 1].from,
   };
 }
 
@@ -168,16 +171,15 @@ async function contactAddresses(db: SupabaseClient, userId: string, contactId: s
 export function replyThreadText(context: ReplyContext): string {
   return context.messages
     .map((message) =>
-      [`[${message.ref}] ${message.at.toISOString().slice(0, 10)} · from ${message.from}`, message.text || "(no text)"].join(
-        "\n",
-      ),
+      [
+        `[${message.ref}] ${message.at.toISOString().slice(0, 10)} · from ${writerOf(message)}`,
+        message.text || "(no text)",
+      ].join("\n"),
     )
     .join("\n\n");
 }
 
-/** Touches of the thread a reply would answer — for tests and callers that need it. */
-export function latestThreadOf(touches: Touch[]): Touch[] {
-  if (touches.length === 0) return [];
-  const newest = touches.reduce((latest, touch) => (touch.at > latest.at ? touch : latest));
-  return touches.filter((touch) => touch.threadId === newest.threadId).sort((a, b) => a.at.getTime() - b.at.getTime());
+/** The thread a reply would answer, oldest first. */
+export function latestThreadOf(items: ThreadItem[]): ThreadItem[] {
+  return latestThread(items).sort((a, b) => a.at.getTime() - b.at.getTime());
 }

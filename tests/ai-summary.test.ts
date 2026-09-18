@@ -21,11 +21,12 @@ import {
  * whole flow — against the real database, with fake Gmail and fake OpenAI.
  */
 
-const message = (n: number, from: "you" | "them", text: string): ConversationMessage => ({
+const message = (n: number, from: "you" | "them" | "other", text: string, who: string | null = null): ConversationMessage => ({
   ref: `m${n}`,
   messageId: `gmail-${n}`,
   threadId: "thread-1",
   from,
+  who,
   at: new Date(Date.UTC(2026, 8, n, 9)),
   subject: n === 1 ? "Examensarbete" : "Re: Examensarbete",
   text,
@@ -40,7 +41,7 @@ const raw = (overrides: Partial<RawSummary> = {}): RawSummary => ({
     company: { value: null, sources: [] },
     role: { value: null, sources: [] },
     next_touch: { reason: null, timing: "nothing_open", date: null, month: null, why: null, sources: [] },
-    referral: { name: null, email: null, sources: [] },
+    referral: { people: [], sources: [] },
   },
   ...overrides,
 });
@@ -49,12 +50,29 @@ const TODAY = "2026-09-17";
 const ADDRESSES = ["karin@fortnox.se", "karin.l@gmail.com"];
 
 describe("buildInput", () => {
+  it("says what the user has already planned, so the model doesn't suggest it again", () => {
+    const messages = [message(1, "you", "Hej")];
+    expect(buildInput("Karin", ADDRESSES, messages, TODAY)).toContain("Already planned by the user: nothing");
+    expect(
+      buildInput("Karin", ADDRESSES, messages, TODAY, { due_on: "2026-09-20", reason: "Contact Pontus" }),
+    ).toContain("Already planned by the user: Contact Pontus — 2026-09-20");
+
+    // Plans with other people in the same threads count too: Pontus's next
+    // touch lives on Pontus's contact, not on this one.
+    const withOthers = buildInput("Karin", ADDRESSES, messages, TODAY, null, [
+      "Pontus Berglund — 2026-09-21 — Follow up about the opportunity",
+    ]);
+    expect(withOthers).toContain("don't suggest contacting them again");
+    expect(withOthers).toContain("Pontus Berglund — 2026-09-21");
+  });
+
   it("gives today, the contact's addresses and each message with a ref, oldest first", () => {
     expect(
       buildInput("Karin Lindqvist", ADDRESSES, [message(1, "you", "Hej Karin!"), message(2, "them", "")], TODAY),
     ).toBe(
       "Today: 2026-09-17\n\nContact: Karin Lindqvist\n\n" +
         "Their addresses:\n[a1] karin@fortnox.se\n[a2] karin.l@gmail.com\n\n" +
+        "Already planned by the user: nothing\n\n" +
         "Messages, oldest first:\n\n" +
         "[m1] 2026-09-01 · from you · Subject: Examensarbete\nHej Karin!\n\n" +
         "[m2] 2026-09-02 · from them · Subject: Re: Examensarbete\n(no text)",
@@ -72,6 +90,7 @@ describe("the instructions and schema", () => {
     expect(INSTRUCTIONS).toMatch(/negations/);
     expect(INSTRUCTIONS).toMatch(/You don't pick the day/);
     expect(INSTRUCTIONS).toMatch(/referral:/);
+    expect(INSTRUCTIONS).toMatch(/Don't repeat a plan they already have/);
   });
 
   it("is strict: every part required, nothing extra", () => {
@@ -158,8 +177,7 @@ describe("checkSummary's suggestions", () => {
       touchOn: "2026-09-22",
       touchWhy: "Martin referred you to Niklas; referrals are best followed up quickly.",
       touchRough: false,
-      referralName: null,
-      referralEmail: null,
+      referrals: [],
       referralSince: null,
     });
     expect(checked.sources.company).toEqual([
@@ -188,8 +206,7 @@ describe("checkSummary's suggestions", () => {
       touchOn: null,
       touchWhy: null,
       touchRough: false,
-      referralName: null,
-      referralEmail: null,
+      referrals: [],
       referralSince: null,
     });
     expect(checked.dropped).toEqual(["company", "role", "next_touch"]);
@@ -218,23 +235,31 @@ describe("checkSummary's suggestions", () => {
     }
   });
 
-  it("keeps a referral cited from a real message, dated by that message", () => {
-    const checked = suggest({ referral: { name: "Niklas Hedlund", email: "Niklas.Hedlund@Combitech.com", sources: ["m2"] } });
-    expect(checked.suggestions).toMatchObject({
-      referralName: "Niklas Hedlund",
-      referralEmail: "niklas.hedlund@combitech.com",
-      referralSince: "2026-09-02T09:00:00.000Z",
+  it("keeps every referred person, cited from a real message and dated by it", () => {
+    const checked = suggest({
+      referral: {
+        people: [
+          { name: "Niklas Hedlund", email: "Niklas.Hedlund@Combitech.com" },
+          { name: "Oskar", email: null },
+        ],
+        sources: ["m2"],
+      },
     });
+    expect(checked.suggestions.referrals).toEqual([
+      { name: "Niklas Hedlund", email: "niklas.hedlund@combitech.com" },
+      { name: "Oskar", email: null },
+    ]);
+    expect(checked.suggestions.referralSince).toBe("2026-09-02T09:00:00.000Z");
   });
 
-  it("keeps the referral's name but not an address that isn't one", () => {
-    const checked = suggest({ referral: { name: "Niklas Hedlund", email: "ask Martin", sources: ["m2"] } });
-    expect(checked.suggestions).toMatchObject({ referralName: "Niklas Hedlund", referralEmail: null });
+  it("keeps a referred name but not an address that isn't one", () => {
+    const checked = suggest({ referral: { people: [{ name: "Niklas Hedlund", email: "ask Martin" }], sources: ["m2"] } });
+    expect(checked.suggestions.referrals).toEqual([{ name: "Niklas Hedlund", email: null }]);
   });
 
-  it("drops a referral that cites no real message — its date would be a guess", () => {
-    const checked = suggest({ referral: { name: "Niklas Hedlund", email: null, sources: ["a1", "m9"] } });
-    expect(checked.suggestions).toMatchObject({ referralName: null, referralSince: null });
+  it("drops referrals that cite no real message — their date would be a guess", () => {
+    const checked = suggest({ referral: { people: [{ name: "Niklas Hedlund", email: null }], sources: ["a1", "m9"] } });
+    expect(checked.suggestions).toMatchObject({ referrals: [], referralSince: null });
     expect(checked.dropped).toContain("referral");
   });
 
@@ -389,7 +414,7 @@ describe("generateSummary", () => {
               why: "Karin asked for an answer before October.",
               sources: ["m2"],
             },
-            referral: { name: "Petter Ahlgren", email: null, sources: ["m2"] },
+            referral: { people: [{ name: "Petter Ahlgren", email: null }], sources: ["m2"] },
           },
         }),
       ),
@@ -406,6 +431,10 @@ describe("generateSummary", () => {
     expect(calls.openAi[0].input).toContain("[a1] karin@fortnox.se");
     expect(calls.openAi).toHaveLength(1);
     expect(calls.openAi[0].input).toContain("[m2] 2026-09-02 · from them");
+    // A thread with someone else in it names them (docs/thread-context-plan.md).
+    expect(buildInput("Karin", ADDRESSES, [message(1, "other", "Hej!", "Pontus Berglund")], TODAY)).toContain(
+      "from Pontus Berglund",
+    );
     expect(calls.openAi[0].input).toContain("I run the platform team at Fortnox");
 
     expect(summary).toMatchObject({
@@ -423,8 +452,7 @@ describe("generateSummary", () => {
       suggested_touch_on: "2026-10-01",
       suggested_touch_why: "Karin asked for an answer before October.",
       suggested_touch_rough: false,
-      suggested_referral_name: "Petter Ahlgren",
-      suggested_referral_email: null,
+      suggested_referrals: [{ name: "Petter Ahlgren", email: null }],
     });
     expect(new Date(summary.suggested_referral_since!).toISOString()).toBe("2026-09-02T09:00:00.000Z");
     expect(new Date(summary.as_of).toISOString()).toBe("2026-09-02T09:00:00.000Z");

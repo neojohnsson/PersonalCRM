@@ -10,7 +10,7 @@ import {
   replySubject,
   replyThreadText,
 } from "@/lib/ai/reply";
-import type { Touch } from "@/lib/relationship/touches";
+import type { ThreadItem } from "@/lib/ai/thread";
 
 /**
  * What a reply needs: the right thread, the right recipient, and the headers
@@ -41,10 +41,11 @@ describe("reply headers", () => {
 });
 
 describe("latestThreadOf", () => {
-  const touch = (thread: string, day: number): Touch => ({
+  const touch = (thread: string, day: number): ThreadItem => ({
     messageId: `${thread}-${day}`,
     threadId: thread,
-    direction: day % 2 ? "inbound" : "outbound",
+    from: day % 2 ? "them" : "you",
+    who: null,
     at: new Date(Date.UTC(2026, 8, day)),
     subject: thread,
   });

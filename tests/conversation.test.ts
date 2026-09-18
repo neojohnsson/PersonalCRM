@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MESSAGES_PER_SUMMARY, readConversation } from "@/lib/ai/conversation";
 import { GmailApiError } from "@/lib/google/gmail";
-import type { Touch } from "@/lib/relationship/touches";
+import type { ThreadItem } from "@/lib/ai/thread";
 
 /**
  * Reading a contact's recent messages from Gmail for one summary — against a
@@ -12,10 +12,11 @@ import type { Touch } from "@/lib/relationship/touches";
 const TOKEN = "ya29.fake-access-token";
 const DAY = 24 * 60 * 60 * 1000;
 
-const touch = (n: number, direction: Touch["direction"] = n % 2 ? "inbound" : "outbound"): Touch => ({
+const touch = (n: number, from: ThreadItem["from"] = n % 2 ? "them" : "you", who: string | null = null): ThreadItem => ({
   messageId: `msg-${n}`,
   threadId: "t1",
-  direction,
+  from,
+  who,
   at: new Date(Date.UTC(2026, 8, 1) + n * DAY),
   subject: `Subject ${n}`,
 });
@@ -61,6 +62,7 @@ describe("readConversation", () => {
       messageId: "msg-6",
       threadId: "t1",
       from: "you",
+      who: null,
       at: touch(6).at,
       subject: "Subject 6",
       text: "Text of msg-6",
@@ -70,6 +72,12 @@ describe("readConversation", () => {
     expect(fetchMock).toHaveBeenCalledTimes(20);
     const url = new URL(String(fetchMock.mock.calls[0][0]));
     expect(url.searchParams.get("format")).toBe("full");
+  });
+
+  it("keeps the label of a message someone else in the thread wrote", async () => {
+    fakeGmail();
+    const conversation = await readConversation(TOKEN, [touch(1, "other", "Pontus Berglund")]);
+    expect(conversation[0]).toMatchObject({ from: "other", who: "Pontus Berglund" });
   });
 
   it("skips a message deleted from Gmail since the sync, and renumbers", async () => {
