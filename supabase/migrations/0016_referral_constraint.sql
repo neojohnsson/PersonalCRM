@@ -4,7 +4,7 @@
 -- the name lived in its own column. Since 0015 the names live in the
 -- `suggested_referrals` list, so a summary with a list and a date but no
 -- `suggested_referral_name` was refused.
---
+--X
 -- The rule is the same, now counting the list too.
 --
 -- Run in the Supabase dashboard → SQL Editor, the whole file.
