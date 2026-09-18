@@ -7,7 +7,8 @@ import { initials } from "@/lib/format";
  * and ReviewQueue.dc.html share it — a dark sidebar on the left, a header on top.
  *
  * Differences from the design, on purpose:
- *   - The sidebar holds only pages that exist: Home, Contacts and Seen once.
+ *   - The sidebar holds only pages that exist: Home, Your week, Contacts and
+ *     Seen once.
  *     The design's Add, Calendar and Settings icons arrive with their pages,
  *     because a nav item that goes nowhere would be a lie. The header's centred
  *     page switcher is left out for the same reason.
@@ -31,7 +32,7 @@ export function AppShell({
   userEmail: string | undefined;
   headerRight?: React.ReactNode;
   /** Which sidebar entry is the current page. */
-  active?: "home" | "contacts" | "seen-once" | "profile";
+  active?: "home" | "brief" | "contacts" | "seen-once" | "profile";
   /** People waiting in Seen once; the design's orange dot shows when above 0. */
   seenOnceCount?: number;
   children: React.ReactNode;
@@ -52,6 +53,14 @@ export function AppShell({
           <NavItem href="/" label="Who needs you today" active={active === "home"}>
             <path d="M3 10.5 12 3l9 7.5" />
             <path d="M5.5 9.4V20h13V9.4" />
+          </NavItem>
+          {/* Your week sits under Home: it's the same question over a week.
+              A sheet with lines, not the design's calendar icon — that one
+              belongs to the Calendar page, which doesn't exist yet. */}
+          <NavItem href="/brief" label="Your week" active={active === "brief"}>
+            <rect x="3.5" y="4.5" width="17" height="15" rx="3" />
+            <path d="M7.5 9.5h9" />
+            <path d="M7.5 13.5h6" />
           </NavItem>
           <NavItem href="/contacts" label="Contacts" active={active === "contacts"}>
             <circle cx="9.5" cy="8" r="3.3" />
