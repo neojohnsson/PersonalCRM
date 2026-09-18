@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useActionState, useEffect, useRef, useState } from "react";
+import { COMMON_AI_PHRASES } from "@/lib/ai/tidy";
 import { initials, timeAgo } from "@/lib/format";
 import {
   PROFILE_LIMITS,
@@ -28,6 +29,9 @@ import { saveProfileAction, type ProfileState } from "./actions";
  *   - Links are edited in place (name, address, remove); the design only shows
  *     saved ones. Under them, a pointer: LinkedIn gets into drafts through
  *     LinkedIn's own PDF export, in Files, once 5b exists.
+ *   - Under "Never write", one-click suggestions for the phrases that make a
+ *     draft read as machine-written (lib/ai/tidy.ts). The design has the list
+ *     but not the suggestions.
  *   - The header's search and bell are left out, as on every page (app-shell.tsx).
  *   - The columns stack on narrow screens.
  */
@@ -325,6 +329,24 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
                   saveSoon();
                 }}
               />
+              {COMMON_AI_PHRASES.some((phrase) => !neverWrite.includes(phrase)) && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[11.5px] text-ink-faint">Common AI phrases:</span>
+                  {COMMON_AI_PHRASES.filter((phrase) => !neverWrite.includes(phrase)).map((phrase) => (
+                    <button
+                      key={phrase}
+                      type="button"
+                      onClick={() => {
+                        setNeverWrite([...neverWrite, phrase]);
+                        saveSoon();
+                      }}
+                      className="rounded-full px-[11px] py-[5px] text-[12px] font-medium text-ink-muted shadow-[inset_0_0_0_1px_var(--color-line)] hover:text-ink"
+                    >
+                      + “{phrase}”
+                    </button>
+                  ))}
+                </div>
+              )}
               <FieldError message={errors.never_write} />
             </div>
           </section>

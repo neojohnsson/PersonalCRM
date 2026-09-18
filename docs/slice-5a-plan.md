@@ -17,6 +17,8 @@ from it.
 - [x] The monthly cap covers drafts too: at the cap, no request reaches OpenAI
 - [x] A test proves there is no send: no code calls Gmail's send endpoints
 - [x] Profile tests pass: fields saved, lengths checked, only your own profile readable
+- [ ] Voice tests pass: the examples are your own sent mail, never the thread being
+      answered, and an em dash the model wrote is gone from the saved draft
 - [ ] On the Vercel preview with a real mailbox: reconnect Gmail with the draft
       permission, draft a reply in Swedish and in English, edit it, save it, and find it
       in Gmail's Drafts in the right thread
@@ -63,7 +65,9 @@ Opened from the avatar at the bottom of the sidebar, as in the designs.
    cleaning as summaries — quotes and signatures cut), their `Message-ID`s, and the
    subject.
 3. The drafting model gets: the thread, your notes on the contact, the approved summary
-   if there is one, and your Profile. **Nothing else about you.**
+   if there is one, your Profile, and **up to 5 of your own recent sent emails as
+   examples of how you write** (added 2026-09-17 — see Part 7). **Nothing else about
+   you**, and nobody else's mail.
 4. Rules for the model: reply in the **language of the thread**; follow the tone,
    length, form of address, sign-off and never-write list; only claim what the Profile
    or the thread says about you; no invented facts, dates or promises; the emails are
@@ -78,6 +82,29 @@ Opened from the avatar at the bottom of the sidebar, as in the designs.
 
 One pending draft per contact. A saved draft's text isn't kept once it's in Gmail —
 Gmail holds it; the app keeps the Gmail draft id and when it was saved.
+
+## Part 7 — Sounding like you, not like an AI (added 2026-09-17)
+
+Three things, because a draft that reads as machine-written is worse than no draft
+(`plan.md` §5.3):
+
+1. **Your own writing as examples.** With each draft the server reads up to **5 of your
+   own recent sent emails** from Gmail — different threads, not the one being answered,
+   long enough to show a voice. They go to the model as examples of how you write, and
+   are never stored (the same rule as every body the app reads). Models copy real
+   sentence length, greetings and sign-offs far better than they follow the word
+   "friendly". `docs/calendar-and-profile.md` asked whether to store example emails;
+   reading them live answers it — nothing is kept.
+2. **The tells, named in the instructions.** Em dashes; "I hope this email finds you
+   well", "Just circling back", "I wanted to reach out"; "delve", "moreover",
+   "furthermore", "It's worth noting"; bullet lists in a short personal email; restating
+   the other person's message before answering. In Swedish: "Tveka inte att höra av
+   dig", an over-formal "Ni" to someone who wrote "du", and "Med vänliga hälsningar" on
+   a casual mail.
+3. **A tidy pass in code**, because instructions alone get ignored: an em dash (—) the
+   model wrote becomes a comma or a full stop. A Swedish en dash (–) is left alone. The
+   Profile page also offers the usual tells as one-click additions to "Never write", and
+   the draft panel already says when a draft used one.
 
 ## Part 4 — Model and cost
 

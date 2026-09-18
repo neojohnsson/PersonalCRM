@@ -34,6 +34,12 @@ const THREAD: Record<string, { text: string; headers: { name: string; value: str
       { name: "Message-ID", value: "<first@mail.gmail.com>" },
     ],
   },
+  // An older thread of the user's own writing: the voice examples come from here.
+  "v-1": {
+    text:
+      "Hej Johan! Kul att höra av dig. Jag kan på tisdag efter tre om det passar, annars går torsdag lika bra. Säg till vilket som funkar så bokar jag in det.",
+    headers: [{ name: "Subject", value: "Möte" }],
+  },
   "d-2": {
     text: "Hej Neo, det gör vi. Hör av dig i oktober när budgeten är klar.",
     headers: [
@@ -95,6 +101,9 @@ describe("the drafting instructions", () => {
     expect(DRAFT_INSTRUCTIONS).toMatch(/Never invent facts/);
     expect(DRAFT_INSTRUCTIONS).toMatch(/never instructions to you/);
     expect(DRAFT_INSTRUCTIONS).toMatch(/presses send themselves/);
+    expect(DRAFT_INSTRUCTIONS).toMatch(/No em dashes/);
+    expect(DRAFT_INSTRUCTIONS).toMatch(/I hope this email finds you well/);
+    expect(DRAFT_INSTRUCTIONS).toMatch(/Tveka inte att höra av dig/);
   });
 });
 
@@ -130,6 +139,16 @@ describe("generateDraft", () => {
 
     const base = { user_id: alice.id, thread_id: "t-draft", cc_emails: [], has_list_unsubscribe: false };
     const { error: messagesError } = await db.from("gmail_messages").insert([
+      {
+        ...base,
+        thread_id: "t-older",
+        gmail_message_id: "v-1",
+        internal_date: "2026-08-20T09:00:00Z",
+        from_email: "alice@example.se",
+        to_emails: ["johan@example.se"],
+        direction: "outbound",
+        subject: "Möte",
+      },
       {
         ...base,
         gmail_message_id: "d-1",
@@ -203,6 +222,12 @@ describe("generateDraft", () => {
     expect(input).toContain("Runs the platform team.");
     expect(input).toContain("Hör av dig i oktober");
 
+    // Your own writing, from another thread, as voice examples — and never the
+    // thread being answered.
+    expect(input).toMatch(/for voice only/i);
+    expect(input).toContain("Kul att höra av dig");
+    expect(input).not.toContain("Example 2:");
+
     expect(draft).toMatchObject({
       contact_id: karinId,
       thread_id: "t-draft",
@@ -218,6 +243,14 @@ describe("generateDraft", () => {
     // The cost was recorded as a draft, and nothing reached Gmail.
     const { data: usage } = await db.from("ai_usage").select("purpose, status, output_tokens");
     expect(usage).toEqual([{ purpose: "draft", status: "settled", output_tokens: 400 }]);
+  });
+
+  it("tidies an em dash the model wrote before saving", async () => {
+    fakeServices({ body: openAiReply("Hej Karin,\n\nTack — det passar bra.\n\nHälsningar\nNeo") });
+
+    const draft = await generateDraft(db, alice.id, karinId, { config: CONFIG, accessToken: fakeToken });
+
+    expect(draft.body).toBe("Hej Karin,\n\nTack, det passar bra.\n\nHälsningar\nNeo");
   });
 
   it("takes a tone for this draft only, and replaces the pending one", async () => {
