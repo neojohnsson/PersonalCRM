@@ -17,9 +17,9 @@ from it.
 - [x] The monthly cap covers drafts too: at the cap, no request reaches OpenAI
 - [x] A test proves there is no send: no code calls Gmail's send endpoints
 - [x] Profile tests pass: fields saved, lengths checked, only your own profile readable
-- [ ] Voice tests pass: the examples are your own sent mail, never the thread being
+- [x] Voice tests pass: the examples are your own sent mail, never the thread being
       answered, and an em dash the model wrote is gone from the saved draft
-- [ ] On the Vercel preview with a real mailbox: reconnect Gmail with the draft
+- [x] On the Vercel preview with a real mailbox: reconnect Gmail with the draft
       permission, draft a reply in Swedish and in English, edit it, save it, and find it
       in Gmail's Drafts in the right thread
 
