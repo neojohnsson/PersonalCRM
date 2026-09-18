@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { aiConfig, type AiConfig } from "@/lib/ai/config";
 import { readConversation, type ConversationMessage } from "@/lib/ai/conversation";
 import { loadThreadMessages, writerOf } from "@/lib/ai/thread";
+import { openNextTouch } from "@/lib/relationship/next-touch";
 import { estimateTokens, maxCostOf } from "@/lib/ai/models";
 import { createStructuredResponse, type JsonSchema } from "@/lib/ai/openai";
 import { withSpendCap } from "@/lib/ai/spend";
@@ -90,7 +91,7 @@ The suggestions, which the user may copy onto the contact:
   - they_will_get_back: they said they would come back to the user.
   - later_event: it depends on something later, like "when your internship approaches" or "in the spring". Put the month in "month" as YYYY-MM only if the messages name one.
   - nothing_open: nothing is left to do. Then "reason" is null.
-  "why" is one short sentence explaining that timing, based on the messages.
+  "why" is one short sentence explaining that timing, based on the messages. If the user already has a next touch planned (it is given below) that covers what needs doing, use timing "nothing_open" and null reason — don't repeat what they have planned. Only suggest one when it is about something else, or clearly needs a different date.
 - referral: the people the contact pointed the user to, one entry each — "Oskar or Pontus" is two entries, not one name. Each has the "name" as written and an "email" only if a message gives it. Cite the message where the referral was made. An empty list when nobody was named. Leave "date" and "month" null unless the rules above say to fill them. Never make up a date. Watch for negations: "I can't before the 20th" is not a promise for the 20th. You don't pick the day — the app does, from the timing.`;
 
 const TEXT_WITH_SOURCES: JsonSchema = {
@@ -183,6 +184,8 @@ export function buildInput(
   addresses: string[],
   conversation: ConversationMessage[],
   today: string,
+  /** What the user has already planned with this contact, if anything. */
+  planned?: { due_on: string; reason: string | null } | null,
 ): string {
   const addressLines = addresses.map((address, index) => `[a${index + 1}] ${address}`);
   const messages = conversation.map((message) =>
@@ -196,6 +199,9 @@ export function buildInput(
     `Today: ${today}`,
     `Contact: ${contactName}`,
     `Their addresses:\n${addressLines.join("\n") || "(none)"}`,
+    planned
+      ? `Already planned by the user: ${planned.reason ?? "a next touch"} — ${planned.due_on}`
+      : "Already planned by the user: nothing",
     `Messages, oldest first:\n\n${messages.join("\n\n")}`,
   ].join("\n\n");
 }
@@ -451,7 +457,11 @@ export async function generateSummary(
   const conversation = await readConversation(token, thread);
   if (conversation.length === 0) throw new NoMailToSummarise();
 
-  const input = buildInput(displayName(contactResult.data), addresses, conversation, today);
+  // What the user has already planned, so the model doesn't suggest it again
+  // (docs/thread-context-plan.md, Part 3).
+  const planned = await openNextTouch(db, userId, contactId);
+
+  const input = buildInput(displayName(contactResult.data), addresses, conversation, today, planned);
   const estimateUsd = maxCostOf(
     config.model,
     // The rules, the messages, and some room for the schema and formatting.

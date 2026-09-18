@@ -50,12 +50,21 @@ const TODAY = "2026-09-17";
 const ADDRESSES = ["karin@fortnox.se", "karin.l@gmail.com"];
 
 describe("buildInput", () => {
+  it("says what the user has already planned, so the model doesn't suggest it again", () => {
+    const messages = [message(1, "you", "Hej")];
+    expect(buildInput("Karin", ADDRESSES, messages, TODAY)).toContain("Already planned by the user: nothing");
+    expect(
+      buildInput("Karin", ADDRESSES, messages, TODAY, { due_on: "2026-09-20", reason: "Contact Pontus" }),
+    ).toContain("Already planned by the user: Contact Pontus — 2026-09-20");
+  });
+
   it("gives today, the contact's addresses and each message with a ref, oldest first", () => {
     expect(
       buildInput("Karin Lindqvist", ADDRESSES, [message(1, "you", "Hej Karin!"), message(2, "them", "")], TODAY),
     ).toBe(
       "Today: 2026-09-17\n\nContact: Karin Lindqvist\n\n" +
         "Their addresses:\n[a1] karin@fortnox.se\n[a2] karin.l@gmail.com\n\n" +
+        "Already planned by the user: nothing\n\n" +
         "Messages, oldest first:\n\n" +
         "[m1] 2026-09-01 · from you · Subject: Examensarbete\nHej Karin!\n\n" +
         "[m2] 2026-09-02 · from them · Subject: Re: Examensarbete\n(no text)",
@@ -73,6 +82,7 @@ describe("the instructions and schema", () => {
     expect(INSTRUCTIONS).toMatch(/negations/);
     expect(INSTRUCTIONS).toMatch(/You don't pick the day/);
     expect(INSTRUCTIONS).toMatch(/referral:/);
+    expect(INSTRUCTIONS).toMatch(/don't repeat what they have planned/);
   });
 
   it("is strict: every part required, nothing extra", () => {

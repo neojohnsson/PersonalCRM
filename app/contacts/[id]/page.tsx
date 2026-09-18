@@ -22,7 +22,7 @@ import {
   type TurnPill,
 } from "@/lib/relationship/describe";
 import { loadRelationship, type Relationship } from "@/lib/relationship/load";
-import { openNextTouch } from "@/lib/relationship/next-touch";
+import { openNextTouch, openNextTouches } from "@/lib/relationship/next-touch";
 import { canDraft } from "@/lib/google/scopes";
 import { loadProfile } from "@/lib/profile/store";
 import { checkReferral } from "@/lib/relationship/referral";
@@ -149,10 +149,23 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
             email: person.email,
             since: summary.suggested_referral_since!,
           }),
+          plannedOn: null,
         })),
       );
     }),
   );
+
+  // A referred person who is a contact may already have a next touch of their
+  // own — then there's nothing to suggest about them.
+  const referredContactIds = Object.values(referrals)
+    .flat()
+    .map((person) => ("contactId" in person.status ? person.status.contactId : null))
+    .filter((id): id is string => id !== null);
+  const referredTouches = await openNextTouches(supabase, user.id, referredContactIds);
+  for (const person of Object.values(referrals).flat()) {
+    const contactId = "contactId" in person.status ? person.status.contactId : null;
+    person.plannedOn = contactId ? (referredTouches.get(contactId)?.due_on ?? null) : null;
+  }
 
   // "Fill in next touch" on the summary links here with ?touch=<summary id>.
   // Only an id travels in the address; the suggestion is read from the database.
@@ -302,7 +315,13 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
           hasMail={relationship.messageCount > 0}
           budget={budget}
           gmailEmail={gmailResult.data?.email ?? null}
-          contact={{ id: contact.id, company: contact.company, role: contact.role, hasNextTouch: nextTouch !== null }}
+          contact={{
+            id: contact.id,
+            company: contact.company,
+            role: contact.role,
+            hasNextTouch: nextTouch !== null,
+            plannedTouch: nextTouch ? { due_on: nextTouch.due_on, reason: nextTouch.reason } : null,
+          }}
           askNow={askForSummary}
           referrals={referrals}
         />

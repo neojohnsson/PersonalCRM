@@ -99,6 +99,26 @@ export async function openNextTouch(
   return data;
 }
 
+/** The open touches of several contacts at once, by contact id. */
+export async function openNextTouches(
+  db: SupabaseClient,
+  userId: string,
+  contactIds: string[],
+): Promise<Map<string, NextTouch>> {
+  if (contactIds.length === 0) return new Map();
+
+  const { data, error } = await db
+    .from("next_touches")
+    .select(COLUMNS)
+    .eq("user_id", userId)
+    .eq("status", "open")
+    .in("contact_id", contactIds)
+    .returns<NextTouch[]>();
+  if (error) throw supabaseError(error, "Couldn't load the next touches");
+
+  return new Map(data.map((touch) => [touch.contact_id, touch]));
+}
+
 /**
  * Give the contact's open touch this date and reason, creating it if there
  * isn't one.

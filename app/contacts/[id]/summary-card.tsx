@@ -11,8 +11,8 @@ import {
 } from "@/lib/ai/summary-parts";
 import type { ReferralStatus } from "@/lib/relationship/referral";
 
-/** One referred person, and what your own mail says about them. */
-export type ReferredStatus = { name: string; status: ReferralStatus };
+/** One referred person, what your own mail says about them, and their own next touch. */
+export type ReferredStatus = { name: string; status: ReferralStatus; plannedOn: string | null };
 import Link from "next/link";
 import {
   applySuggestionAction,
@@ -66,7 +66,14 @@ const PART_LABELS: Record<SummaryPart, string> = {
 };
 
 /** What the contact holds now, so a suggestion knows whether it would fill or replace. */
-export type ContactNow = { id: string; company: string | null; role: string | null; hasNextTouch: boolean };
+export type ContactNow = {
+  id: string;
+  company: string | null;
+  role: string | null;
+  hasNextTouch: boolean;
+  /** What you have already planned with this contact, if anything. */
+  plannedTouch: { due_on: string; reason: string | null } | null;
+};
 
 export type AiBudget = {
   spentUsd: number;
@@ -374,9 +381,13 @@ function Suggestions({
     { field: "role" as const, label: "Role", value: summary.suggested_role, current: contact.role },
   ].filter((row) => row.value);
   const referred = referrals[summary.id] ?? [];
-  // Everyone they referred you to has been written to: the next step is done.
-  const allDone = referred.length > 0 && referred.every((person) => person.status.kind === "done");
-  const stillOpen = referred.filter((person) => person.status.kind !== "done").map((person) => person.name);
+  // Everyone they referred you to has been written to, or already has a next
+  // touch of their own: nothing left to suggest.
+  const allDone =
+    referred.length > 0 && referred.every((person) => person.status.kind === "done" || person.plannedOn !== null);
+  const stillOpen = referred
+    .filter((person) => person.status.kind !== "done" && person.plannedOn === null)
+    .map((person) => person.name);
   const touchReason = allDone ? null : summary.suggested_touch_reason;
 
   if (fields.length === 0 && !touchReason && referred.length === 0) return null;
@@ -413,6 +424,11 @@ function Suggestions({
         {referred.map((person) => (
           <li key={person.name} className="flex flex-col gap-0.5">
             <ReferralLine name={person.name} status={person.status} />
+            {person.plannedOn && (
+              <span className="text-[11.5px] text-ink-muted">
+                You already have a next touch for {person.name} on {weekdayDate(person.plannedOn)}.
+              </span>
+            )}
           </li>
         ))}
         {touchReason && (
@@ -428,6 +444,12 @@ function Suggestions({
                   {summary.suggested_touch_rough && (
                     <span className="text-cooling"> Rough guess — pick a better date.</span>
                   )}
+                </span>
+              )}
+              {contact.plannedTouch && (
+                <span className="text-[11.5px] text-cooling">
+                  Already planned with {"this contact"}: {contact.plannedTouch.reason ?? "a next touch"} ·{" "}
+                  {weekdayDate(contact.plannedTouch.due_on)}. Filling this in replaces it.
                 </span>
               )}
               {stillOpen.length > 0 && stillOpen.length < referred.length && (
