@@ -37,6 +37,8 @@ export type BriefEntry<T> = {
   because: string;
   /** For sorting inside a reason: the bigger, the more it needs you. */
   weight: number;
+  /** The conversation the row is about, so it can be settled from there. */
+  threadId: string | null;
 };
 
 /** Monday of the week `date` falls in, in Swedish time. YYYY-MM-DD. */
@@ -78,7 +80,15 @@ export function pickBrief<T>(
   const chosen = new Map<string, BriefEntry<T>>();
 
   const take = (person: Person<T>, reason: BriefReason, because: string, weight: number) => {
-    if (!chosen.has(person.contact.id)) chosen.set(person.contact.id, { contact: person.contact, reason, because, weight });
+    if (chosen.has(person.contact.id)) return;
+    const { turn } = person.relationship;
+    chosen.set(person.contact.id, {
+      contact: person.contact,
+      reason,
+      because,
+      weight,
+      threadId: turn.kind === "none" ? null : turn.threadId,
+    });
   };
 
   const eligible = people.filter((person) => {

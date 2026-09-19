@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
+import { NotNeededButton } from "@/app/not-needed-button";
 import { CARD, EmptyCard } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
 import { APP_NAME } from "@/lib/app-config";
@@ -32,6 +33,10 @@ export const metadata = { title: `Your week · ${APP_NAME}` };
  *     read as five alarms.
  *   - Both buttons show on every row, where Main reveals Draft reply on hover.
  *     The brief exists to be acted on, and there are at most eight rows.
+ *   - A third button, Not needed, settles the conversation the row is about
+ *     (slice 6c). It is Calendar.dc.html's, from the card that suggests a
+ *     follow-up — the one place a design says what "this needs nothing from
+ *     me" looks like.
  *   - The footnote is Calendar's grey note: it says the list is computed, not
  *     written by AI, since nothing else on the page says so.
  */
@@ -161,7 +166,7 @@ export default async function BriefPage() {
 }
 
 function BriefRow({ entry }: { entry: BriefEntry<ContactRow> }) {
-  const { contact, reason, because } = entry;
+  const { contact, reason, because, threadId } = entry;
   const name = displayName(contact);
   const hasName = Boolean(contact.first_name?.trim() || contact.last_name?.trim());
   const pill = REASON_PILL[reason];
@@ -206,6 +211,9 @@ function BriefRow({ entry }: { entry: BriefEntry<ContactRow> }) {
         <Link href={`/contacts/${contact.id}`} className={GHOST}>
           Open
         </Link>
+        {/* Nothing to settle when there is no thread — a row that is here
+            because of a next touch on a contact with no mail. */}
+        {threadId && <NotNeededButton contactId={contact.id} threadId={threadId} />}
       </div>
     </li>
   );

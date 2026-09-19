@@ -18,10 +18,11 @@ import {
   lastContactText,
   replyRateCaption,
   replySpeedText,
-  turnPill,
+  standingPill,
   type TurnPill,
 } from "@/lib/relationship/describe";
 import { loadRelationship, type Relationship } from "@/lib/relationship/load";
+import { standingOf } from "@/lib/relationship/standing";
 import { openNextTouch, openNextTouches } from "@/lib/relationship/next-touch";
 import { canDraft } from "@/lib/google/scopes";
 import { loadProfile } from "@/lib/profile/store";
@@ -31,6 +32,7 @@ import type { Band } from "@/lib/relationship/warmth";
 import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 import { DismissContact } from "./dismiss-contact";
+import { StandingActions } from "./standing-actions";
 import { DraftCard } from "./draft-card";
 import { NextTouchCard } from "./next-touch-card";
 import { SummaryCard, type AiBudget } from "./summary-card";
@@ -185,7 +187,19 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
         rough: suggestion.suggested_touch_rough,
       }
     : null;
-  const pill = turnPill(relationship.turn);
+  // What you said about this contact beats what the app worked out, and the
+  // pill says which it is (slice 6c).
+  const standing = standingOf(
+    {
+      turn: relationship.turn,
+      settledAt: relationship.settledAt,
+      plannedOn: nextTouch?.due_on ?? null,
+      neverChase: relationship.neverChase,
+    },
+    todayIn(),
+  );
+  const pill = standingPill(standing);
+  const openThreadId = relationship.turn.kind === "none" ? null : relationship.turn.threadId;
 
   const name = displayName({ ...contact, primary_email: emails[0] ?? null });
   const hasName = Boolean(contact.first_name?.trim() || contact.last_name?.trim());
@@ -286,6 +300,12 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
               <PencilIcon className="size-[15px]" />
               Draft reply
             </Link>
+            <StandingActions
+              contactId={contact.id}
+              threadId={openThreadId}
+              settled={standing.kind === "settled"}
+              neverChase={relationship.neverChase}
+            />
             {emails.length > 0 && <DismissContact contactId={contact.id} name={name} />}
           </div>
         </div>
