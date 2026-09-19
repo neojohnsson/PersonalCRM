@@ -57,26 +57,31 @@ tested once.
 `loadRelationships` grows two fields: `settledAt` for the latest thread, and `neverChase`.
 Open next touches are already loaded separately by every page that needs them.
 
-## Part 3 — the words: describe, don't instruct
+## Part 3 — the words
 
-The calculation stays; the demand goes. Every one of these is a change to wording the
-designs use, so each gets a comment where it happens saying it changed on 2026-09-19 at the
-user's request, and why: the app states what happened and lets the person decide.
+**Tried and reverted, 2026-09-19.** The first attempt replaced "Your turn" with "They
+wrote last" and "Their turn" with "You wrote last", on the grounds that the app should
+state the fact and not give orders. It states the fact, but it makes the reader work out
+whose turn it is every single time — which is the one job the pill exists to do. The
+design's words are back.
 
-| Now | After |
+What was actually wrong was never the words. It was that "Your turn" was the *only* thing
+the app could say, so it said it about conversations that were finished, days already
+chosen, and people who are never chased. Parts 1 and 2 give those their own words, and
+"Your turn" is left to mean what it says:
+
+| Label | When |
 |---|---|
-| `Your turn · 6 days` | `They wrote last · 6 days` |
-| `Their turn · 3 days` | `You wrote last · 3 days` |
-| `Going quiet · 24 days` | unchanged — already a fact |
-| `/` card **Your turn**, "3 people are waiting on a reply from you" | **They wrote last**, "3 people, and nothing has gone back yet" |
-| brief: "They wrote 9 days ago and you haven't answered." | "They wrote 9 days ago and nothing has gone back." |
-| brief pill **Waiting on you** | **They wrote last** |
-| contact list chip **Your turn** | **They wrote last** (the `?filter=yours` URL keeps its name) |
-| "they wrote, you didn't" | "they wrote, nothing back yet" |
-| — | new pills: **Nothing owed**, **Planned for 3 March**, **Just a contact** |
+| `Your turn · 6 days` | they wrote last and nothing has gone back |
+| `Their turn · 3 days` | you wrote last, less than two weeks ago |
+| `Going quiet · 24 days` | you wrote last, over two weeks ago |
+| `No open thread` | the last message either way is over 30 days old |
+| **`Nothing owed`** | you said so — until they write again |
+| **`Planned for 3 March`** | a next touch you set, for a day that hasn't come |
+| **`Just a contact`** | prompting is switched off for this person |
 
-The contact list's default order is **not** changed in this slice: people who wrote last still
-come first, because that is still the most useful order. Only the words change.
+The three in bold are new, and they win over the first two. The contact list's default
+order is unchanged: people whose turn it is still come first.
 
 ## Part 4 — the buttons
 
@@ -109,11 +114,12 @@ reversible from the contact page. Nothing is deleted.
 - [ ] An open next touch dated after today silences every prompt; the contact page says
       "Planned for 3 March" instead of whose turn it is
 - [ ] Never chase is never prompted anywhere, still appears in the contact list, and still
-      counts toward warmth
+      counts toward warmth. A next touch is the exception and still shows, in Coming up and
+      in the brief: it is a day *you* chose, and silencing it would only hide your own plan
+      (decided while building, 2026-09-19)
 - [ ] `settled_threads` passes the two-user RLS test: one user can neither see nor settle
       the other's threads
 - [ ] Precedence is tested where several apply at once
-- [ ] No surface says "Your turn" any more
 - [ ] On the preview, with the real mailbox: the handed-off contact settles and leaves the
       brief, the spring conversation leaves it once it has a date, and the contact no reply
       is owed to settles
