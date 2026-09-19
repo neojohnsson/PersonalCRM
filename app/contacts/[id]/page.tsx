@@ -475,6 +475,9 @@ const PILL: Record<TurnPill["tone"], { box: string; dot: string }> = {
   quiet: { box: "bg-chip text-cooling", dot: "bg-cooling" },
   theirs: { box: "bg-chip text-ink-soft", dot: "bg-ink-faint" },
   closed: { box: "bg-chip text-ink-muted", dot: "bg-ink-ghost" },
+  // Slice 6c: a day you chose, and the two things you can say about a contact.
+  planned: { box: "bg-info-tint text-info-ink", dot: "bg-info" },
+  said: { box: "bg-chip text-ink-muted", dot: "bg-ink-faint" },
 };
 
 function TurnPillBadge({ pill }: { pill: TurnPill }) {

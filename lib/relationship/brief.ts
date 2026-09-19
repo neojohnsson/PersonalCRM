@@ -106,7 +106,7 @@ export function pickBrief<T>(
     .slice(0, YOUR_TURN_MAX)
     .forEach((person) => {
       const waited = daysOf(person.relationship);
-      take(person, "waiting", `They wrote ${days(waited)} ago and you haven't answered.`, waited);
+      take(person, "waiting", `They wrote ${days(waited)} ago and nothing has gone back.`, waited);
     });
 
   // 2 and 3. Next touches: overdue first, then the rest of this week.

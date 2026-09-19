@@ -9,8 +9,8 @@ export type ListFilter = "all" | "yours" | "theirs" | "closed" | "quiet";
 
 export const FILTERS: { value: ListFilter; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "yours", label: "Your turn" },
-  { value: "theirs", label: "Their turn" },
+  { value: "yours", label: "They wrote last" },
+  { value: "theirs", label: "You wrote last" },
   { value: "closed", label: "No open thread" },
   { value: "quiet", label: "Going quiet" },
 ];

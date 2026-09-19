@@ -1,4 +1,6 @@
+import { dayMonth } from "@/lib/format";
 import { daysBetweenDates } from "@/lib/relationship/dates";
+import type { Standing } from "@/lib/relationship/standing";
 import type { Turn } from "@/lib/relationship/whose-turn";
 
 /**
@@ -11,9 +13,18 @@ const DAY = 24 * 60 * 60 * 1000;
 
 const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
 
-export type TurnPill = { text: string; tone: "yours" | "quiet" | "theirs" | "closed" };
+export type TurnPill = { text: string; tone: "yours" | "quiet" | "theirs" | "closed" | "planned" | "said" };
 
-/** The pill beside the name: "Your turn · 6 days". Nothing for a contact with no mail. */
+/**
+ * The pill beside the name: "They wrote last · 6 days". Nothing for a contact
+ * with no mail.
+ *
+ * The design says "Your turn" and "Their turn". Changed 2026-09-19 at the
+ * user's request: whose turn it is was being read as an instruction to write
+ * now, and it isn't one — two people can simply both be busy, or the right
+ * moment can be months away. The app states what happened and leaves the
+ * decision where it belongs. "Going quiet" is untouched: it was always a fact.
+ */
 export function turnPill(turn: Turn): TurnPill | null {
   switch (turn.kind) {
     case "none":
@@ -21,11 +32,29 @@ export function turnPill(turn: Turn): TurnPill | null {
     case "closed":
       return { text: "No open thread", tone: "closed" };
     case "yours":
-      return { text: `Your turn · ${turn.days === 0 ? "today" : days(turn.days)}`, tone: "yours" };
+      return { text: `They wrote last · ${turn.days === 0 ? "today" : days(turn.days)}`, tone: "yours" };
     case "theirs":
       return turn.goingQuiet
         ? { text: `Going quiet · ${days(turn.days)}`, tone: "quiet" }
-        : { text: `Their turn · ${turn.days === 0 ? "today" : days(turn.days)}`, tone: "theirs" };
+        : { text: `You wrote last · ${turn.days === 0 ? "today" : days(turn.days)}`, tone: "theirs" };
+  }
+}
+
+/**
+ * The same pill, once what you said is taken into account (slice 6c): a
+ * conversation you finished, a day you chose, a person you never chase. Only
+ * when you have said nothing does it fall back to the plain fact.
+ */
+export function standingPill(standing: Standing): TurnPill | null {
+  switch (standing.kind) {
+    case "never_chase":
+      return { text: "Just a contact", tone: "said" };
+    case "planned":
+      return { text: `Planned for ${dayMonth(standing.dueOn)}`, tone: "planned" };
+    case "settled":
+      return { text: "Nothing owed", tone: "said" };
+    case "open":
+      return turnPill(standing.turn);
   }
 }
 
@@ -46,8 +75,8 @@ export function lastContactText(daysAgo: number): string {
 
 /** Under "Last contact": who wrote it — and, when it's your turn, that you haven't answered. */
 export function lastContactCaption(from: "you" | "them", turn: Turn): string {
-  if (turn.kind === "yours") return "they wrote, you didn't";
-  if (turn.kind === "theirs") return "you wrote, they haven't yet";
+  if (turn.kind === "yours") return "they wrote, nothing back yet";
+  if (turn.kind === "theirs") return "you wrote, nothing back yet";
   return from === "you" ? "you wrote last" : "they wrote last";
 }
 
