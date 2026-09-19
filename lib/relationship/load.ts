@@ -21,10 +21,27 @@ export type Relationship = {
   turn: Turn;
   warmth: Warmth | null;
   messageCount: number;
+  /**
+   * When you said nothing more was owed in the contact's *latest* thread, if
+   * you did (migration 0018). Older threads aren't loaded: the app only ever
+   * talks about the newest one.
+   */
+  settledAt: Date | null;
+  /** "Just a contact": never prompted about. */
+  neverChase: boolean;
 };
 
 /** For a contact with no stored mail at all. */
-export const NO_MAIL: Relationship = { turn: { kind: "none" }, warmth: null, messageCount: 0 };
+export const NO_MAIL: Relationship = {
+  turn: { kind: "none" },
+  warmth: null,
+  messageCount: 0,
+  settledAt: null,
+  neverChase: false,
+};
+
+/** A thread the user has said needs nothing more, and when they said it. */
+type SettledRow = { contact_id: string; thread_id: string; settled_at: string };
 
 const MESSAGE_COLUMNS =
   "gmail_message_id, thread_id, direction, internal_date, from_email, to_emails, cc_emails, subject";
@@ -37,7 +54,7 @@ export async function loadRelationships(
   const now = options.now ?? new Date();
   const pageSize = options.pageSize ?? DEFAULT_PAGE_SIZE;
 
-  const [addresses, messages] = await Promise.all([
+  const [addresses, messages, settled, contacts] = await Promise.all([
     readAll<ContactAddress>(
       (from, to) =>
         db
@@ -60,18 +77,62 @@ export async function loadRelationships(
       "Couldn't load messages",
       pageSize,
     ),
+    readAll<SettledRow>(
+      (from, to) =>
+        db
+          .from("settled_threads")
+          .select("contact_id, thread_id, settled_at")
+          .eq("user_id", userId)
+          .order("thread_id")
+          .range(from, to),
+      "Couldn't load settled threads",
+      pageSize,
+    ),
+    readAll<{ id: string; never_chase: boolean }>(
+      (from, to) =>
+        db.from("contacts").select("id, never_chase").eq("user_id", userId).order("id").range(from, to),
+      "Couldn't load contacts",
+      pageSize,
+    ),
   ]);
 
+  const settledBy = settledByContact(settled);
+
+  // Every contact gets an entry, not only the ones with mail: "never chase" is
+  // a thing you said about the person, and it holds whether they ever wrote.
   const relationships = new Map<string, Relationship>();
+  for (const contact of contacts) {
+    relationships.set(contact.id, { ...NO_MAIL, neverChase: contact.never_chase });
+  }
+
   for (const [contactId, touches] of touchesByContact(messages, addresses)) {
+    const turn = whoseTurn(touches, now);
     relationships.set(contactId, {
-      turn: whoseTurn(touches, now),
+      turn,
       warmth: warmth(touches, now),
       messageCount: touches.length,
+      settledAt: settledFor(settledBy.get(contactId), turn),
+      neverChase: relationships.get(contactId)?.neverChase ?? false,
     });
   }
 
   return relationships;
+}
+
+function settledByContact(rows: SettledRow[]): Map<string, Map<string, Date>> {
+  const byContact = new Map<string, Map<string, Date>>();
+  for (const row of rows) {
+    const threads = byContact.get(row.contact_id) ?? new Map<string, Date>();
+    threads.set(row.thread_id, new Date(row.settled_at));
+    byContact.set(row.contact_id, threads);
+  }
+  return byContact;
+}
+
+/** The settle on the thread the turn is about — the newest one. */
+function settledFor(threads: Map<string, Date> | undefined, turn: Turn): Date | null {
+  if (!threads || turn.kind === "none") return null;
+  return threads.get(turn.threadId) ?? null;
 }
 
 /**
@@ -90,10 +151,36 @@ export async function loadRelationship(
   options: { now?: Date; pageSize?: number } = {},
 ): Promise<Relationship> {
   const now = options.now ?? new Date();
-  const touches = await contactTouches(db, userId, contactId, options);
-  if (!touches) return NO_MAIL;
 
-  return { turn: whoseTurn(touches, now), warmth: warmth(touches, now), messageCount: touches.length };
+  const [touches, settledResult, contactResult] = await Promise.all([
+    contactTouches(db, userId, contactId, options),
+    db
+      .from("settled_threads")
+      .select("contact_id, thread_id, settled_at")
+      .eq("user_id", userId)
+      .eq("contact_id", contactId)
+      .returns<SettledRow[]>(),
+    db
+      .from("contacts")
+      .select("never_chase")
+      .eq("user_id", userId)
+      .eq("id", contactId)
+      .maybeSingle<{ never_chase: boolean }>(),
+  ]);
+  if (settledResult.error) throw supabaseError(settledResult.error, "Couldn't load settled threads");
+  if (contactResult.error) throw supabaseError(contactResult.error, "Couldn't load the contact");
+
+  const neverChase = contactResult.data?.never_chase ?? false;
+  if (!touches) return { ...NO_MAIL, neverChase };
+
+  const turn = whoseTurn(touches, now);
+  return {
+    turn,
+    warmth: warmth(touches, now),
+    messageCount: touches.length,
+    settledAt: settledFor(settledByContact(settledResult.data).get(contactId), turn),
+    neverChase,
+  };
 }
 
 /**
