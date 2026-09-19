@@ -8,6 +8,7 @@ import { APP_NAME } from "@/lib/app-config";
 import { requireUser } from "@/lib/auth";
 import { displayName } from "@/lib/contacts/display";
 import { avatarColors, countOf, initials, weekdayDayMonth } from "@/lib/format";
+import { pickBrief, thisWeek } from "@/lib/relationship/brief";
 import { todayIn } from "@/lib/relationship/dates";
 import { dateBadge } from "@/lib/relationship/describe";
 import { NO_MAIL, loadRelationships } from "@/lib/relationship/load";
@@ -36,6 +37,8 @@ export const metadata = { title: `Who needs you today · ${APP_NAME}` };
  *     or keyboard focus, so a list of them doesn't read as nine black pills.
  *   - Long lists stop at a few rows with a link to the full, filtered contact
  *     list; the design is a fixed 900px frame and never had to say.
+ *   - On Mondays a line above the cards links to /brief, which the design
+ *     doesn't have because the weekly brief didn't exist yet (slice 6b).
  *   - Coming up: a touch that's due or overdue has an orange badge, so it
  *     doesn't read like a future date.
  *   - Seen once says "people", not "new people": nothing yet knows who is new
@@ -138,6 +141,11 @@ export default async function Home() {
   }));
   const { yours, quiet, comingUp } = whoNeedsYou(people, touchesResult.data, today);
 
+  // Mondays only: the week's brief is new, so point at it once (slice 6b).
+  // The rest of the week /brief is in the sidebar, where it doesn't interrupt.
+  const week = thisWeek(now);
+  const brief = week.start === today ? pickBrief(people, touchesResult.data, week) : [];
+
   return (
     <AppShell
       userEmail={user.email}
@@ -171,6 +179,19 @@ export default async function Home() {
             )}
           </div>
         </div>
+
+        {brief.length > 0 && (
+          <Link
+            href="/brief"
+            className={`${CARD} flex flex-wrap items-center gap-x-2.5 gap-y-1 px-[22px] py-[13px] transition-colors hover:bg-paper-tint`}
+          >
+            <span aria-hidden="true" className="size-[7px] rounded-full bg-accent" />
+            <span className="text-[13.5px] font-semibold tracking-[-0.01em]">
+              Your week: {countOf(brief.length, "person", "people")} worth a message
+            </span>
+            <span className="ml-auto text-[12px] font-semibold text-ink-faint">Open the brief</span>
+          </Link>
+        )}
 
         <div className="flex flex-col gap-5 lg:flex-row">
           <div className="flex min-w-0 flex-1 flex-col gap-[18px]">
