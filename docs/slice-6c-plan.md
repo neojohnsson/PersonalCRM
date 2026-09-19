@@ -88,10 +88,12 @@ order is unchanged: people whose turn it is still come first.
 - **Not needed** — a ghost button on each brief row and on each `/` row (beside Draft reply,
   on hover, as that one already is). It settles the thread that row is about. This is
   `Calendar.dc.html`'s own button, so it isn't a new pattern.
-- **Nothing owed here** — on the contact page, next to the turn pill. Once settled the pill
-  reads **Nothing owed**, with the date and an **Undo**.
-- **Just a contact** — a switch on the contact page, `Profile.dc.html`'s switch, under the
-  line "Never prompt me about this person."
+- **Nothing owed here** — on the contact page, beside Edit and Draft reply. Once settled the
+  pill beside the name reads **Nothing owed** and the button becomes **Reopen the thread**.
+- **Just a contact** — not `Profile.dc.html`'s switch in the end, but the same ghost pill as
+  its neighbours, filled in when it is on. A lone switch in a row of pills looked like a
+  setting that had wandered onto the wrong screen, and the pill beside the name already says
+  which state the contact is in.
 
 Every one of these is a server action that checks the user itself, and every one is
 reversible from the contact page. Nothing is deleted.
@@ -100,8 +102,9 @@ reversible from the contact page. Nothing is deleted.
 
 `0018_settled_threads.sql`:
 
-- `settled_threads` — `user_id`, `contact_id`, `thread_id`, `settled_at`, optional `note`;
-  unique on the three, composite foreign key `(contact_id, user_id) → contacts(id, user_id)`
+- `settled_threads` — `user_id`, `contact_id`, `thread_id`, `settled_at`. No `note` column:
+  nothing writes one yet, and a column no code fills is a promise the schema can't keep.
+  Keyed on the three ids, composite foreign key `(contact_id, user_id) → contacts(id, user_id)`
   as everywhere else, and four RLS policies.
 - `alter table contacts add column never_chase boolean not null default false`.
 - `create or replace view contact_list` with `never_chase` appended at the end, so the list
