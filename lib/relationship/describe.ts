@@ -16,14 +16,18 @@ const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
 export type TurnPill = { text: string; tone: "yours" | "quiet" | "theirs" | "closed" | "planned" | "said" };
 
 /**
- * The pill beside the name: "They wrote last · 6 days". Nothing for a contact
- * with no mail.
+ * The pill beside the name: "Your turn · 6 days". Nothing for a contact with
+ * no mail.
  *
- * The design says "Your turn" and "Their turn". Changed 2026-09-19 at the
- * user's request: whose turn it is was being read as an instruction to write
- * now, and it isn't one — two people can simply both be busy, or the right
- * moment can be months away. The app states what happened and leaves the
- * decision where it belongs. "Going quiet" is untouched: it was always a fact.
+ * These are the design's words, and they stay. Tried and reverted 2026-09-19:
+ * "They wrote last · 6 days" states the same fact without asking for anything,
+ * but it made the reader work out whose turn it was every time, which is the
+ * one job the pill exists to do.
+ *
+ * What was actually wrong is that "Your turn" was the only thing the app could
+ * say — so it said it about conversations that were finished, days already
+ * chosen, and people who are never chased. Those have their own words now
+ * (standingPill), and "Your turn" is left to mean what it says.
  */
 export function turnPill(turn: Turn): TurnPill | null {
   switch (turn.kind) {
@@ -32,11 +36,11 @@ export function turnPill(turn: Turn): TurnPill | null {
     case "closed":
       return { text: "No open thread", tone: "closed" };
     case "yours":
-      return { text: `They wrote last · ${turn.days === 0 ? "today" : days(turn.days)}`, tone: "yours" };
+      return { text: `Your turn · ${turn.days === 0 ? "today" : days(turn.days)}`, tone: "yours" };
     case "theirs":
       return turn.goingQuiet
         ? { text: `Going quiet · ${days(turn.days)}`, tone: "quiet" }
-        : { text: `You wrote last · ${turn.days === 0 ? "today" : days(turn.days)}`, tone: "theirs" };
+        : { text: `Their turn · ${turn.days === 0 ? "today" : days(turn.days)}`, tone: "theirs" };
   }
 }
 
@@ -75,8 +79,8 @@ export function lastContactText(daysAgo: number): string {
 
 /** Under "Last contact": who wrote it — and, when it's your turn, that you haven't answered. */
 export function lastContactCaption(from: "you" | "them", turn: Turn): string {
-  if (turn.kind === "yours") return "they wrote, nothing back yet";
-  if (turn.kind === "theirs") return "you wrote, nothing back yet";
+  if (turn.kind === "yours") return "they wrote, you didn't";
+  if (turn.kind === "theirs") return "you wrote, they haven't yet";
   return from === "you" ? "you wrote last" : "they wrote last";
 }
 

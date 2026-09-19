@@ -50,7 +50,7 @@ type ContactRow = {
 };
 
 const REASON_LABEL: Record<BriefReason, string> = {
-  waiting: "They wrote last",
+  waiting: "Your turn",
   overdue: "Overdue",
   due_this_week: "This week",
   going_quiet: "Going quiet",

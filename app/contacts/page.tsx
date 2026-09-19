@@ -387,9 +387,9 @@ function ContactTable({ items, total, moreHref }: { items: Item[]; total: number
                 </td>
                 <td className="px-2 whitespace-nowrap">
                   {turn.kind === "yours" ? (
-                    <span className="text-[10.5px] font-bold tracking-[0.06em] text-accent uppercase">They wrote last</span>
+                    <span className="text-[10.5px] font-bold tracking-[0.06em] text-accent uppercase">Your turn</span>
                   ) : turn.kind === "theirs" ? (
-                    <span className="text-[12px] font-medium text-ink-muted">You wrote last</span>
+                    <span className="text-[12px] font-medium text-ink-muted">Their turn</span>
                   ) : (
                     <span className="text-[12px] font-medium text-ink-hush">No open thread</span>
                   )}

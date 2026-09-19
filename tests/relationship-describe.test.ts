@@ -19,11 +19,11 @@ const yours = (days: number): Turn => ({ kind: "yours", days, ...latest });
 const theirs = (days: number, goingQuiet = false): Turn => ({ kind: "theirs", goingQuiet, days, ...latest });
 
 describe("turnPill", () => {
-  it("says who wrote last and how long ago, without asking for anything", () => {
-    expect(turnPill(yours(6))).toEqual({ text: "They wrote last · 6 days", tone: "yours" });
-    expect(turnPill(yours(1))).toEqual({ text: "They wrote last · 1 day", tone: "yours" });
-    expect(turnPill(yours(0))).toEqual({ text: "They wrote last · today", tone: "yours" });
-    expect(turnPill(theirs(3))).toEqual({ text: "You wrote last · 3 days", tone: "theirs" });
+  it("says whose turn it is and for how long, as the design does", () => {
+    expect(turnPill(yours(6))).toEqual({ text: "Your turn · 6 days", tone: "yours" });
+    expect(turnPill(yours(1))).toEqual({ text: "Your turn · 1 day", tone: "yours" });
+    expect(turnPill(yours(0))).toEqual({ text: "Your turn · today", tone: "yours" });
+    expect(turnPill(theirs(3))).toEqual({ text: "Their turn · 3 days", tone: "theirs" });
     expect(turnPill(theirs(20, true))).toEqual({ text: "Going quiet · 20 days", tone: "quiet" });
   });
 
@@ -48,7 +48,7 @@ describe("standingPill", () => {
 
   it("falls back to the plain fact when you have said nothing", () => {
     expect(standingPill({ kind: "open", turn: yours(6) })).toEqual({
-      text: "They wrote last · 6 days",
+      text: "Your turn · 6 days",
       tone: "yours",
     });
     expect(standingPill({ kind: "open", turn: { kind: "none" } })).toBeNull();
@@ -72,9 +72,9 @@ describe("last contact", () => {
     expect(lastContactText(6)).toBe("6 days ago");
   });
 
-  it("says who wrote, and that nothing has gone back", () => {
-    expect(lastContactCaption("them", yours(6))).toBe("they wrote, nothing back yet");
-    expect(lastContactCaption("you", theirs(3))).toBe("you wrote, nothing back yet");
+  it("says who wrote, and that you haven't answered when it's your turn", () => {
+    expect(lastContactCaption("them", yours(6))).toBe("they wrote, you didn't");
+    expect(lastContactCaption("you", theirs(3))).toBe("you wrote, they haven't yet");
     expect(lastContactCaption("them", { kind: "closed", days: 40, ...latest })).toBe("they wrote last");
     expect(lastContactCaption("you", { kind: "closed", days: 40, ...latest })).toBe("you wrote last");
   });

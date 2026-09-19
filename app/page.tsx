@@ -22,22 +22,20 @@ import { describeSync, type SyncSummary } from "@/lib/sync/describe";
 export const metadata = { title: `Who needs you today · ${APP_NAME}` };
 
 /**
- * Home: "Who needs you today", built from design/Main.dc.html — They wrote
- * last and Going quiet on the left, Coming up and Seen once on the right
+ * Home: "Who needs you today", built from design/Main.dc.html — Your turn and
+ * Going quiet on the left, Coming up and Seen once on the right
  * (docs/slice-3-plan.md, decision C). The answer to "who needs me today",
  * never "here are your contacts, A–Z" (AGENTS.md, core premise).
  *
  * Differences from the design, on purpose:
- *   - The design's card is called "Your turn". Changed 2026-09-19 at the
- *     user's request: it was read as an instruction to write now, and it
- *     isn't one (lib/relationship/describe.ts says the same about the pill).
- *     Someone you have settled, planned a day for, or never chase is not
- *     listed here at all — lib/relationship/standing.ts decides.
- *   - That card's second line is the latest subject, where the design has an
+ *   - Your turn holds only people something is actually owed to: anyone you
+ *     have settled, planned a day for, or never chase drops out, because
+ *     lib/relationship/standing.ts decides who may be asked about (slice 6c).
+ *   - Your turn's second line is the latest subject, where the design has an
  *     AI summary ("Asked about your thesis timeline"). Summaries are slice 6;
  *     the subject is what's stored. Going quiet uses the design's own
  *     computed wording, "You wrote 24 days ago. No answer since."
- *   - Those rows have the design's "Draft reply" — a link to the contact's
+ *   - Your turn rows have the design's "Draft reply" — a link to the contact's
  *     draft panel, since the draft is read and edited there (slice 5a). The
  *     design shows it on one row; here it appears on the row under the pointer
  *     or keyboard focus, so a list of them doesn't read as nine black pills.
@@ -202,14 +200,14 @@ export default async function Home() {
         <div className="flex flex-col gap-5 lg:flex-row">
           <div className="flex min-w-0 flex-1 flex-col gap-[18px]">
             <PeopleCard
-              title="They wrote last"
+              title="Your turn"
               dot="bg-accent"
               subtitle={
                 yours.length > 0
-                  ? `${countOf(yours.length, "person", "people")}, and nothing has gone back yet`
-                  : "Nothing of theirs is unanswered"
+                  ? `${countOf(yours.length, "person is", "people are")} waiting on a reply from you`
+                  : "Nobody is waiting on a reply from you"
               }
-              empty="When someone writes and nothing goes back, they show up here — longest wait first."
+              empty="When someone writes and you haven't answered, they show up here — longest wait first."
               rows={yours.slice(0, YOUR_TURN_ROWS).map((person) => ({
                 person,
                 line: subjectOf(person),

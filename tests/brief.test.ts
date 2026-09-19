@@ -71,7 +71,7 @@ describe("pickBrief", () => {
       ["a", "waiting"],
       ["c", "waiting"],
     ]);
-    expect(brief[0].because).toBe("They wrote 30 days ago and nothing has gone back.");
+    expect(brief[0].because).toBe("They wrote 30 days ago and you haven't answered.");
   });
 
   it("adds what you planned: overdue first, then the rest of this week", () => {
