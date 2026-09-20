@@ -118,6 +118,13 @@ const HOLDINGS: Omit<Holding, "count">[] = [
 ];
 
 /**
+ * Every table this app writes for a user, in the order the page shows them.
+ * The export reads the same list, so a table can never be counted on the
+ * privacy page and then left out of the file it promises (lib/privacy/export.ts).
+ */
+export const HOLDING_TABLES = HOLDINGS.map((holding) => holding.table);
+
+/**
  * Count each table for this user. Fourteen small counting queries in parallel —
  * `head: true` asks the database for the number only, so no personal data is
  * read to build the page that describes it.

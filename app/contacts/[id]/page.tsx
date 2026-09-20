@@ -306,6 +306,16 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
               settled={standing.kind === "settled"}
               neverChase={relationship.neverChase}
             />
+            {/* Slice 7: the copy you hand over when the person asks what you
+                hold on them (plan.md §5.2). A plain link, because the answer
+                is a file the browser saves. */}
+            <a
+              href={`/contacts/${id}/export`}
+              title="Everything this app holds about them, as a file"
+              className="rounded-full bg-line-soft px-[18px] py-2.5 text-[13px] font-semibold text-ink-body transition-colors hover:bg-chip-track"
+            >
+              Export
+            </a>
             {emails.length > 0 && <DismissContact contactId={contact.id} name={name} />}
           </div>
         </div>

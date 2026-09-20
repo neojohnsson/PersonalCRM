@@ -87,6 +87,29 @@ export default async function PrivacyPage() {
           </section>
 
           <section className={CARD}>
+            <CardHeading title="Take it with you" caption="Built when you ask, stored nowhere" />
+            <p className="text-[13px] leading-[1.55] text-ink-body">
+              Every row above, as a file. The Gmail refresh token is left out on purpose &mdash;
+              it is encrypted with a key that isn&rsquo;t in the file, so it could only ever be
+              noise in a download that gets forwarded and saved.
+            </p>
+            <div className="flex flex-wrap gap-[7px]">
+              <a
+                href="/privacy/export"
+                className="rounded-full bg-ink-deep px-[15px] py-2 text-[12px] font-semibold text-white transition hover:bg-ink/85"
+              >
+                Export everything
+              </a>
+              <a
+                href="/privacy/export?as=csv"
+                className="rounded-full bg-line-soft px-3.5 py-2 text-[12px] font-semibold text-ink-body transition hover:bg-chip-track"
+              >
+                Contacts as a spreadsheet
+              </a>
+            </div>
+          </section>
+
+          <section className={CARD}>
             <CardHeading title="If someone asks what you hold on them" caption="They are allowed to" />
             <p className="text-[13px] leading-[1.55] text-ink-body">
               Anyone in your list can ask for a copy of their record, including what the AI wrote
