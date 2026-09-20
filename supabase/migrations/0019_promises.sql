@@ -108,6 +108,18 @@ on public.promises for delete to authenticated
 using ((select auth.uid()) = user_id);
 
 
+-- ── ai_usage, a third purpose ───────────────────────────────────────────────
+--
+-- Every request the app pays for is recorded and counted against the monthly
+-- cap. A scan is neither a summary nor a draft, and calling it one would make
+-- the spending unreadable — "what did I spend on promises?" has to be
+-- answerable, since a scan reads many contacts at once.
+
+alter table ai_usage drop constraint ai_usage_purpose_check;
+alter table ai_usage add constraint ai_usage_purpose_check
+  check (purpose in ('summary', 'draft', 'promises'));
+
+
 -- ── contacts.promises_scanned_at ────────────────────────────────────────────
 --
 -- When this contact's mail was last read for promises. A contact whose newest
