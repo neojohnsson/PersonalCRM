@@ -1,4 +1,6 @@
+import { dayMonth } from "@/lib/format";
 import { daysBetweenDates } from "@/lib/relationship/dates";
+import type { Standing } from "@/lib/relationship/standing";
 import type { Turn } from "@/lib/relationship/whose-turn";
 
 /**
@@ -11,9 +13,22 @@ const DAY = 24 * 60 * 60 * 1000;
 
 const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
 
-export type TurnPill = { text: string; tone: "yours" | "quiet" | "theirs" | "closed" };
+export type TurnPill = { text: string; tone: "yours" | "quiet" | "theirs" | "closed" | "planned" | "said" };
 
-/** The pill beside the name: "Your turn · 6 days". Nothing for a contact with no mail. */
+/**
+ * The pill beside the name: "Your turn · 6 days". Nothing for a contact with
+ * no mail.
+ *
+ * These are the design's words, and they stay. Tried and reverted 2026-09-19:
+ * "They wrote last · 6 days" states the same fact without asking for anything,
+ * but it made the reader work out whose turn it was every time, which is the
+ * one job the pill exists to do.
+ *
+ * What was actually wrong is that "Your turn" was the only thing the app could
+ * say — so it said it about conversations that were finished, days already
+ * chosen, and people who are never chased. Those have their own words now
+ * (standingPill), and "Your turn" is left to mean what it says.
+ */
 export function turnPill(turn: Turn): TurnPill | null {
   switch (turn.kind) {
     case "none":
@@ -26,6 +41,24 @@ export function turnPill(turn: Turn): TurnPill | null {
       return turn.goingQuiet
         ? { text: `Going quiet · ${days(turn.days)}`, tone: "quiet" }
         : { text: `Their turn · ${turn.days === 0 ? "today" : days(turn.days)}`, tone: "theirs" };
+  }
+}
+
+/**
+ * The same pill, once what you said is taken into account (slice 6c): a
+ * conversation you finished, a day you chose, a person you never chase. Only
+ * when you have said nothing does it fall back to the plain fact.
+ */
+export function standingPill(standing: Standing): TurnPill | null {
+  switch (standing.kind) {
+    case "never_chase":
+      return { text: "Just a contact", tone: "said" };
+    case "planned":
+      return { text: `Planned for ${dayMonth(standing.dueOn)}`, tone: "planned" };
+    case "settled":
+      return { text: "Nothing owed", tone: "said" };
+    case "open":
+      return turnPill(standing.turn);
   }
 }
 

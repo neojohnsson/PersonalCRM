@@ -119,9 +119,12 @@ describe("loadRelationships", () => {
     expect(karin.turn).toMatchObject({ kind: "yours", days: 6, subject: "Re: Hej" });
     expect(karin.warmth?.signals.replyRate).toEqual({ answered: 1, sent: 1 });
 
-    // Nils has no mail, and the stranger isn't a contact at all.
-    expect(relationships.has(nilsId)).toBe(false);
-    expect(relationships.size).toBe(1);
+    // Every contact gets an entry, with or without mail — since slice 6c the
+    // map also carries what the user said about them ("just a contact"), which
+    // holds whether or not they ever wrote. Nils has no mail, so his is NO_MAIL.
+    // The stranger isn't a contact at all, so there are two entries, not three.
+    expect(relationships.get(nilsId)).toEqual(NO_MAIL);
+    expect(relationships.size).toBe(2);
     expect(NO_MAIL.turn).toEqual({ kind: "none" });
   });
 

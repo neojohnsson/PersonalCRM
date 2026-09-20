@@ -6,6 +6,7 @@ import {
   lastContactText,
   replyRateCaption,
   replySpeedText,
+  standingPill,
   turnPill,
 } from "@/lib/relationship/describe";
 import type { Turn } from "@/lib/relationship/whose-turn";
@@ -29,6 +30,28 @@ describe("turnPill", () => {
   it("has a quiet pill for a closed thread and none for no mail", () => {
     expect(turnPill({ kind: "closed", days: 40, ...latest })).toEqual({ text: "No open thread", tone: "closed" });
     expect(turnPill({ kind: "none" })).toBeNull();
+  });
+});
+
+describe("standingPill", () => {
+  it("says what you said, not what the app worked out", () => {
+    expect(standingPill({ kind: "never_chase" })).toEqual({ text: "Just a contact", tone: "said" });
+    expect(standingPill({ kind: "planned", dueOn: "2026-03-03" })).toEqual({
+      text: "Planned for 3 March",
+      tone: "planned",
+    });
+    expect(standingPill({ kind: "settled", at: new Date("2026-09-18T08:00:00Z") })).toEqual({
+      text: "Nothing owed",
+      tone: "said",
+    });
+  });
+
+  it("falls back to the plain fact when you have said nothing", () => {
+    expect(standingPill({ kind: "open", turn: yours(6) })).toEqual({
+      text: "Your turn · 6 days",
+      tone: "yours",
+    });
+    expect(standingPill({ kind: "open", turn: { kind: "none" } })).toBeNull();
   });
 });
 

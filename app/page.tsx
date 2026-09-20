@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
 import { DisconnectGmailButton } from "@/app/disconnect-gmail-button";
+import { NotNeededButton } from "@/app/not-needed-button";
 import { CARD, EmptyCard, StatusLine } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
 import { SyncButton } from "@/app/sync-button";
@@ -27,6 +28,9 @@ export const metadata = { title: `Who needs you today · ${APP_NAME}` };
  * never "here are your contacts, A–Z" (AGENTS.md, core premise).
  *
  * Differences from the design, on purpose:
+ *   - Your turn holds only people something is actually owed to: anyone you
+ *     have settled, planned a day for, or never chase drops out, because
+ *     lib/relationship/standing.ts decides who may be asked about (slice 6c).
  *   - Your turn's second line is the latest subject, where the design has an
  *     AI summary ("Asked about your thesis timeline"). Summaries are slice 6;
  *     the subject is what's stored. Going quiet uses the design's own
@@ -280,9 +284,14 @@ type Row = {
   person: Person<ContactRow>;
   line: string;
   daysClass: string;
-  /** Set on Your turn rows: the design's "Draft reply" button. */
+  /** Set on the rows where they wrote last: the design's "Draft reply" button. */
   draftHref?: string;
 };
+
+/** The conversation a row is about, for Not needed. Null when there is no mail. */
+function threadOf({ relationship: { turn } }: Person<ContactRow>): string | null {
+  return turn.kind === "none" ? null : turn.threadId;
+}
 
 /** One of Main's left-hand cards: a coloured dot, a title, and people. */
 function PeopleCard({
@@ -331,6 +340,7 @@ function PeopleCard({
 
 function PersonRow({ person, line, daysClass, draftHref }: Row) {
   const { contact, relationship } = person;
+  const threadId = threadOf(person);
   const name = displayName(contact);
   const hasName = Boolean(contact.first_name?.trim() || contact.last_name?.trim());
   const days = relationship.turn.kind === "none" ? null : relationship.turn.days;
@@ -362,6 +372,16 @@ function PersonRow({ person, line, daysClass, draftHref }: Row) {
         </div>
         <span className="truncate text-[12.5px] text-ink-soft">{line}</span>
       </div>
+      {/* Slice 6c: say the conversation is finished, without opening it.
+          Shown with Draft reply, on the row under the pointer or keyboard
+          focus, so a list of rows doesn't read as a wall of buttons. */}
+      {threadId && (
+        <NotNeededButton
+          contactId={contact.id}
+          threadId={threadId}
+          className="relative z-10 hidden shrink-0 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100 sm:block"
+        />
+      )}
       {draftHref && (
         <Link
           href={draftHref}

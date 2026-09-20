@@ -128,6 +128,49 @@ describe("pickBrief", () => {
     expect(brief[0].reason).toBe("waiting");
   });
 
+  it("leaves out a finished conversation, and takes it back when they write again", () => {
+    const settledAt = new Date("2026-09-15T08:00:00Z");
+    const handedOff = person("michail", yours(9));
+    handedOff.relationship = { ...handedOff.relationship, settledAt };
+
+    expect(pickBrief([handedOff], [], WEEK)).toEqual([]);
+
+    // They wrote again after you said you were done: a newer fact wins.
+    const wroteAgain = person("michail", {
+      ...latest,
+      kind: "yours",
+      days: 1,
+      at: new Date("2026-09-16T09:00:00Z"),
+    });
+    wroteAgain.relationship = { ...wroteAgain.relationship, settledAt };
+    expect(reasons(pickBrief([wroteAgain], [], WEEK))).toEqual([["michail", "waiting"]]);
+  });
+
+  it("never works out a reason for someone you never chase", () => {
+    const linda = person("linda", yours(30));
+    linda.relationship = { ...linda.relationship, neverChase: true };
+    const sven = person("sven", theirs(40));
+    sven.relationship = { ...sven.relationship, neverChase: true };
+
+    expect(pickBrief([linda, sven], [], WEEK)).toEqual([]);
+  });
+
+  it("still lists a day you set yourself, whatever you said about the person", () => {
+    // A next touch is your own plan. Silencing it would only hide it from you.
+    const linda = person("linda", yours(30));
+    linda.relationship = { ...linda.relationship, neverChase: true };
+
+    const brief = pickBrief([linda], [touch("linda", "2026-09-18", "Send the address")], WEEK);
+    expect(reasons(brief)).toEqual([["linda", "due_this_week"]]);
+  });
+
+  it("puts the soonest of this week's plans first", () => {
+    const people = [person("sun", closed(40)), person("fri", closed(40))];
+    const brief = pickBrief(people, [touch("sun", "2026-09-20"), touch("fri", "2026-09-18")], WEEK);
+
+    expect(brief.map((entry) => entry.contact.id)).toEqual(["fri", "sun"]);
+  });
+
   it("never gives more than eight people", () => {
     const people = Array.from({ length: 30 }, (_, i) => person(`p${i}`, theirs(20 + i)));
     expect(pickBrief(people, [], WEEK).length).toBeLessThanOrEqual(BRIEF_SIZE);

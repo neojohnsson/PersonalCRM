@@ -1,5 +1,6 @@
 import { addDays, daysBetweenDates, todayIn } from "@/lib/relationship/dates";
 import type { Relationship } from "@/lib/relationship/load";
+import { prompts, standingOf } from "@/lib/relationship/standing";
 import type { OpenTouch, Person } from "@/lib/relationship/today";
 
 /**
@@ -36,6 +37,8 @@ export type BriefEntry<T> = {
   because: string;
   /** For sorting inside a reason: the bigger, the more it needs you. */
   weight: number;
+  /** The conversation the row is about, so it can be settled from there. */
+  threadId: string | null;
 };
 
 /** Monday of the week `date` falls in, in Swedish time. YYYY-MM-DD. */
@@ -60,9 +63,13 @@ const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
  * The brief: at most BRIEF_SIZE people, in the order of BRIEF_REASONS, each
  * under one reason only.
  *
- * Left out: contacts with no mail; anyone whose next touch is set for after
- * this week, because you have already decided when; and anyone you wrote to in
- * the last few days.
+ * Left out of the reasons the app works out for itself: contacts with no mail,
+ * anyone you wrote to in the last few days, and anyone whose standing says not
+ * to ask — a finished conversation, a day you already chose, a person you never
+ * chase (lib/relationship/standing.ts).
+ *
+ * A next touch is different. It is a date *you* set, so it is listed whatever
+ * the standing says — silencing a plan you made yourself would only hide it.
  */
 export function pickBrief<T>(
   people: Person<T>[],
@@ -73,20 +80,35 @@ export function pickBrief<T>(
   const chosen = new Map<string, BriefEntry<T>>();
 
   const take = (person: Person<T>, reason: BriefReason, because: string, weight: number) => {
-    if (!chosen.has(person.contact.id)) chosen.set(person.contact.id, { contact: person.contact, reason, because, weight });
+    if (chosen.has(person.contact.id)) return;
+    const { turn } = person.relationship;
+    chosen.set(person.contact.id, {
+      contact: person.contact,
+      reason,
+      because,
+      weight,
+      threadId: turn.kind === "none" ? null : turn.threadId,
+    });
   };
 
   const eligible = people.filter((person) => {
-    const { turn } = person.relationship;
+    const { turn, settledAt, neverChase } = person.relationship;
     if (turn.kind === "none") return false;
     // You wrote to them just now: leave it be.
     if (turn.kind === "theirs" && turn.days <= JUST_WROTE_DAYS) return false;
-    // A next touch planned for later is a decision already made.
+    // A finished conversation, a day already chosen, a person never chased:
+    // lib/relationship/standing.ts holds all three (slice 6c). This covers the
+    // old rule about a next touch set for later — that is now "planned".
     const planned = touchByContact.get(person.contact.id);
-    return !planned || planned.due_on <= week.end;
+    return prompts(standingOf({ turn, settledAt, plannedOn: planned?.due_on ?? null, neverChase }, week.today));
   });
 
-  const sorted = [...eligible].sort((a, b) => daysOf(b.relationship) - daysOf(a.relationship));
+  const byWait = (a: Person<T>, b: Person<T>) => daysOf(b.relationship) - daysOf(a.relationship);
+  const sorted = [...eligible].sort(byWait);
+  // The touch passes read from everyone, not from `eligible`: a date you set is
+  // yours, and one due this week is "planned" — which is exactly what keeps it
+  // out of the list above.
+  const planned = [...people].sort(byWait);
 
   // 1. Waiting on you longest.
   sorted
@@ -98,14 +120,16 @@ export function pickBrief<T>(
     });
 
   // 2 and 3. Next touches: overdue first, then the rest of this week.
-  for (const person of sorted) {
-    const planned = touchByContact.get(person.contact.id);
-    if (!planned) continue;
-    const late = daysBetweenDates(planned.due_on, week.today);
-    if (planned.due_on < week.today) {
-      take(person, "overdue", `You planned this for ${days(late)} ago${reasonTail(planned)}.`, late);
-    } else if (planned.due_on <= week.end) {
-      take(person, "due_this_week", `You planned to get back to them ${dayWord(planned.due_on)}${reasonTail(planned)}.`, 0);
+  for (const person of planned) {
+    const touch = touchByContact.get(person.contact.id);
+    if (!touch) continue;
+    const late = daysBetweenDates(touch.due_on, week.today);
+    if (touch.due_on < week.today) {
+      take(person, "overdue", `You planned this for ${days(late)} ago${reasonTail(touch)}.`, late);
+    } else if (touch.due_on <= week.end) {
+      // `late` is negative for a day still to come, so the soonest (-1, tomorrow)
+      // sorts above the furthest (-3, Sunday).
+      take(person, "due_this_week", `You planned to get back to them ${dayWord(touch.due_on)}${reasonTail(touch)}.`, late);
     }
   }
 
