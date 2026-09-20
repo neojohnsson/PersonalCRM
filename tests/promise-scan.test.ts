@@ -82,7 +82,9 @@ const onePromise: RawPromises = {
       owed_by: "them",
       sentence: PROMISE,
       reason: "Pär said he'd come back about the team",
+      timing: "stated_date",
       date: "2026-10-01",
+      month: null,
     },
   ],
 };

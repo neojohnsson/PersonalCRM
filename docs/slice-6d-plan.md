@@ -53,6 +53,20 @@ Three things against it:
 
 If a sentence is ambiguous, the rule is the same as everywhere else in this app: say nothing.
 
+**The model does not pick the day** (corrected 2026-09-20, after the first real scan turned
+down two promises "with no date to act on"). The instructions say a promise counts even with
+no date given — "I'll check with the team and come back to you" — and then the checker threw
+those away for having no date. The model now names the *kind* of timing, as §3.4 already
+decided for next-touch suggestions, and `lib/relationship/touch-date.ts` turns it into a day
+by the same working-day rules:
+
+| Timing | The day |
+|---|---|
+| `stated_date` | the day the message gives, kept even when it has passed — that is overdue, which is the most useful kind there is |
+| `they_will_get_back` | 14 days after their last message |
+| `reply_owed` | the next working day |
+| `later_event` | the month named, or a month out and marked rough |
+
 ## Part 3 — what it costs, and how that is kept small
 
 Reading every thread for every contact, on every sync, forever, is exactly the cost mistake

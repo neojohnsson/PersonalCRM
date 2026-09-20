@@ -33,7 +33,9 @@ const found = (over: Partial<RawPromise> = {}): RawPromise => ({
   owed_by: "them",
   sentence: "I'll check with the team and come back to you",
   reason: "Pär said he'd come back about the team",
+  timing: "stated_date",
   date: "2026-09-25",
+  month: null,
   ...over,
 });
 
@@ -130,9 +132,10 @@ describe("checkPromises", () => {
   it("needs a real date, near enough today to act on", () => {
     const conversation = [message("m1", REAL)];
     const cases: [Partial<RawPromise>, string][] = [
-      [{ date: null }, "no_date"],
-      [{ date: "soon" }, "no_date"],
-      [{ date: "2026-02-30" }, "no_date"],
+      // Nothing stated and no timing to work from: there is no honest day.
+      [{ date: null, timing: "nothing_open" }, "no_date"],
+      [{ date: "soon", timing: "nothing_open" }, "no_date"],
+      [{ date: "2026-02-30", timing: "nothing_open" }, "no_date"],
       [{ date: "2024-01-05" }, "date_too_far"],
       [{ date: "2030-01-05" }, "date_too_far"],
     ];
@@ -141,6 +144,32 @@ describe("checkPromises", () => {
       const checked = checkPromises({ promises: [found(over)] }, conversation, TODAY);
       expect(checked.dropped, JSON.stringify(over)).toEqual([reason]);
     }
+  });
+
+  it("works out a day when the message gives none", () => {
+    // "I'll check with the team and come back to you" has no date in it. The
+    // rules in lib/relationship/touch-date.ts pick the day, not the model
+    // (plan.md §3.4). They wrote on the 10th; they_will_get_back is 14 days on,
+    // moved to a working day.
+    const conversation = [message("m1", REAL)];
+    const checked = checkPromises(
+      { promises: [found({ timing: "they_will_get_back", date: null })] },
+      conversation,
+      TODAY,
+    );
+
+    expect(checked.dropped).toEqual([]);
+    expect(checked.promises[0].dueOn).toBe("2026-09-24");
+  });
+
+  it("works out a day for something waiting on a later month", () => {
+    const checked = checkPromises(
+      { promises: [found({ timing: "later_event", date: null, month: "2026-11" })] },
+      [message("m1", REAL)],
+      TODAY,
+    );
+
+    expect(checked.promises[0].dueOn).toBe("2026-11-02"); // the 1st is a Sunday
   });
 
   it("keeps a date that has already passed, because that is overdue, not wrong", () => {
