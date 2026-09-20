@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
 import { NotNeededButton } from "@/app/not-needed-button";
+import { countPendingPromises } from "@/lib/ai/promise-list";
 import { CARD, EmptyCard } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
 import { APP_NAME } from "@/lib/app-config";
@@ -77,7 +78,7 @@ export default async function BriefPage() {
   const now = new Date();
   const week = thisWeek(now);
 
-  const [contacts, relationships, touchesResult, seenOnceResult] = await Promise.all([
+  const [contacts, relationships, touchesResult, seenOnceResult, promiseCount] = await Promise.all([
     readAll<ContactRow>(
       (from, to) =>
         supabase
@@ -103,6 +104,7 @@ export default async function BriefPage() {
       .eq("user_id", user.id)
       .eq("tier", "seen_once")
       .is("contact_id", null),
+    countPendingPromises(supabase, user.id),
   ]);
   if (touchesResult.error) throw supabaseError(touchesResult.error, "Couldn't load next touches");
   if (seenOnceResult.error) throw supabaseError(seenOnceResult.error, "Couldn't count Seen once");
@@ -134,6 +136,21 @@ export default async function BriefPage() {
             {dayMonth(week.start)} &ndash; {dayMonth(week.end)}
           </p>
         </div>
+
+        {promiseCount > 0 && (
+          // Slice 6d: promises found in the mail are decided on their own page,
+          // not here — the brief is eight rows on purpose.
+          <Link
+            href="/promises"
+            className={`${CARD} flex max-w-3xl flex-wrap items-center gap-x-2.5 gap-y-1 px-[22px] py-[13px] transition-colors hover:bg-paper-tint`}
+          >
+            <span aria-hidden="true" className="size-[7px] rounded-full bg-info" />
+            <span className="text-[13.5px] font-semibold tracking-[-0.01em]">
+              {countOf(promiseCount, "promise")} found in your mail
+            </span>
+            <span className="ml-auto text-[12px] font-semibold text-ink-faint">Decide them</span>
+          </Link>
+        )}
 
         {entries.length > 0 ? (
           <section className={`${CARD} max-w-3xl overflow-hidden`}>
