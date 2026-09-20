@@ -109,7 +109,9 @@ export function PromiseCard({ promise }: { promise: PendingPromise }) {
         </a>
 
         <span className="ml-auto text-[11.5px] font-medium text-ink-ghost">
-          suggested {dayMonth(promise.dueOn)}
+          {promise.plannedOn
+            ? `moves their next touch from ${dayMonth(promise.plannedOn)}`
+            : `suggested ${dayMonth(promise.dueOn)}`}
         </span>
       </div>
 

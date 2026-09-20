@@ -188,15 +188,57 @@ describe("scanning for promises", () => {
     vi.unstubAllGlobals();
   });
 
-  it("reads only the contact there is a reason to read", async () => {
+  it("reads only the contacts there is a reason to read", async () => {
     const plan = await planScan(db, alice.id, { config: CONFIG, now: NOW });
+    const read = plan.contacts.map((c) => c.contactId);
 
-    expect(plan.contacts.map((c) => c.contactId)).toEqual([parId]);
+    // No mail, never chased, and a conversation you settled: all left alone.
+    expect(read).not.toContain(noMailId);
+    expect(read).not.toContain(mutedId);
+    expect(read).not.toContain(settledId);
     expect(plan.estimateUsd).toBeGreaterThan(0);
 
-    // Each of the others is left out for its own reason.
-    const left = [mutedId, settledId, plannedId, noMailId];
-    expect(left.every((id) => !plan.contacts.some((c) => c.contactId === id))).toBe(true);
+    // A contact you already have a date for IS read — only a promise due
+    // before that day is worth offering, and the candidate carries the day.
+    expect(read).toContain(parId);
+    expect(read).toContain(plannedId);
+    expect(plan.contacts.find((c) => c.contactId === plannedId)!.plannedOn).toBe("2026-10-05");
+    expect(plan.contacts.find((c) => c.contactId === parId)!.plannedOn).toBeNull();
+  });
+
+  it("offers a promise that falls before the day you already chose, and not one after", async () => {
+    fakeServices({ body: answer(onePromise) });
+
+    // The plan for Johan is 5 October; the promise in his mail is 1 October.
+    await scanForPromises(db, alice.id, { config: CONFIG, accessToken: fakeToken, now: NOW });
+
+    const { data } = await db
+      .from("promises")
+      .select("contact_id, due_on")
+      .eq("contact_id", plannedId);
+    expect(data).toEqual([{ contact_id: plannedId, due_on: "2026-10-01" }]);
+
+    // Now move his plan earlier than the promise: it stops being news.
+    await db.from("promises").delete().eq("user_id", alice.id);
+    await db.from("contacts").update({ promises_scanned_at: null }).eq("id", plannedId);
+    await db
+      .from("next_touches")
+      .update({ due_on: "2026-09-25" })
+      .eq("user_id", alice.id)
+      .eq("contact_id", plannedId);
+
+    const result = await scanForPromises(db, alice.id, { config: CONFIG, accessToken: fakeToken, now: NOW });
+
+    const { data: after } = await db.from("promises").select("id").eq("contact_id", plannedId);
+    expect(after).toEqual([]);
+    expect(result.dropped.later_than_plan).toBeGreaterThan(0);
+
+    // Put his plan back: the tests below share this contact.
+    await db
+      .from("next_touches")
+      .update({ due_on: "2026-10-05" })
+      .eq("user_id", alice.id)
+      .eq("contact_id", plannedId);
   });
 
   it("writes what it finds as pending, and says it has read the contact", async () => {
@@ -208,19 +250,15 @@ describe("scanning for promises", () => {
       now: NOW,
     });
 
-    expect(result).toEqual({
-      read: 1,
-      found: 1,
-      stoppedAtCap: false,
-      failed: 0,
-      remaining: 0,
-      dropped: {},
-    });
-    expect(calls.openAi).toBe(1);
+    // Pär and Johan are both read; each has the same promise in their mail.
+    expect(result).toMatchObject({ read: 2, found: 2, stoppedAtCap: false, failed: 0, remaining: 0 });
+    // One request per contact read, and no more.
+    expect(calls.openAi).toBe(2);
 
     const { data: promises } = await db
       .from("promises")
-      .select("contact_id, owed_by, due_on, reason, status, message_id, thread_id");
+      .select("contact_id, owed_by, due_on, reason, status, message_id, thread_id")
+      .eq("contact_id", parId);
     expect(promises).toEqual([
       {
         contact_id: parId,
@@ -246,7 +284,7 @@ describe("scanning for promises", () => {
     const plan = await planScan(db, alice.id, { config: CONFIG, now: NOW, limit: 0 });
 
     expect(plan.contacts).toEqual([]);
-    expect(plan.remaining).toBe(1);
+    expect(plan.remaining).toBe(2);
   });
 
   it("reads nobody a second time, which is what makes pressing it again cheap", async () => {
@@ -294,7 +332,7 @@ describe("scanning for promises", () => {
     expect(second.read).toBe(1);
     expect(second.found).toBe(0);
 
-    const { data } = await db.from("promises").select("id");
+    const { data } = await db.from("promises").select("id").eq("contact_id", parId);
     expect(data).toHaveLength(1);
   });
 
@@ -334,7 +372,8 @@ describe("scanning for promises", () => {
       now: NOW,
     });
 
-    expect(result).toMatchObject({ read: 0, failed: 1, stoppedAtCap: false });
+    expect(result).toMatchObject({ read: 0, stoppedAtCap: false });
+    expect(result.failed).toBeGreaterThan(0);
 
     // It keeps no scanned_at, so the next scan tries again.
     const { data } = await db.from("contacts").select("promises_scanned_at").eq("id", parId).single();

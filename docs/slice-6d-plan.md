@@ -60,8 +60,14 @@ Reading every thread for every contact, on every sync, forever, is exactly the c
 
 - **On demand.** A **Look for promises** button on `/brief`, not a job that runs on sync.
 - **Only contacts worth reading**: an open thread (not "No open thread"), not settled, not
-  "just a contact", and **no open next touch already** — if you have a date for them, there
-  is nothing to find.
+  "just a contact".
+- **A contact you already have a date for is read, but only a sooner promise is offered**
+  (changed 2026-09-20, at the user's request). The first rule skipped them outright; on the
+  real mailbox that was 15 contacts of 21, so the scan read one person and the feature barely
+  ran. "He said he'd send the document on Friday" is worth knowing when your own plan says
+  5 October — a promise dated *after* the plan tells you nothing you haven't decided.
+  Accepting one moves that next touch forward rather than making a second, and the row says
+  so before you press.
 - **Only what's changed**: `promises_scanned_at` per contact. A thread with no new message
   since the last scan is skipped entirely.
 - **One request per contact**, over the latest thread only, reusing `loadThreadContext` and

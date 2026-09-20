@@ -112,7 +112,8 @@ export type DropReason =
   | "date_too_far"
   | "empty_reason"
   | "duplicate"
-  | "over_the_cap";
+  | "over_the_cap"
+  | "later_than_plan";
 
 export type CheckedPromises = { promises: FoundPromise[]; dropped: DropReason[] };
 

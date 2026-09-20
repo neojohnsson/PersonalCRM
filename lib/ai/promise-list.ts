@@ -30,6 +30,12 @@ export type PendingPromise = {
   reason: string;
   /** The message it was found in, read live. Null when Gmail no longer has it. */
   text: string | null;
+  /**
+   * The open next touch this contact already has, if any. A promise only gets
+   * this far when it is due sooner, so accepting moves that day forward — the
+   * row says so before you press.
+   */
+  plannedOn: string | null;
 };
 
 type PromiseRow = {
@@ -80,6 +86,21 @@ export async function loadPendingPromises(
 
   const byId = new Map(contacts.map((contact) => [contact.id, contact]));
 
+  const { data: touches, error: touchesError } = await db
+    .from("next_touches")
+    .select("contact_id, due_on")
+    .eq("user_id", userId)
+    .eq("status", "open")
+    .in("contact_id", [...byId.keys()])
+    .returns<{ contact_id: string; due_on: string }[]>();
+  if (touchesError) throw supabaseError(touchesError, "Couldn't load next touches");
+
+  const plannedOn = new Map<string, string>();
+  for (const touch of touches) {
+    const current = plannedOn.get(touch.contact_id);
+    if (!current || touch.due_on < current) plannedOn.set(touch.contact_id, touch.due_on);
+  }
+
   // One Gmail read per distinct message, in parallel. A failure is not fatal:
   // the row still shows, with nothing to read.
   const texts = new Map<string, string | null>();
@@ -113,6 +134,7 @@ export async function loadPendingPromises(
         dueOn: row.due_on,
         reason: row.reason,
         text: texts.get(row.message_id) ?? null,
+        plannedOn: plannedOn.get(row.contact_id) ?? null,
       };
     })
     .filter((promise): promise is PendingPromise => promise !== null);

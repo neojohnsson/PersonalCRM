@@ -35,8 +35,14 @@ import { readAll } from "@/lib/supabase/read-all";
  *   no open thread       nothing to promise about
  *   settled              you said the conversation was finished
  *   just a contact       you said never to prompt about them
- *   a next touch already you have a date; there is nothing to find
  *   nothing new since    the last scan already read every message there is
+ *
+ * A contact you already have a next touch for *is* read, but only a promise
+ * dated before that day is offered (changed 2026-09-20, at the user's request:
+ * the old rule skipped them outright, and on a real mailbox that was 15 of 21
+ * contacts, so the scan barely ran). "He said he'd send the document on Friday"
+ * is worth knowing when your own plan says 5 October. A promise dated after the
+ * plan tells you nothing you haven't already decided.
  *
  * On a mailbox that has been scanned once, the last rule alone skips almost
  * everybody, which is what makes pressing the button again nearly free.
@@ -73,6 +79,8 @@ export type ScanCandidate = {
   name: string;
   /** The newest message either way — what `promises_scanned_at` is compared to. */
   newestAt: Date;
+  /** The open next touch you already have, if any. Only sooner promises count. */
+  plannedOn: string | null;
 };
 
 export type ScanPlan = {
@@ -145,25 +153,32 @@ export async function planScan(
     loadRelationships(db, userId, { now }),
     db
       .from("next_touches")
-      .select("contact_id")
+      .select("contact_id, due_on")
       .eq("user_id", userId)
       .eq("status", "open")
       .limit(1000),
   ]);
   if (touchesResult.error) throw supabaseError(touchesResult.error, "Couldn't load next touches");
 
-  const planned = new Set((touchesResult.data ?? []).map((row) => row.contact_id as string));
+  // The soonest open touch per contact: what a promise has to beat to be news.
+  const planned = new Map<string, string>();
+  for (const row of touchesResult.data ?? []) {
+    const current = planned.get(row.contact_id as string);
+    const dueOn = row.due_on as string;
+    if (!current || dueOn < current) planned.set(row.contact_id as string, dueOn);
+  }
 
   const candidates: ScanCandidate[] = [];
   for (const contact of contacts) {
     const relationship: Relationship = relationships.get(contact.id) ?? NO_MAIL;
-    if (!worthReading(contact, relationship, planned)) continue;
+    if (!worthReading(contact, relationship)) continue;
 
     candidates.push({
       contactId: contact.id,
       name: displayName({ ...contact, primary_email: null }),
       // worthReading has already ruled out "none", so there is a message.
       newestAt: relationship.turn.kind === "none" ? now : relationship.turn.at,
+      plannedOn: planned.get(contact.id) ?? null,
     });
   }
 
@@ -185,16 +200,12 @@ export async function planScan(
   };
 }
 
-function worthReading(
-  contact: ContactRow,
-  relationship: Relationship,
-  planned: Set<string>,
-): boolean {
+function worthReading(contact: ContactRow, relationship: Relationship): boolean {
   const { turn, settledAt, neverChase } = relationship;
 
   // Nothing said, nothing recent: no promise to find.
   if (turn.kind === "none" || turn.kind === "closed") return false;
-  if (neverChase || planned.has(contact.id)) return false;
+  if (neverChase) return false;
   // Settled: you said this conversation was finished (slice 6c).
   if (settledAt && settledAt.getTime() >= turn.at.getTime()) return false;
 
@@ -322,7 +333,16 @@ async function readOneContact(
     },
   );
 
-  return checkPromises(raw, conversation, today);
+  const checked = checkPromises(raw, conversation, today);
+  if (!candidate.plannedOn) return checked;
+
+  // You already chose a day. Only something due before it is news.
+  const sooner = checked.promises.filter((promise) => promise.dueOn < candidate.plannedOn!);
+  const later = checked.promises.length - sooner.length;
+  return {
+    promises: sooner,
+    dropped: [...checked.dropped, ...Array<DropReason>(later).fill("later_than_plan")],
+  };
 }
 
 /**

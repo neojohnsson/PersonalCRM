@@ -33,6 +33,7 @@ const REFUSED = {
   empty_reason: "with nothing written",
   duplicate: "already offered",
   over_the_cap: "over the per-contact limit",
+  later_than_plan: "dated after the next touch you already have",
 } as const;
 
 export type DecideState = { error: string } | null;
@@ -73,22 +74,46 @@ export async function acceptPromise(
 
   const dueOn = asked || promise.due_on;
 
-  const { data: touch, error: touchError } = await supabase
+  // One open touch per contact (migration 0009). A promise is only offered when
+  // it falls before the touch the contact already has, so accepting moves that
+  // day forward rather than making a second one. The row said so before you
+  // pressed; this is where it happens.
+  const { data: open, error: openError } = await supabase
     .from("next_touches")
-    .insert({
-      user_id: user.id,
-      contact_id: promise.contact_id,
-      due_on: dueOn,
-      reason: promise.reason,
-    })
     .select("id")
-    .single();
-  // One open touch per contact (migration 0009). Somebody set one between the
-  // scan and now: their date wins, and the promise stays for them to decide.
+    .eq("user_id", user.id)
+    .eq("contact_id", promise.contact_id)
+    .eq("status", "open")
+    .maybeSingle<{ id: string }>();
+  if (openError) throw supabaseError(openError, "Couldn't check the next touch");
+
+  const saved = open
+    ? await supabase
+        .from("next_touches")
+        .update({ due_on: dueOn, reason: promise.reason, updated_at: new Date().toISOString() })
+        .eq("user_id", user.id)
+        .eq("id", open.id)
+        .eq("status", "open")
+        .select("id")
+        .single()
+    : await supabase
+        .from("next_touches")
+        .insert({
+          user_id: user.id,
+          contact_id: promise.contact_id,
+          due_on: dueOn,
+          reason: promise.reason,
+        })
+        .select("id")
+        .single();
+
+  const touch = saved.data;
+  const touchError = saved.error;
+  // Somebody set one in another tab between the check and now.
   if (touchError?.code === UNIQUE_VIOLATION) {
     return { error: "There's already a next touch for this contact. Open them to change it." };
   }
-  if (touchError) throw supabaseError(touchError, "Couldn't create the next touch");
+  if (touchError || !touch) throw supabaseError(touchError!, "Couldn't save the next touch");
 
   const { error: decideError } = await supabase
     .from("promises")
