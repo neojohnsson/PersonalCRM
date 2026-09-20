@@ -10,6 +10,7 @@ import {
   PROMISE_SCHEMA,
   buildPromiseInput,
   checkPromises,
+  type DropReason,
   type FoundPromise,
   type RawPromises,
 } from "@/lib/ai/promises";
@@ -93,6 +94,12 @@ export type ScanResult = {
   failed: number;
   /** Still worth reading when this press finished. */
   remaining: number;
+  /**
+   * What the model offered and code refused, by reason. "Found nothing" and
+   * "found four and rejected every one" are different answers, and only the
+   * second means the rules are the thing to look at.
+   */
+  dropped: Partial<Record<DropReason, number>>;
 };
 
 export type ScanOptions = {
@@ -218,7 +225,14 @@ export async function scanForPromises(
   const today = todayIn("Europe/Stockholm", now);
 
   const plan = await planScan(db, userId, { ...options, limit: options.limit ?? SCAN_BATCH });
-  const result: ScanResult = { read: 0, found: 0, stoppedAtCap: false, failed: 0, remaining: plan.remaining };
+  const result: ScanResult = {
+    read: 0,
+    found: 0,
+    stoppedAtCap: false,
+    failed: 0,
+    remaining: plan.remaining,
+    dropped: {},
+  };
   if (plan.contacts.length === 0) return result;
 
   // Once for the whole scan. getAccessToken refreshes against Google every
@@ -227,9 +241,9 @@ export async function scanForPromises(
   const token = await (options.accessToken ?? getAccessToken)(db, userId);
 
   for (const [index, candidate] of plan.contacts.entries()) {
-    let promises: FoundPromise[];
+    let found: { promises: FoundPromise[]; dropped: DropReason[] };
     try {
-      promises = await readOneContact(db, userId, candidate, today, config, token);
+      found = await readOneContact(db, userId, candidate, today, config, token);
     } catch (failure) {
       if (failure instanceof AiCapReached) {
         result.stoppedAtCap = true;
@@ -244,7 +258,10 @@ export async function scanForPromises(
     }
 
     result.read += 1;
-    if (promises.length > 0) result.found += await writePromises(db, userId, candidate.contactId, promises);
+    for (const reason of found.dropped) result.dropped[reason] = (result.dropped[reason] ?? 0) + 1;
+    if (found.promises.length > 0) {
+      result.found += await writePromises(db, userId, candidate.contactId, found.promises);
+    }
 
     const { error } = await db
       .from("contacts")
@@ -265,14 +282,14 @@ async function readOneContact(
   today: string,
   config: AiConfig,
   token: string,
-): Promise<FoundPromise[]> {
+): Promise<{ promises: FoundPromise[]; dropped: DropReason[] }> {
   // Everything that can fail for free happens before the reservation, so a
   // request is only paid for when it is really sent (as generateSummary does).
   const { items: thread } = await loadThreadContext(db, userId, candidate.contactId);
-  if (thread.length === 0) return [];
+  if (thread.length === 0) return { promises: [], dropped: [] };
 
   const conversation = await readConversation(token, thread);
-  if (conversation.length === 0) return [];
+  if (conversation.length === 0) return { promises: [], dropped: [] };
 
   const input = buildPromiseInput(candidate.name, conversation, today);
   const estimateUsd = maxCostOf(
@@ -305,7 +322,7 @@ async function readOneContact(
     },
   );
 
-  return checkPromises(raw, conversation, today).promises;
+  return checkPromises(raw, conversation, today);
 }
 
 /**

@@ -23,6 +23,18 @@ import { createClient } from "@/lib/supabase/server";
 
 const UNIQUE_VIOLATION = "23505";
 
+/** Drop reasons in words, for the line under the scan button. */
+const REFUSED = {
+  no_such_message: "about a message that wasn't there",
+  not_quoted: "not quoted from the message",
+  negated: "as negations",
+  no_date: "with no date to act on",
+  date_too_far: "dated too far off",
+  empty_reason: "with nothing written",
+  duplicate: "already offered",
+  over_the_cap: "over the per-contact limit",
+} as const;
+
 export type DecideState = { error: string } | null;
 
 type PromiseRow = {
@@ -126,10 +138,17 @@ export async function runScan(): Promise<ScanState> {
     const trouble = result.failed > 0 ? `, and couldn't read ${result.failed}` : "";
     const capped = result.stoppedAtCap ? ". Stopped at the monthly limit." : "";
     const left = result.remaining > 0 ? ` ${result.remaining} still to read.` : "";
+    // When it found nothing, say what it turned down — otherwise "nothing to
+    // decide" hides the difference between an empty mailbox and rules that are
+    // too strict.
+    const refused = Object.entries(result.dropped)
+      .map(([reason, count]) => `${count} ${REFUSED[reason as keyof typeof REFUSED] ?? reason}`)
+      .join(", ");
+    const why = result.found === 0 && refused ? ` Turned down ${refused}.` : "";
 
     refresh();
     return {
-      message: `${read}: ${found}${trouble}${capped}${left}`,
+      message: `${read}: ${found}${trouble}${capped}${why}${left}`,
       tone: result.stoppedAtCap ? "problem" : "ok",
     };
   } catch (failure) {

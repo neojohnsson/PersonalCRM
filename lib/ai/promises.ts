@@ -117,16 +117,23 @@ export type DropReason =
 export type CheckedPromises = { promises: FoundPromise[]; dropped: DropReason[] };
 
 /**
- * Words that turn a promise into its opposite, or into no promise at all.
+ * Phrases that turn a promise into its opposite, or into no promise at all.
  * Swedish as well as English: the mailbox this is built for is both.
  *
- * Crude on purpose. "I won't be able to send it until Friday, but I'll send it
- * Friday" is a real promise and this drops it — which is the right way round to
- * be wrong, because the cost of a missed promise is that things stay as they
- * are today, and the cost of a wrong one is nagging somebody who owes nothing.
+ * Each one has to negate a *commitment*. Narrowed 2026-09-20, after a scan of
+ * real Swedish mail found nothing at all: the list held bare "inte", which is
+ * among the commonest words in the language. "Jag har inte fått svar än, men
+ * jag hör av mig på fredag" is a promise, and a rule that reads one word
+ * anywhere in the sentence threw it away. The Swedish entries now carry the
+ * verb they negate.
+ *
+ * Still crude, and still deliberately so: "I won't be able to send it until
+ * Friday, but I'll send it Friday" is a real promise and this drops it. That is
+ * the right way round to be wrong — a missed promise leaves things as they are
+ * today, a wrong one has you chasing somebody who owes you nothing.
  */
 const NEGATIONS =
-  /\b(can'?t|cannot|can not|won'?t|will not|shan'?t|unable|not able|no need|don'?t need|doesn'?t need|unless|if you need|if anything|inte|om du beh[öo]ver|h[öo]r av dig om|ingen br[åa]dska)\b/i;
+  /\b(can'?t|cannot|can not|won'?t|will not|shan'?t|unable|not able|no need|don'?t need|doesn'?t need|unless|if you need|if anything|kan inte|hinner inte|kommer inte|behöver inte|får inte|inte förrän|om inte|om du behöver|hör av dig om|ingen brådska)\b/i;
 
 /** Whitespace differences are not a paraphrase; anything else is. */
 function normalise(text: string): string {

@@ -208,7 +208,14 @@ describe("scanning for promises", () => {
       now: NOW,
     });
 
-    expect(result).toEqual({ read: 1, found: 1, stoppedAtCap: false, failed: 0, remaining: 0 });
+    expect(result).toEqual({
+      read: 1,
+      found: 1,
+      stoppedAtCap: false,
+      failed: 0,
+      remaining: 0,
+      dropped: {},
+    });
     expect(calls.openAi).toBe(1);
 
     const { data: promises } = await db

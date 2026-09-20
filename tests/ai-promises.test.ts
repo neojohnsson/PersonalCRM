@@ -52,6 +52,7 @@ describe("negations and near-misses", () => {
     "Jag hinner inte titta på det före den 20:e",
     "Hör av dig om du behöver något inför hösten",
     "Vi behöver inte boka något nytt möte",
+    "Jag kan inte svara på det förrän i oktober",
   ];
 
   it.each(nothing)("finds no promise in %j", (sentence) => {
@@ -60,6 +61,17 @@ describe("negations and near-misses", () => {
 
     expect(checked.promises).toEqual([]);
     expect(checked.dropped).toEqual(["negated"]);
+  });
+
+  it("keeps a promise that happens to contain a negation elsewhere", () => {
+    // "inte" is among the commonest words in Swedish. A rule that reads it
+    // anywhere in the sentence threw away real promises (2026-09-20).
+    const sentence = "Jag har inte fått svar än, men jag hör av mig på fredag";
+    const conversation = [message("m1", `Hej! ${sentence}. Hälsningar, Pär`)];
+    const checked = checkPromises({ promises: [found({ sentence })] }, conversation, TODAY);
+
+    expect(checked.dropped).toEqual([]);
+    expect(checked.promises).toHaveLength(1);
   });
 
   it("still finds the plain promise it is meant to find", () => {
