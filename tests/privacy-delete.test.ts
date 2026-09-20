@@ -85,7 +85,7 @@ async function fillUp(db: SupabaseClient, userId: string): Promise<string> {
       due_on: "2026-10-05",
       reason: "Ask about the thesis",
     }),
-    db.from("gmail_sync_state").insert({ user_id: userId, status: "idle" }),
+    db.from("gmail_sync_state").insert({ user_id: userId, status: "ready" }),
     db.from("profiles").insert({ user_id: userId, display_name: "Alice" }),
   ]);
   for (const result of inserts) if (result.error) throw result.error;

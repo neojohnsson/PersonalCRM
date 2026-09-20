@@ -81,15 +81,15 @@ make it honest.
 
 ## Done when — a test proves it, not when it renders
 
-- [ ] The counts on `/privacy` match what is really in the database, for that user only
-- [ ] Export contains every table the user owns, and nothing of anyone else's — proven with
+- [x] The counts on `/privacy` match what is really in the database, for that user only
+- [x] Export contains every table the user owns, and nothing of anyone else's — proven with
       two users
-- [ ] One person's export contains their summary, their messages' metadata and their sources
-- [ ] "Delete all contacts" leaves the account and the Gmail connection working
-- [ ] "Delete everything" leaves no row anywhere with that user's id, and the Google refresh
+- [x] One person's export contains their summary, their messages' metadata and their sources
+- [x] "Delete all contacts" leaves the account and the Gmail connection working
+- [x] "Delete everything" leaves no row anywhere with that user's id, and the Google refresh
       token is revoked at Google, not merely deleted locally
-- [ ] Deleting is refused unless the confirm step was completed
-- [ ] A second user's data is untouched by every one of the above
+- [x] Deleting is refused unless the confirm step was completed
+- [x] A second user's data is untouched by every one of the above
 
 ## Not in this slice
 
