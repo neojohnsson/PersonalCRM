@@ -7,8 +7,8 @@ import { initials } from "@/lib/format";
  * and ReviewQueue.dc.html share it — a dark sidebar on the left, a header on top.
  *
  * Differences from the design, on purpose:
- *   - The sidebar holds only pages that exist: Home, Your week, Contacts and
- *     Seen once.
+ *   - The sidebar holds only pages that exist: Home, Your week, Promises,
+ *     Contacts and Seen once.
  *     The design's Add, Calendar and Settings icons arrive with their pages,
  *     because a nav item that goes nowhere would be a lie. The header's centred
  *     page switcher is left out for the same reason.
@@ -32,7 +32,7 @@ export function AppShell({
   userEmail: string | undefined;
   headerRight?: React.ReactNode;
   /** Which sidebar entry is the current page. */
-  active?: "home" | "brief" | "contacts" | "seen-once" | "profile";
+  active?: "home" | "brief" | "promises" | "contacts" | "seen-once" | "profile";
   /** People waiting in Seen once; the design's orange dot shows when above 0. */
   seenOnceCount?: number;
   children: React.ReactNode;
@@ -61,6 +61,13 @@ export function AppShell({
             <rect x="3.5" y="4.5" width="17" height="15" rx="3" />
             <path d="M7.5 9.5h9" />
             <path d="M7.5 13.5h6" />
+          </NavItem>
+          {/* Promises sits next to Your week: both are about what to do next,
+              and one feeds the other. A speech mark, because a promise is
+              something somebody said. */}
+          <NavItem href="/promises" label="Promises" active={active === "promises"}>
+            <path d="M8.5 10.5c0-2 1.4-3.5 3.5-3.5" />
+            <path d="M4 18V7.5a2.5 2.5 0 0 1 2.5-2.5h11A2.5 2.5 0 0 1 20 7.5v6a2.5 2.5 0 0 1-2.5 2.5H8z" />
           </NavItem>
           <NavItem href="/contacts" label="Contacts" active={active === "contacts"}>
             <circle cx="9.5" cy="8" r="3.3" />

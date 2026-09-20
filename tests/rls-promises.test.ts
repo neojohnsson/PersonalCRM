@@ -224,7 +224,11 @@ describe("promises", () => {
     const deleted = await bobClient.from("promises").delete().eq("contact_id", parId);
     expect(deleted.error).toBeNull();
 
-    const { data } = await aliceClient.from("promises").select("status").eq("message_id", "m-1");
+    const { data } = await aliceClient
+      .from("promises")
+      .select("status")
+      .eq("message_id", "m-1")
+      .eq("owed_by", "them");
     expect(data).toEqual([{ status: "accepted" }]);
   });
 

@@ -60,6 +60,9 @@ create table promises (
   foreign key (contact_id, user_id) references contacts (id, user_id) on delete cascade,
   -- Set when accepted. If the touch is later deleted the promise stays, still
   -- marked accepted: it records that you decided, not what became of it.
+  --
+  -- Corrected by 0020: "set null" on a composite key nulls every column in it,
+  -- user_id included, and that column is not null. Left as it was run.
   foreign key (next_touch_id, user_id) references next_touches (id, user_id) on delete set null,
 
   -- A decision has a date, and a pending promise hasn't been decided.
