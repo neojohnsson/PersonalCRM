@@ -112,18 +112,18 @@ reversible from the contact page. Nothing is deleted.
 
 ## Done when — a test proves it, not when it renders
 
-- [ ] A settled thread stops prompting on `/`, in the brief and on the contact page — and a
+- [x] A settled thread stops prompting on `/`, in the brief and on the contact page — and a
       newer message in that thread re-opens it
-- [ ] An open next touch dated after today silences every prompt; the contact page says
+- [x] An open next touch dated after today silences every prompt; the contact page says
       "Planned for 3 March" instead of whose turn it is
-- [ ] Never chase is never prompted anywhere, still appears in the contact list, and still
+- [x] Never chase is never prompted anywhere, still appears in the contact list, and still
       counts toward warmth. A next touch is the exception and still shows, in Coming up and
       in the brief: it is a day *you* chose, and silencing it would only hide your own plan
       (decided while building, 2026-09-19)
-- [ ] `settled_threads` passes the two-user RLS test: one user can neither see nor settle
+- [x] `settled_threads` passes the two-user RLS test: one user can neither see nor settle
       the other's threads
-- [ ] Precedence is tested where several apply at once
-- [ ] On the preview, with the real mailbox: the handed-off contact settles and leaves the
+- [x] Precedence is tested where several apply at once
+- [x] On the preview, with the real mailbox: the handed-off contact settles and leaves the
       brief, the spring conversation leaves it once it has a date, and the contact no reply
       is owed to settles
 
