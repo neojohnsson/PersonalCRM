@@ -208,7 +208,7 @@ describe("scanning for promises", () => {
       now: NOW,
     });
 
-    expect(result).toEqual({ read: 1, found: 1, stoppedAtCap: false, failed: 0 });
+    expect(result).toEqual({ read: 1, found: 1, stoppedAtCap: false, failed: 0, remaining: 0 });
     expect(calls.openAi).toBe(1);
 
     const { data: promises } = await db
@@ -232,6 +232,14 @@ describe("scanning for promises", () => {
       .eq("id", parId)
       .single();
     expect(contact!.promises_scanned_at).not.toBeNull();
+  });
+
+  it("reads a batch at a time, and says how many are left", async () => {
+    // A press is bounded by the platform's timeout, not by what is waiting.
+    const plan = await planScan(db, alice.id, { config: CONFIG, now: NOW, limit: 0 });
+
+    expect(plan.contacts).toEqual([]);
+    expect(plan.remaining).toBe(1);
   });
 
   it("reads nobody a second time, which is what makes pressing it again cheap", async () => {

@@ -45,6 +45,21 @@ import { readAll } from "@/lib/supabase/read-all";
 export const PROMISE_MAX_OUTPUT_TOKENS = 1_200;
 
 /**
+ * Contacts read in one press.
+ *
+ * Reading one takes five to twelve seconds, nearly all of it waiting for the
+ * model, against a 60 second budget for the whole request (maxDuration in
+ * app/promises/page.tsx). Five fits even when every contact is slow. What is
+ * left over is read by pressing again, and the button says how many that is.
+ *
+ * The alternative — read everything and hope — fails in the worst possible
+ * way: the request is killed part way through, the spending is already
+ * recorded, and the promises from the contact it was in the middle of are not
+ * written. Stopping early on purpose costs a second press.
+ */
+export const SCAN_BATCH = 5;
+
+/**
  * What one contact's thread is assumed to cost before Gmail has been read, for
  * the estimate on the button. Twenty messages of a few hundred tokens each,
  * plus the rules. Deliberately generous: the number shown should never be less
@@ -63,6 +78,8 @@ export type ScanPlan = {
   contacts: ScanCandidate[];
   /** The most it could cost, in dollars. */
   estimateUsd: number;
+  /** Worth reading, but over this press's batch: press again for these. */
+  remaining: number;
 };
 
 export type ScanResult = {
@@ -74,6 +91,8 @@ export type ScanResult = {
   stoppedAtCap: boolean;
   /** Contacts whose mail couldn't be read; the scan carried on past them. */
   failed: number;
+  /** Still worth reading when this press finished. */
+  remaining: number;
 };
 
 export type ScanOptions = {
@@ -152,7 +171,11 @@ export async function planScan(
     PROMISE_MAX_OUTPUT_TOKENS,
   );
 
-  return { contacts: contactsToRead, estimateUsd: perContact * contactsToRead.length };
+  return {
+    contacts: contactsToRead,
+    estimateUsd: perContact * contactsToRead.length,
+    remaining: candidates.length - contactsToRead.length,
+  };
 }
 
 function worthReading(
@@ -194,16 +217,24 @@ export async function scanForPromises(
   const now = options.now ?? new Date();
   const today = todayIn("Europe/Stockholm", now);
 
-  const plan = await planScan(db, userId, options);
-  const result: ScanResult = { read: 0, found: 0, stoppedAtCap: false, failed: 0 };
+  const plan = await planScan(db, userId, { ...options, limit: options.limit ?? SCAN_BATCH });
+  const result: ScanResult = { read: 0, found: 0, stoppedAtCap: false, failed: 0, remaining: plan.remaining };
+  if (plan.contacts.length === 0) return result;
 
-  for (const candidate of plan.contacts) {
+  // Once for the whole scan. getAccessToken refreshes against Google every
+  // call, so asking per contact would be one round trip per contact for a
+  // token that is good for all of them.
+  const token = await (options.accessToken ?? getAccessToken)(db, userId);
+
+  for (const [index, candidate] of plan.contacts.entries()) {
     let promises: FoundPromise[];
     try {
-      promises = await readOneContact(db, userId, candidate, today, config, options);
+      promises = await readOneContact(db, userId, candidate, today, config, token);
     } catch (failure) {
       if (failure instanceof AiCapReached) {
         result.stoppedAtCap = true;
+        // Everything this press didn't get to is still waiting.
+        result.remaining += plan.contacts.length - index;
         break;
       }
       // Gmail gone, a thread deleted, a token refused for one account: step
@@ -233,14 +264,13 @@ async function readOneContact(
   candidate: ScanCandidate,
   today: string,
   config: AiConfig,
-  options: ScanOptions,
+  token: string,
 ): Promise<FoundPromise[]> {
   // Everything that can fail for free happens before the reservation, so a
   // request is only paid for when it is really sent (as generateSummary does).
   const { items: thread } = await loadThreadContext(db, userId, candidate.contactId);
   if (thread.length === 0) return [];
 
-  const token = await (options.accessToken ?? getAccessToken)(db, userId);
   const conversation = await readConversation(token, thread);
   if (conversation.length === 0) return [];
 

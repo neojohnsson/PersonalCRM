@@ -66,6 +66,13 @@ Reading every thread for every contact, on every sync, forever, is exactly the c
   since the last scan is skipped entirely.
 - **One request per contact**, over the latest thread only, reusing `loadThreadContext` and
   the same "last 20 messages" window the summary uses.
+- **Five contacts per press** (decided while building, 2026-09-20). Reading one takes five to
+  twelve seconds, nearly all of it waiting for the model, against a 60 second budget for the
+  request. Reading everything and hoping fails in the worst way: the request is killed part
+  way through, the spending is already recorded, and the promises from the contact it was in
+  the middle of are never written. The button says how many are left for the next press.
+- **One Gmail token for the whole scan.** `getAccessToken` refreshes against Google on every
+  call, so asking per contact was a round trip per contact for a token good for all of them.
 - The cheap model (`gpt-5.6-luna`), under the existing monthly cap — `withSpendCap` already
   reserves before the request and settles after, so a scan can never run past £2.
 - The button says what it will cost before you press it: "23 contacts to read, about $0.04."

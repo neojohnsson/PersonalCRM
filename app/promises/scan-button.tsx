@@ -13,7 +13,16 @@ import { runScan, type ScanState } from "@/app/promises/actions";
  *
  * The solid pill is design/ReviewQueue.dc.html's, from the same toolbar strip.
  */
-export function ScanButton({ contacts, estimateUsd }: { contacts: number; estimateUsd: number }) {
+export function ScanButton({
+  contacts,
+  estimateUsd,
+  remaining,
+}: {
+  contacts: number;
+  estimateUsd: number;
+  /** Worth reading but over this press's batch — a second press gets them. */
+  remaining: number;
+}) {
   const [state, scan] = useActionState<ScanState, FormData>(runScan, null);
 
   return (
@@ -29,7 +38,8 @@ export function ScanButton({ contacts, estimateUsd }: { contacts: number; estima
         <span className="text-[11.5px] font-medium text-ink-quiet">
           {contacts === 0
             ? "Nothing new to read"
-            : `${contacts === 1 ? "1 contact" : `${contacts} contacts`} to read, up to ${price(estimateUsd)}`}
+            : `${contacts === 1 ? "1 contact" : `${contacts} contacts`} to read, up to ${price(estimateUsd)}` +
+              (remaining > 0 ? ` · ${remaining} more after that` : "")}
         </span>
       )}
       <SubmitPill disabled={contacts === 0} />

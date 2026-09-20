@@ -5,7 +5,7 @@ import { PromiseCard } from "@/app/promises/promise-card";
 import { ScanButton } from "@/app/promises/scan-button";
 import { SignOutButton } from "@/app/sign-out-button";
 import { loadPendingPromises } from "@/lib/ai/promise-list";
-import { planScan } from "@/lib/ai/promise-scan";
+import { SCAN_BATCH, planScan } from "@/lib/ai/promise-scan";
 import { APP_NAME } from "@/lib/app-config";
 import { requireUser } from "@/lib/auth";
 import { displayName } from "@/lib/contacts/display";
@@ -14,6 +14,12 @@ import { getAccessToken } from "@/lib/google/tokens";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: `Promises · ${APP_NAME}` };
+
+/**
+ * A scan waits on the model for most of its time, so the request needs longer
+ * than a page normally gets. SCAN_BATCH is sized to fit inside this.
+ */
+export const maxDuration = 60;
 
 /**
  * The promises found in your mail, waiting to be accepted or rejected
@@ -41,7 +47,7 @@ export default async function PromisesPage() {
 
   const [promises, plan, seenOnceResult] = await Promise.all([
     loadPendingPromises(supabase, user.id, token, displayName),
-    planScan(supabase, user.id),
+    planScan(supabase, user.id, { limit: SCAN_BATCH }),
     supabase
       .from("person_tiers")
       .select("email", { count: "exact", head: true })
@@ -75,7 +81,11 @@ export default async function PromisesPage() {
               ? `${countOf(promises.length, "promise")} to decide`
               : "Nothing waiting"}
           </span>
-          <ScanButton contacts={plan.contacts.length} estimateUsd={plan.estimateUsd} />
+          <ScanButton
+            contacts={plan.contacts.length}
+            estimateUsd={plan.estimateUsd}
+            remaining={plan.remaining}
+          />
         </div>
 
         {promises.length > 0 ? (

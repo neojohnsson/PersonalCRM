@@ -125,9 +125,13 @@ export async function runScan(): Promise<ScanState> {
       result.found === 0 ? "nothing to decide" : `${result.found} ${result.found === 1 ? "promise" : "promises"}`;
     const trouble = result.failed > 0 ? `, and couldn't read ${result.failed}` : "";
     const capped = result.stoppedAtCap ? ". Stopped at the monthly limit." : "";
+    const left = result.remaining > 0 ? ` ${result.remaining} still to read.` : "";
 
     refresh();
-    return { message: `${read}: ${found}${trouble}${capped}`, tone: result.stoppedAtCap ? "problem" : "ok" };
+    return {
+      message: `${read}: ${found}${trouble}${capped}${left}`,
+      tone: result.stoppedAtCap ? "problem" : "ok",
+    };
   } catch (failure) {
     if (failure instanceof AiCapReached) {
       return { message: "The monthly AI limit is reached, so nothing was read.", tone: "problem" };
