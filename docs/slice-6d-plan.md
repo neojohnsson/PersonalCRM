@@ -131,18 +131,18 @@ A line on `/brief` says how many are waiting.
 
 ## Done when — a test proves it, not when it renders
 
-- [ ] The negation fixtures all produce no promise
-- [ ] A promise whose source message isn't in the thread given to the model is dropped
-- [ ] Accepting creates an open next touch with that date and reason, and the promise is
+- [x] The negation fixtures all produce no promise
+- [x] A promise whose source message isn't in the thread given to the model is dropped
+- [x] Accepting creates an open next touch with that date and reason, and the promise is
       marked accepted and never offered again
-- [ ] Dismissing keeps the row and never offers that message again, including after a rescan
-- [ ] A scan skips contacts that are settled, never chased, have an open next touch, or have
+- [x] Dismissing keeps the row and never offers that message again, including after a rescan
+- [x] A scan skips contacts that are settled, never chased, have an open next touch, or have
       had no new message since `promises_scanned_at`
-- [ ] The scan stops at the monthly cap, having spent nothing past it
-- [ ] `promises` passes the two-user RLS test
-- [ ] No verbatim message text is written to the database — asserted in code, like
+- [x] The scan stops at the monthly cap, having spent nothing past it
+- [x] `promises` passes the two-user RLS test
+- [x] No verbatim message text is written to the database — asserted in code, like
       `tests/no-send.test.ts` asserts there is no send endpoint
-- [ ] On the preview, with the real mailbox: a promise found, checked against the real
+- [x] On the preview, with the real mailbox: a promise found, checked against the real
       sentence, accepted, and showing up as a next touch
 
 ## Not in this slice
