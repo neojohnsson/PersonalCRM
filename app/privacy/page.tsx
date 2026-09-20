@@ -1,4 +1,5 @@
 import { AppShell } from "@/app/app-shell";
+import { DeletePanel } from "@/app/privacy/delete-panel";
 import { SignOutButton } from "@/app/sign-out-button";
 import { APP_NAME } from "@/lib/app-config";
 import { requireUser } from "@/lib/auth";
@@ -107,6 +108,18 @@ export default async function PrivacyPage() {
                 Contacts as a spreadsheet
               </a>
             </div>
+          </section>
+
+          <section className={CARD}>
+            <CardHeading title="Delete it" caption="No undo, so each one is typed out" />
+            <p className="text-[13px] leading-[1.55] text-ink-body">
+              Deleting one person is on their own page. These two are the bigger ones, and both
+              really delete &mdash; no archive, no soft delete, nothing kept to be helpful.
+            </p>
+            <DeletePanel
+              email={user.email ?? ""}
+              contactCount={holdings.find((holding) => holding.table === "contacts")?.count ?? 0}
+            />
           </section>
 
           <section className={CARD}>
