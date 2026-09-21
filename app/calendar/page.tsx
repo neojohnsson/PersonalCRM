@@ -3,7 +3,7 @@ import { AppShell } from "@/app/app-shell";
 import { CalendarPanel } from "@/app/connect/calendar-panel";
 import { CARD, EmptyCard } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
-import { buildWeek, clock, mondayOf, weekLabel, HOUR_HEIGHT, LAST_HOUR, FIRST_HOUR } from "@/lib/calendar/week";
+import { buildWeek, clock, mondayOf, weekLabel } from "@/lib/calendar/week";
 import { APP_NAME } from "@/lib/app-config";
 import { requireUser } from "@/lib/auth";
 import { displayName } from "@/lib/contacts/display";
@@ -50,6 +50,12 @@ export const maxDuration = 30;
  *     is.
  *   - The design's note about meetings counting toward warmth is kept word for
  *     word: it is the most important sentence on the screen.
+ *   - **Nothing scrolls.** The design is a fixed 900px frame, so copying its
+ *     64px hours gave the page two scrollbars on a real window: one across,
+ *     from the width seven columns needed, and one down, from ten hours of
+ *     64px. The grid is a percentage of whatever height it is given and the
+ *     columns simply share the width (changed 2026-09-21, at the user's
+ *     request). On a phone the columns get narrow rather than sliding sideways.
  */
 
 type ContactRow = {
@@ -190,8 +196,8 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-col gap-5 lg:flex-row">
-        <section className={`${CARD} flex min-w-0 flex-1 flex-col overflow-hidden`}>
+      <div className="flex min-h-0 flex-1 flex-col gap-5 lg:flex-row">
+        <section className={`${CARD} flex min-h-[420px] min-w-0 flex-1 flex-col overflow-hidden`}>
           {week ? (
             <WeekGrid week={week} byId={byId} touches={touchesResult.data} />
           ) : (
@@ -346,15 +352,13 @@ function WeekGrid({
   byId: Map<string, ContactRow>;
   touches: { id: string; contact_id: string; due_on: string; reason: string | null }[];
 }) {
-  const gridHeight = (LAST_HOUR - FIRST_HOUR) * HOUR_HEIGHT;
-
   return (
-    <div className="min-w-0 overflow-x-auto">
-      <div className="min-w-[680px]">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex h-[52px] shrink-0 items-center">
           <div className="w-[52px] shrink-0" />
           {week.days.map((day) => (
-            <div key={day.date} className="flex flex-1 items-center justify-center gap-[7px]">
+            <div key={day.date} className="flex min-w-0 flex-1 items-center justify-center gap-[7px]">
               <span
                 className={`text-[10.5px] font-bold tracking-[0.06em] uppercase ${
                   day.isToday ? "text-ink" : "text-ink-ghost"
@@ -376,7 +380,7 @@ function WeekGrid({
         </div>
 
         {/* Due: this app's own next touches, not anything from Google. */}
-        <div className="flex h-9 items-stretch border-y border-line">
+        <div className="flex h-9 shrink-0 items-stretch border-y border-line">
           <div className="flex w-[52px] shrink-0 items-center justify-end pr-2">
             <span className="text-[9.5px] font-bold tracking-[0.05em] text-ink-ghost uppercase">Due</span>
           </div>
@@ -385,7 +389,7 @@ function WeekGrid({
             return (
               <div
                 key={day.date}
-                className={`flex flex-1 items-center gap-1 border-l border-chip px-1 ${
+                className={`flex min-w-0 flex-1 items-center gap-1 border-l border-chip px-1 ${
                   day.isWeekend ? "bg-paper-tint" : ""
                 }`}
               >
@@ -410,13 +414,14 @@ function WeekGrid({
           })}
         </div>
 
-        <div className="relative flex" style={{ height: gridHeight }}>
+        {/* The hours fill whatever height is left, so the week always fits. */}
+        <div className="relative flex min-h-0 flex-1">
           {week.hours.slice(0, -1).map((hour, index) => (
             <div
               key={hour}
               aria-hidden="true"
               className="absolute right-0 left-[52px] h-px bg-chip"
-              style={{ top: index * HOUR_HEIGHT }}
+              style={{ top: `${(index / (week.hours.length - 1)) * 100}%` }}
             />
           ))}
 
@@ -425,7 +430,7 @@ function WeekGrid({
               <span
                 key={hour}
                 className="absolute w-11 -translate-y-1/2 text-right text-[10.5px] font-semibold text-ink-ghost"
-                style={{ top: index * HOUR_HEIGHT }}
+                style={{ top: `${(index / (week.hours.length - 1)) * 100}%` }}
               >
                 {String(hour).padStart(2, "0")}
               </span>
@@ -435,7 +440,7 @@ function WeekGrid({
           {week.days.map((day, dayIndex) => (
             <div
               key={day.date}
-              className={`relative flex-1 border-l border-chip ${day.isWeekend ? "bg-paper-tint" : ""}`}
+              className={`relative min-w-0 flex-1 border-l border-chip ${day.isWeekend ? "bg-paper-tint" : ""}`}
             >
               {week.events
                 .filter((event) => event.dayIndex === dayIndex)
@@ -444,10 +449,17 @@ function WeekGrid({
                   return (
                     <div
                       key={event.id}
-                      className={`absolute inset-x-1 flex flex-col gap-px overflow-hidden rounded-[9px] px-2 py-1.5 ${
+                      className={`absolute inset-x-[3px] flex flex-col gap-px overflow-hidden rounded-[9px] px-1.5 py-1 ${
                         contact ? "bg-info-tint" : "bg-chip/60"
                       }`}
-                      style={{ top: event.top, height: event.height }}
+                      // A 15-minute meeting still has to be readable, so the
+                      // block has a floor in pixels while its place is a
+                      // percentage.
+                      style={{
+                        top: `${event.topPercent}%`,
+                        height: `${event.heightPercent}%`,
+                        minHeight: "20px",
+                      }}
                     >
                       <span
                         className={`truncate text-[11.5px] leading-[1.3] font-semibold tracking-[-0.01em] ${

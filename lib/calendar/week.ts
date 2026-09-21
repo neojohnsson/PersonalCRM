@@ -19,8 +19,16 @@ import { addDays, todayIn } from "@/lib/relationship/dates";
 export const FIRST_HOUR = 8;
 export const LAST_HOUR = 18;
 
-/** Pixels per hour, from the design's 64px hour lines. */
-export const HOUR_HEIGHT = 64;
+/**
+ * Where a block sits is a percentage of the grid, not a number of pixels.
+ *
+ * The design is a fixed 900px frame with 64px hours, and pixels copied straight
+ * out of it gave the page two scrollbars: one across, because seven columns
+ * needed a minimum width, and one down, because ten hours of 64px is taller
+ * than a laptop window. A percentage grid fills whatever height it is given, so
+ * the week always fits and nothing scrolls (changed 2026-09-21).
+ */
+const GRID_MINUTES = (LAST_HOUR - FIRST_HOUR) * 60;
 
 export type WeekDay = {
   /** YYYY-MM-DD. */
@@ -38,9 +46,9 @@ export type WeekEvent = {
   when: string;
   /** Which day column, as an index into `days`. */
   dayIndex: number;
-  /** Where the block sits, in pixels from the top of the grid. */
-  top: number;
-  height: number;
+  /** Where the block sits, as a percentage of the grid's height. */
+  topPercent: number;
+  heightPercent: number;
   /** The contact it is with, when it is with one. */
   contactId: string | null;
   startedAt: Date;
@@ -125,9 +133,10 @@ export function buildWeek(
       title: event.summary?.trim() || "(no title)",
       when: `${clock(startedAt, timeZone)} – ${clock(endedAt, timeZone)}`,
       dayIndex,
-      top: ((startMinutes - FIRST_HOUR * 60) / 60) * HOUR_HEIGHT,
-      // A 15-minute meeting still needs to be readable.
-      height: Math.max(24, ((endMinutes - startMinutes) / 60) * HOUR_HEIGHT),
+      topPercent: ((startMinutes - FIRST_HOUR * 60) / GRID_MINUTES) * 100,
+      // A short meeting is kept readable by a minimum height in CSS, not by
+      // lying about how long it was.
+      heightPercent: ((endMinutes - startMinutes) / GRID_MINUTES) * 100,
       contactId,
       startedAt,
       endedAt,

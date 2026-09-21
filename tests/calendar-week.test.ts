@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FIRST_HOUR, HOUR_HEIGHT, buildWeek, clock, mondayOf, weekLabel } from "@/lib/calendar/week";
+import { FIRST_HOUR, LAST_HOUR, buildWeek, clock, mondayOf, weekLabel } from "@/lib/calendar/week";
 import type { GoogleEvent } from "@/lib/google/calendar";
 
 /**
@@ -52,8 +52,12 @@ describe("placing an event", () => {
     // 09:00 UTC is 11:00 in Sweden, on the Tuesday.
     expect(placed.dayIndex).toBe(1);
     expect(placed.when).toBe("11:00 – 12:00");
-    expect(placed.top).toBe((11 - FIRST_HOUR) * HOUR_HEIGHT);
-    expect(placed.height).toBe(HOUR_HEIGHT);
+
+    // A place in the grid, not a number of pixels: the grid fills whatever
+    // height the page gives it, so nothing scrolls (2026-09-21).
+    const hours = LAST_HOUR - FIRST_HOUR;
+    expect(placed.topPercent).toBeCloseTo(((11 - FIRST_HOUR) / hours) * 100);
+    expect(placed.heightPercent).toBeCloseTo((1 / hours) * 100);
     expect(placed.contactId).toBe("contact-karin");
     expect(placed.title).toBe("Coffee with Karin");
   });
@@ -68,13 +72,16 @@ describe("placing an event", () => {
     expect(buildWeek(MONDAY, [lateNight], contacts, NOW).events[0].dayIndex).toBe(1);
   });
 
-  it("keeps a short meeting readable", () => {
+  it("gives a short meeting its true height, and lets CSS keep it readable", () => {
     const quarter = event({
       start: { dateTime: "2026-09-22T09:00:00Z" },
       end: { dateTime: "2026-09-22T09:15:00Z" },
     });
 
-    expect(buildWeek(MONDAY, [quarter], contacts, NOW).events[0].height).toBe(24);
+    // Fifteen minutes of a ten-hour grid. The page floors the *rendered*
+    // height in pixels rather than lying here about how long it was.
+    const placed = buildWeek(MONDAY, [quarter], contacts, NOW).events[0];
+    expect(placed.heightPercent).toBeCloseTo((0.25 / (LAST_HOUR - FIRST_HOUR)) * 100);
   });
 
   it("shows other people's events too, with no contact on them", () => {
