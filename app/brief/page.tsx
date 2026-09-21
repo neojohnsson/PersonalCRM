@@ -52,6 +52,7 @@ type ContactRow = {
 
 const REASON_LABEL: Record<BriefReason, string> = {
   waiting: "Your turn",
+  // Slice 9a: a waiting row keeps its reason but loses the instruction.
   overdue: "Overdue",
   due_this_week: "This week",
   going_quiet: "Going quiet",
@@ -92,7 +93,7 @@ export default async function BriefPage() {
     loadRelationships(supabase, user.id, { now }),
     supabase
       .from("next_touches")
-      .select("id, contact_id, due_on, reason")
+      .select("id, contact_id, due_on, reason, kind")
       .eq("user_id", user.id)
       .eq("status", "open")
       .order("due_on")
@@ -126,9 +127,13 @@ export default async function BriefPage() {
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div className="flex flex-col gap-2">
             <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.035em]">Your week</h1>
+            {/* Slice 9a: say that this is a selection, not a list. It is
+                capped at eight and measured from Monday, and the first
+                outside test read it as "everyone who needs you" and found
+                it disagreed with Home. */}
             <p className="text-[12.5px] font-medium text-ink-quiet">
               {entries.length > 0
-                ? `${countOf(entries.length, "person", "people")} worth a message before Sunday`
+                ? `The ${countOf(entries.length, "person", "people")} most worth a message, chosen on Monday`
                 : "Nobody is waiting on you this week"}
             </p>
           </div>
@@ -183,7 +188,7 @@ export default async function BriefPage() {
 }
 
 function BriefRow({ entry }: { entry: BriefEntry<ContactRow> }) {
-  const { contact, reason, because, threadId } = entry;
+  const { contact, reason, because, threadId, waitingOnThem } = entry;
   const name = displayName(contact);
   const hasName = Boolean(contact.first_name?.trim() || contact.last_name?.trim());
   const pill = REASON_PILL[reason];
@@ -222,9 +227,14 @@ function BriefRow({ entry }: { entry: BriefEntry<ContactRow> }) {
       </div>
 
       <div className="flex shrink-0 gap-[7px]">
-        <Link href={`/contacts/${contact.id}#draft`} className={SOLID}>
-          Draft reply
-        </Link>
+        {/* Slice 9a: nothing to draft when the next move is theirs. Offering
+            it was the app telling you to do the one thing you had decided not
+            to do. */}
+        {!waitingOnThem && (
+          <Link href={`/contacts/${contact.id}#draft`} className={SOLID}>
+            Draft reply
+          </Link>
+        )}
         <Link href={`/contacts/${contact.id}`} className={GHOST}>
           Open
         </Link>

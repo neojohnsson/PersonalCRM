@@ -87,10 +87,14 @@ export async function acceptPromise(
     .maybeSingle<{ id: string }>();
   if (openError) throw supabaseError(openError, "Couldn't check the next touch");
 
+  // A promise already says whose move it is, which is exactly the kind a touch
+  // needs: theirs means the app must not offer to draft anything (slice 9a).
+  const kind = promise.owed_by === "them" ? "they_will_get_back" : "reply_owed";
+
   const saved = open
     ? await supabase
         .from("next_touches")
-        .update({ due_on: dueOn, reason: promise.reason, updated_at: new Date().toISOString() })
+        .update({ due_on: dueOn, reason: promise.reason, kind, updated_at: new Date().toISOString() })
         .eq("user_id", user.id)
         .eq("id", open.id)
         .eq("status", "open")
@@ -103,6 +107,7 @@ export async function acceptPromise(
           contact_id: promise.contact_id,
           due_on: dueOn,
           reason: promise.reason,
+          kind,
         })
         .select("id")
         .single();

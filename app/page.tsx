@@ -12,6 +12,7 @@ import { avatarColors, countOf, initials, weekdayDayMonth } from "@/lib/format";
 import { pickBrief, thisWeek } from "@/lib/relationship/brief";
 import { todayIn } from "@/lib/relationship/dates";
 import { dateBadge } from "@/lib/relationship/describe";
+import { isWaitingKind } from "@/lib/relationship/touch-date";
 import { NO_MAIL, loadRelationships } from "@/lib/relationship/load";
 import { whoNeedsYou, type ComingUp, type OpenTouch, type Person } from "@/lib/relationship/today";
 import { supabaseError } from "@/lib/supabase/errors";
@@ -114,7 +115,7 @@ export default async function Home() {
     loadRelationships(supabase, user.id, { now }),
     supabase
       .from("next_touches")
-      .select("id, contact_id, due_on, reason")
+      .select("id, contact_id, due_on, reason, kind")
       .eq("user_id", user.id)
       .eq("status", "open")
       .order("due_on")
@@ -438,6 +439,12 @@ function ComingUpCard({ touches }: { touches: ComingUp<ContactRow>[] }) {
                   >
                     {displayName(touch.contact)}
                   </Link>
+                  {/* Slice 9a: a reminder to check is not a thing to do. */}
+                  {isWaitingKind(touch.kind) && (
+                    <span className="text-[11px] font-semibold tracking-[0.04em] text-info-ink uppercase">
+                      Waiting on them
+                    </span>
+                  )}
                   {touch.reason ? (
                     <span className="text-[12px] leading-[1.4] break-words text-ink-soft">
                       &ldquo;{touch.reason}&rdquo;

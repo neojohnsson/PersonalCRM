@@ -104,7 +104,9 @@ export async function readBackMailFrom(
       const row = message && toMessageRow(message, { userId, ownEmail: account.email });
       // Gmail's from: search is loose (it also matches names); keep only this
       // exact address, and only what the sync itself would have kept.
-      if (row && row.from_email === email && filterReason(row) === null) rows.push(row);
+      if (row && row.from_email === email && filterReason(row, new Set(), message.payload?.headers) === null) {
+        rows.push(row);
+      }
     }
   }
 

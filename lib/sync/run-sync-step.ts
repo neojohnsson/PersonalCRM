@@ -333,7 +333,10 @@ async function saveMessages(
       });
       if (!row) continue;
 
-      if (filterReason(row, dismissed)) {
+      // The headers go in as well as the row: an out-of-office is a real
+      // person's address, so only the headers and the subject give it away
+      // (lib/google/filter.ts, slice 9a).
+      if (filterReason(row, dismissed, message.payload?.headers)) {
         skipped++;
       } else {
         rows.push(row);

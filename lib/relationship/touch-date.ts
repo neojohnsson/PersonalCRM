@@ -66,6 +66,23 @@ export function isTiming(value: string): value is Timing {
   return (TIMINGS as readonly string[]).includes(value);
 }
 
+/**
+ * The kinds where the next move is *theirs* (slice 9a).
+ *
+ * A touch of one of these kinds is a reminder to check, not a thing to do. The
+ * date is still the point: if nothing has arrived by then, that is when it
+ * becomes yours.
+ *
+ * Null means no kind was recorded — every touch made before 2026-09-21, and
+ * every one typed in by hand — and is treated as yours to act on, which is how
+ * all of them behaved before.
+ */
+const WAITING_KINDS = new Set<string>(["waiting_on_them", "they_will_get_back"]);
+
+export function isWaitingKind(kind: string | null | undefined): boolean {
+  return kind !== null && kind !== undefined && WAITING_KINDS.has(kind);
+}
+
 export function touchDate(input: TimingInput, context: TimingContext): TouchDate | null {
   const { today } = context;
   if (!isTiming(input.timing)) return null;

@@ -22,7 +22,7 @@ import {
 import { displayName } from "@/lib/contacts/display";
 import { getAccessToken } from "@/lib/google/tokens";
 import { todayIn } from "@/lib/relationship/dates";
-import { TIMINGS, touchDate } from "@/lib/relationship/touch-date";
+import { TIMINGS, isTiming, touchDate } from "@/lib/relationship/touch-date";
 import { supabaseError } from "@/lib/supabase/errors";
 
 /**
@@ -225,6 +225,8 @@ export type CheckedSummary = {
     touchOn: string | null;
     touchWhy: string | null;
     touchRough: boolean;
+    /** Which timing the model chose, so accepting the suggestion keeps it. */
+    touchKind: string | null;
     referrals: ReferredPerson[];
     referralSince: string | null;
   };
@@ -331,6 +333,9 @@ export function checkSummary(
   let touchOn: string | null = null;
   let touchWhy: string | null = null;
   let touchRough = false;
+  // Which timing the model chose. Kept so that accepting the suggestion keeps
+  // it, and a "waiting on them" touch can say so (migration 0023, slice 9a).
+  let touchKind: string | null = null;
   if (touchReason !== null) {
     if (realSources("next_touch", touch!.sources, false)) {
       const due = touchDate(
@@ -340,6 +345,8 @@ export function checkSummary(
       touchOn = due?.dueOn ?? null;
       touchRough = due?.rough ?? false;
       touchWhy = clean(touch!.why, MAX_SUGGESTED_REASON_CHARS);
+      // Only a timing the app understands, and only when a day came of it.
+      touchKind = touchOn && isTiming(touch!.timing) ? touch!.timing : null;
     } else {
       touchReason = null;
     }
@@ -374,6 +381,7 @@ export function checkSummary(
       touchOn,
       touchWhy,
       touchRough,
+      touchKind,
       referrals,
       referralSince,
     },
@@ -557,6 +565,7 @@ export async function generateSummary(
     suggested_touch_on: checked.suggestions.touchOn,
     suggested_touch_why: checked.suggestions.touchWhy,
     suggested_touch_rough: checked.suggestions.touchRough,
+    suggested_touch_kind: checked.suggestions.touchKind,
     suggested_referrals: checked.suggestions.referrals,
     suggested_referral_since: checked.suggestions.referralSince,
     sources: checked.sources,
@@ -572,6 +581,7 @@ type PendingRow = Record<SummaryPart, string | null> & {
   suggested_touch_on: string | null;
   suggested_touch_why: string | null;
   suggested_touch_rough: boolean;
+  suggested_touch_kind: string | null;
   suggested_referrals: ReferredPerson[];
   suggested_referral_since: string | null;
   sources: CheckedSummary["sources"];

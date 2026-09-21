@@ -95,12 +95,19 @@ describe("getMessageMetadata", () => {
     const { url } = firstRequest(fetchMock);
     expect(url.pathname).toBe("/gmail/v1/users/me/messages/abc");
     expect(url.searchParams.get("format")).toBe("metadata");
+    // The whole list, on purpose: this is the app's claim about what it reads
+    // from your mail, so adding a header should have to be deliberate. The
+    // four auto-reply ones arrived in slice 9a (lib/google/filter.ts).
     expect(url.searchParams.getAll("metadataHeaders")).toEqual([
       "From",
       "To",
       "Cc",
       "Subject",
       "List-Unsubscribe",
+      "Auto-Submitted",
+      "Precedence",
+      "X-Autoreply",
+      "X-Autorespond",
     ]);
   });
 });

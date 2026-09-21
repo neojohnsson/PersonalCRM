@@ -161,6 +161,17 @@ confirm.** Deleting the stored row would only make this app forget the token whi
 went on honouring it. A failure leaves the account entirely intact and says to remove the
 app at `myaccount.google.com/permissions` and try again.
 
+### The calendar, from slice 8
+
+Only the start, the end, the title and the guest addresses of an event are read, and only
+meetings with someone already in your contacts are stored — as the date and which contact it
+was. No titles are stored: a title is read while the calendar page draws the week and is
+thrown away with the request, the same way a message body is. Descriptions and attachments
+are never asked for at all, so Google does not send them.
+
+Nothing in the calendar is ever created, changed or deleted, because the app never asks for a
+write permission. `tests/calendar-scopes.test.ts` fails if any code starts asking.
+
 ### Body retention: not built, on purpose
 
 The original plan had per-contact opt-in body retention with a visible period. It is not

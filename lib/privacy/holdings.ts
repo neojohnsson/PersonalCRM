@@ -83,7 +83,7 @@ const HOLDINGS: Omit<Holding, "count">[] = [
     table: "calendar_meetings",
     group: "people",
     label: "Meetings",
-    what: "That you were in a meeting with a contact, and when. No title, no description and no other guests — the app never asks Google for them.",
+    what: "That you were in a meeting with a contact, and when. Nothing else is stored — no title, no description, no other guests. A title is read while the calendar page draws your week and is never written down; a description is never asked for at all.",
   },
   {
     table: "seen_once_dismissals",

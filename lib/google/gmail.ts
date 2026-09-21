@@ -27,7 +27,20 @@ const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me";
  * The only headers the sync asks for. Never the body. Subject since slice 2
  * (slice-2-plan.md, decision B).
  */
-export const METADATA_HEADERS = ["From", "To", "Cc", "Subject", "List-Unsubscribe"] as const;
+export const METADATA_HEADERS = [
+  "From",
+  "To",
+  "Cc",
+  "Subject",
+  "List-Unsubscribe",
+  // Slice 9a: what a mail server sets when a machine answered, so an
+  // out-of-office is not mistaken for a person writing to you
+  // (lib/google/filter.ts). Only mail read after this change carries them.
+  "Auto-Submitted",
+  "Precedence",
+  "X-Autoreply",
+  "X-Autorespond",
+] as const;
 
 export type GmailHeader = { name: string; value: string };
 

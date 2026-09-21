@@ -186,6 +186,7 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
         due_on: suggestion.suggested_touch_on ?? "",
         reason: suggestion.suggested_touch_reason,
         rough: suggestion.suggested_touch_rough,
+        kind: suggestion.suggested_touch_kind,
       }
     : null;
   // What you said about this contact beats what the app worked out, and the

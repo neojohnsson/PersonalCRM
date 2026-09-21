@@ -149,6 +149,17 @@ describe("what the app holds", () => {
     }
   });
 
+  it("says the same thing about meeting titles as the calendar page does", async () => {
+    const holdings = await loadHoldings(aliceClient, alice.id);
+    const meetings = holdings.find((holding) => holding.table === "calendar_meetings")!;
+
+    // Slice 8b started reading titles to draw the week three commits after
+    // this line promised the app never asked for them. It now says what the
+    // code does: read for the page, never written down.
+    expect(meetings.what).toContain("never written down");
+    expect(meetings.what).not.toContain("never asks Google for them");
+  });
+
   it("describes every line in words a person in the list could read", async () => {
     const holdings = await loadHoldings(aliceClient, alice.id);
 
