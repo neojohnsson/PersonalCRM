@@ -50,7 +50,9 @@ export async function readMyCalendar(): Promise<CalendarState> {
       };
     }
     if (failure instanceof CalendarReadFailed) {
-      return { message: "Google refused the calendar read. Try again in a minute.", tone: "problem" };
+      // Google's own words. "Calendar API has not been used in project … or it
+      // is disabled" is an instruction; "it failed" is not.
+      return { message: failure.message, tone: "problem" };
     }
     throw failure;
   }

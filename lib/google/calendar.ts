@@ -50,7 +50,24 @@ export type GoogleEvent = {
   organizer?: { email?: string; self?: boolean };
 };
 
-export class CalendarReadFailed extends Error {}
+/**
+ * Google refused the read, with what it said about why.
+ *
+ * The message is carried rather than flattened to "it failed" because the
+ * useful cases are all indistinguishable otherwise: the Calendar API not
+ * enabled in the Cloud project (403), a permission that was withdrawn (401), a
+ * quota (429). The first of those cost an hour on 2026-09-21 precisely because
+ * the reason was thrown away.
+ */
+export class CalendarReadFailed extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly reason: string | null,
+  ) {
+    super(message);
+  }
+}
 
 /**
  * Every event between two moments, following Google's paging.
@@ -80,7 +97,15 @@ export async function listEvents(
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!response.ok) {
-      throw new CalendarReadFailed(`Google refused the calendar read (${response.status})`);
+      const body: { error?: { message?: string; status?: string } } = await response
+        .json()
+        .catch(() => ({}));
+      const said = body.error?.message ?? response.statusText;
+      throw new CalendarReadFailed(
+        `Google refused the calendar read (${response.status}): ${said}`,
+        response.status,
+        body.error?.status ?? null,
+      );
     }
 
     const body: { items?: GoogleEvent[]; nextPageToken?: string } = await response.json();

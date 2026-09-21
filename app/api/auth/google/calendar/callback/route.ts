@@ -104,7 +104,10 @@ export async function GET(request: NextRequest) {
     // connection — the page has a "Read my calendar" button for that.
     try {
         await readCalendar(supabase, user.id);
-    } catch {
+    } catch (failure) {
+        // Say why, in the logs. Swallowing this silently on 2026-09-21 meant
+        // the reason had to be guessed at from an empty table.
+        console.error("Calendar read after connecting failed:", failure);
         return clearState(NextResponse.redirect(new URL("/connect?calendar=unread", request.url)));
     }
 
