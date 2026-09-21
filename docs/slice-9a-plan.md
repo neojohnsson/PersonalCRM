@@ -124,7 +124,7 @@ uploading a CV under "Files, which is coming soon" — a feature that is not in 
       "Digitalt utanförskap LNU". Niklas Hedlund is the referral target from Martin Ryd's
       summary and his only inbound message is that auto-reply, so he was sitting in Your turn
       on the strength of a machine answering.
-- [ ] Home and Contacts counts agree on the preview — pending, needs a person to look
+- [x] Home and Contacts counts agree, checked by the user on 2026-09-21
 
 ## Not in this slice
 
