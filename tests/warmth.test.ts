@@ -273,3 +273,49 @@ describe("warmth, with meetings", () => {
     expect(warmth([], NOW, [met(2 * DAY)])).toBeNull();
   });
 });
+
+/** Slice 9a: an auto-reply must not warm a relationship. */
+describe("warmth and auto-replies", () => {
+  it("does not count an out-of-office as contact", async () => {
+    const { touchesByContact } = await import("@/lib/relationship/touches");
+
+    const addresses = [{ contact_id: "c1", email: "omsorgsnamnden@vaxjo.se" }];
+    const base = {
+      thread_id: "t1",
+      to_emails: ["me@example.se"],
+      cc_emails: [],
+    };
+
+    const touches = touchesByContact(
+      [
+        {
+          ...base,
+          gmail_message_id: "mine",
+          direction: "outbound" as const,
+          internal_date: "2026-09-20T09:00:00Z",
+          from_email: "me@example.se",
+          to_emails: ["omsorgsnamnden@vaxjo.se"],
+          subject: "Förfrågan om kort intervju",
+        },
+        {
+          ...base,
+          gmail_message_id: "autosvar",
+          direction: "inbound" as const,
+          internal_date: "2026-09-20T09:00:05Z",
+          from_email: "omsorgsnamnden@vaxjo.se",
+          subject: "Autosvar: Förfrågan om kort intervju",
+        },
+      ],
+      addresses,
+    ).get("c1")!;
+
+    // Only your own message is a touch, so it stays your turn to wait — not
+    // theirs to be chased.
+    expect(touches).toHaveLength(1);
+    expect(touches[0].messageId).toBe("mine");
+
+    const score = warmth(touches, NOW)!;
+    expect(score.signals.lastContact.from).toBe("you");
+    expect(score.signals.exchanges.count).toBe(0);
+  });
+});

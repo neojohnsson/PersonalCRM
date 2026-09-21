@@ -1,3 +1,5 @@
+import { isAutoReplySubject } from "@/lib/google/filter";
+
 /**
  * A "touch" is one message between you and a contact — the raw material for
  * whose turn it is and for warmth (docs/slice-3-plan.md, Parts 1 and 2).
@@ -51,6 +53,13 @@ export function touchesByContact(
   const touches = new Map<string, Touch[]>();
 
   for (const message of messages) {
+    // An out-of-office already in the database still is not a person writing
+    // to you (slice 9a). The sync stops storing these, but mail read before
+    // that change is still here, and re-syncing would not remove it — so the
+    // subject rule is applied again where touches are counted. That makes the
+    // fix retroactive for nothing: no re-sync, and no mail deleted.
+    if (message.direction === "inbound" && isAutoReplySubject(message.subject)) continue;
+
     const contacts = new Set<string>();
 
     if (message.direction === "inbound") {
