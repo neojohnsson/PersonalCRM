@@ -44,14 +44,16 @@ describe("parseNextTouchForm", () => {
   it("accepts a date and trims the reason", () => {
     expect(parseNextTouchForm(form({ due_on: "2026-10-01", reason: "  said the budget lands in October " }), TODAY)).toEqual({
       ok: true,
-      touch: { dueOn: "2026-10-01", reason: "said the budget lands in October" },
+      // A date typed by hand carries no kind, which means yours to act on
+      // (slice 9a).
+      touch: { dueOn: "2026-10-01", reason: "said the budget lands in October", kind: null },
     });
   });
 
   it("allows today, and no reason", () => {
     expect(parseNextTouchForm(form({ due_on: TODAY, reason: "  " }), TODAY)).toEqual({
       ok: true,
-      touch: { dueOn: TODAY, reason: null },
+      touch: { dueOn: TODAY, reason: null, kind: null },
     });
   });
 

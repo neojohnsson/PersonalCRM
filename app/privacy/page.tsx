@@ -131,8 +131,8 @@ export default async function PrivacyPage() {
               their mail from here.
             </p>
             <p className="text-[12px] leading-[1.5] text-ink-faint">
-              The written version of all of this, with the legal reasoning behind it, is in{" "}
-              <code className="text-[11.5px]">docs/privacy.md</code> in the repository.
+              This page is the whole answer. It is counted from the database each time you open
+              it, so it cannot fall out of date the way a written policy does.
             </p>
           </section>
         </div>

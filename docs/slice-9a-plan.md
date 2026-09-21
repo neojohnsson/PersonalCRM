@@ -106,18 +106,18 @@ uploading a CV under "Files, which is coming soon" — a feature that is not in 
 
 ## Done when — a test proves it, not when it renders
 
-- [ ] One function decides "needs you", and Home, the Contacts chips, their counts, Your week
+- [x] One function decides "needs you", and Home, the Contacts chips, their counts, Your week
       and the Calendar Due row all use it — proven by a test that sets a contact settled and
       asserts every surface agrees
-- [ ] A settled contact is counted under Nothing owed and nowhere else; never-chase under Just
+- [x] A settled contact is counted under Nothing owed and nowhere else; never-chase under Just
       a contact; a future touch under Planned
-- [ ] Every auto-reply subject in the fixture list is caught, and the two lookalikes are not
-- [ ] An auto-reply does not flip the turn, does not count toward warmth, and does not make a
+- [x] Every auto-reply subject in the fixture list is caught, and the two lookalikes are not
+- [x] An auto-reply does not flip the turn, does not count toward warmth, and does not make a
       contact
-- [ ] A `waiting_on_them` touch offers no draft and says "Waiting on them"; a touch with no
+- [x] A `waiting_on_them` touch offers no draft and says "Waiting on them"; a touch with no
       kind behaves exactly as it does today
-- [ ] `/privacy` and `docs/privacy.md` say the same thing about titles as the code does
-- [ ] With the real mailbox: the two Autosvar contacts stop being people waiting on a reply,
+- [x] `/privacy` and `docs/privacy.md` say the same thing about titles as the code does
+- [x] With the real mailbox: the two Autosvar contacts stop being people waiting on a reply,
       and the Home and Contacts counts agree
 
 ## Not in this slice

@@ -363,9 +363,10 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
             />
             <FieldError message={errors.links} />
             <p className="text-[11.5px] leading-[1.5] font-medium text-ink-faint">
-              The AI only sees the address. The app never opens these pages — LinkedIn is not read or
-              scraped. To use your LinkedIn profile in drafts, upload LinkedIn&rsquo;s own PDF export
-              under Files, which is coming soon.
+              The AI only sees the address. The app never opens these pages &mdash; LinkedIn is not
+              read or scraped. If you want what is on your LinkedIn profile to reach a draft, put
+              it in &ldquo;What you do&rdquo; and &ldquo;What you&rsquo;re looking for&rdquo;
+              above, which is what every draft is given.
             </p>
           </section>
         </div>

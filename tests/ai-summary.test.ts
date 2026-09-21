@@ -177,6 +177,8 @@ describe("checkSummary's suggestions", () => {
       touchOn: "2026-09-22",
       touchWhy: "Martin referred you to Niklas; referrals are best followed up quickly.",
       touchRough: false,
+      // The timing is kept, so accepting the suggestion keeps it (slice 9a).
+      touchKind: "referral",
       referrals: [],
       referralSince: null,
     });
@@ -206,6 +208,8 @@ describe("checkSummary's suggestions", () => {
       touchOn: null,
       touchWhy: null,
       touchRough: false,
+      // No day came of it, so there is no kind to keep either.
+      touchKind: null,
       referrals: [],
       referralSince: null,
     });
