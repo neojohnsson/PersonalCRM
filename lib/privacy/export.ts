@@ -27,6 +27,7 @@ const REDACTED: Record<string, string[]> = {
   // noise — and a secret, even an unreadable one, has no business in a
   // download that gets forwarded and saved.
   google_accounts: ["refresh_token_encrypted"],
+  google_calendar: ["refresh_token_encrypted"],
 };
 
 export type Everything = {
