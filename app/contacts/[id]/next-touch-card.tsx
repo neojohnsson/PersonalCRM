@@ -41,7 +41,12 @@ export function NextTouchCard({
   /** YYYY-MM-DD in Swedish time, from the server, so both sides agree on "today". */
   today: string;
   /** A summary's suggestion to start the form from; the date is "" when the emails gave none. */
-  prefill?: { due_on: string; reason: string; rough?: boolean } | null;
+  /**
+   * A suggestion to start the form from. `kind` is the timing the AI chose, so
+   * accepting it keeps "waiting on them" — otherwise the kind is lost between
+   * the AI answering and this button being pressed (slice 9a).
+   */
+  prefill?: { due_on: string; reason: string; rough?: boolean; kind?: string | null } | null;
 }) {
   const [state, formAction, pending] = useActionState<SetNextTouchState, FormData>(
     saveNextTouch.bind(null, contactId),
@@ -104,6 +109,10 @@ export function NextTouchCard({
         </>
       ) : (
         <form action={formAction} noValidate className="flex flex-col gap-3">
+          {/* The timing the AI chose, carried through the form so accepting a
+              suggestion keeps "waiting on them" (slice 9a). A date typed by
+              hand sends nothing, and no kind means yours to act on. */}
+          {suggested?.kind && <input type="hidden" name="kind" value={suggested.kind} />}
           <div className="flex flex-col gap-1">
             <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Next touch</h2>
             {suggested ? (

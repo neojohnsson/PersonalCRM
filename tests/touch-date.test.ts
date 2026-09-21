@@ -3,6 +3,7 @@ import {
   addMonths,
   addWorkingDays,
   firstWorkingDayOfMonth,
+  isWaitingKind,
   nextWorkingDay,
   onWorkingDay,
   touchDate,
@@ -143,5 +144,24 @@ describe("touchDate, when you are seeing them anyway", () => {
     for (const timing of ["reply_owed", "referral", "waiting_on_them", "they_will_get_back"]) {
       expect(date(timing, {}, context({ meetingWith: null }))).toEqual(date(timing));
     }
+  });
+});
+
+/** Slice 9a: which kinds mean the next move is theirs. */
+describe("isWaitingKind", () => {
+  it("is true only for the two where you are the one waiting", () => {
+    expect(isWaitingKind("waiting_on_them")).toBe(true);
+    expect(isWaitingKind("they_will_get_back")).toBe(true);
+
+    for (const kind of ["stated_date", "reply_owed", "referral", "later_event"]) {
+      expect(isWaitingKind(kind), kind).toBe(false);
+    }
+  });
+
+  it("treats no kind as yours to act on, which is how every old touch behaved", () => {
+    expect(isWaitingKind(null)).toBe(false);
+    expect(isWaitingKind(undefined)).toBe(false);
+    expect(isWaitingKind("")).toBe(false);
+    expect(isWaitingKind("something_invented")).toBe(false);
   });
 });

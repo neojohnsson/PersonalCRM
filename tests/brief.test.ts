@@ -37,11 +37,17 @@ const person = (id: string, turn: Turn, band: Band | null = null): Person<{ name
   relationship: { ...NO_MAIL, turn, warmth: band ? warmth(band) : null, messageCount: 2 } satisfies Relationship,
 });
 
-const touch = (contact_id: string, due_on: string, reason: string | null = null): OpenTouch => ({
+const touch = (
+  contact_id: string,
+  due_on: string,
+  reason: string | null = null,
+  kind: string | null = null,
+): OpenTouch => ({
   id: `touch-${contact_id}`,
   contact_id,
   due_on,
   reason,
+  kind,
 });
 
 // Thursday 17 September 2026: the week runs Mon 14 – Sun 20.
@@ -191,5 +197,38 @@ describe("pickBrief", () => {
   it("never gives more than eight people", () => {
     const people = Array.from({ length: 30 }, (_, i) => person(`p${i}`, theirs(20 + i)));
     expect(pickBrief(people, [], WEEK).length).toBeLessThanOrEqual(BRIEF_SIZE);
+  });
+});
+
+/** Slice 9a: waiting on somebody is a reminder to check, not a thing to do. */
+describe("a touch you are waiting on", () => {
+  it("says so, and offers nothing to draft", () => {
+    const people = [person("peter", closed(40))];
+    const touches = [touch("peter", "2026-09-18", "Wait for Peter's response", "they_will_get_back")];
+
+    const [entry] = pickBrief(people, touches, WEEK);
+
+    expect(entry.waitingOnThem).toBe(true);
+    expect(entry.because).toBe("Waiting on them: Wait for Peter's response. Check again on Friday.");
+  });
+
+  it("says something different again when the day has passed", () => {
+    const people = [person("peter", closed(40))];
+    const touches = [touch("peter", "2026-09-14", "Wait for the manager", "waiting_on_them")];
+
+    const [entry] = pickBrief(people, touches, WEEK);
+
+    expect(entry.waitingOnThem).toBe(true);
+    expect(entry.because).toBe("Still nothing from them: Wait for the manager. You were checking 3 days ago.");
+  });
+
+  it("leaves a touch with no kind exactly as it was", () => {
+    const people = [person("karin", closed(40))];
+    const touches = [touch("karin", "2026-09-18", "Ask about the thesis")];
+
+    const [entry] = pickBrief(people, touches, WEEK);
+
+    expect(entry.waitingOnThem).toBe(false);
+    expect(entry.because).toBe("You planned to get back to them on Friday: Ask about the thesis.");
   });
 });

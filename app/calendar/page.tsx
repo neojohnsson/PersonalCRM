@@ -102,12 +102,12 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
     loadRelationships(supabase, user.id, { now }),
     supabase
       .from("next_touches")
-      .select("id, contact_id, due_on, reason")
+      .select("id, contact_id, due_on, reason, kind")
       .eq("user_id", user.id)
       .eq("status", "open")
       .gte("due_on", monday)
       .lte("due_on", addDays(monday, 6))
-      .returns<{ id: string; contact_id: string; due_on: string; reason: string | null }[]>(),
+      .returns<{ id: string; contact_id: string; due_on: string; reason: string | null; kind: string | null }[]>(),
     supabase
       .from("calendar_meetings")
       .select("contact_id, started_at, ended_at")

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { addDays, daysBetweenDates, isIsoDate, laterDate } from "@/lib/relationship/dates";
+import { isTiming } from "@/lib/relationship/touch-date";
 import { supabaseError } from "@/lib/supabase/errors";
 
 /**
@@ -29,9 +30,15 @@ export type NextTouch = {
   due_on: string;
   reason: string | null;
   status: NextTouchStatus;
+  /**
+   * What sort of touch it is (migration 0023). Null for every touch made
+   * before 2026-09-21 and for every one typed in by hand, and treated as
+   * yours to act on — which is how all of them behaved before.
+   */
+  kind: string | null;
 };
 
-const COLUMNS = "id, contact_id, due_on, reason, status";
+const COLUMNS = "id, contact_id, due_on, reason, status, kind";
 
 /** The touch doesn't exist, isn't open any more, or isn't the caller's. */
 export class NextTouchNotFound extends Error {
@@ -43,7 +50,7 @@ export class NextTouchNotFound extends Error {
 
 // ── The form ────────────────────────────────────────────────────────────────
 
-export type NextTouchInput = { dueOn: string; reason: string | null };
+export type NextTouchInput = { dueOn: string; reason: string | null; kind?: string | null };
 export type NextTouchErrors = Partial<Record<"due_on" | "reason", string>>;
 export type NextTouchValues = { due_on: string; reason: string };
 
@@ -75,9 +82,15 @@ export function parseNextTouchForm(formData: FormData, today: string): ParsedNex
     errors.reason = `Keep it under ${MAX_REASON_LENGTH} characters.`;
   }
 
+  // The timing the AI chose, when the form is accepting a suggestion. Only a
+  // kind the app understands is kept: a POST can carry anything, and a kind
+  // nothing recognises would be shown to you as if it meant something.
+  const offered = text("kind").trim();
+  const kind = isTiming(offered) ? offered : null;
+
   return Object.keys(errors).length > 0
     ? { ok: false, errors, values }
-    : { ok: true, touch: { dueOn: values.due_on, reason: reason || null } };
+    : { ok: true, touch: { dueOn: values.due_on, reason: reason || null, kind } };
 }
 
 // ── Reading and writing ─────────────────────────────────────────────────────
@@ -136,7 +149,14 @@ export async function setNextTouch(
   const update = () =>
     db
       .from("next_touches")
-      .update({ due_on: input.dueOn, reason: input.reason, updated_at: new Date().toISOString() })
+      .update({
+        due_on: input.dueOn,
+        reason: input.reason,
+        // A hand-typed date has no kind, and saying so is the point: it clears
+        // a stale "waiting on them" from a suggestion you have since changed.
+        kind: input.kind ?? null,
+        updated_at: new Date().toISOString(),
+      })
       .eq("user_id", userId)
       .eq("contact_id", contactId)
       .eq("status", "open")
@@ -149,7 +169,13 @@ export async function setNextTouch(
 
   const inserted = await db
     .from("next_touches")
-    .insert({ user_id: userId, contact_id: contactId, due_on: input.dueOn, reason: input.reason })
+    .insert({
+      user_id: userId,
+      contact_id: contactId,
+      due_on: input.dueOn,
+      reason: input.reason,
+      kind: input.kind ?? null,
+    })
     .select(COLUMNS)
     .single<NextTouch>();
 

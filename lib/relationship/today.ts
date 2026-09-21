@@ -22,7 +22,14 @@ import { compareTurns } from "@/lib/relationship/whose-turn";
 
 export type Person<T> = { contact: T & { id: string }; relationship: Relationship };
 
-export type OpenTouch = { id: string; contact_id: string; due_on: string; reason: string | null };
+export type OpenTouch = {
+  id: string;
+  contact_id: string;
+  due_on: string;
+  reason: string | null;
+  /** What sort of touch it is (migration 0023). Null: yours to act on. */
+  kind?: string | null;
+};
 
 export type ComingUp<T> = OpenTouch & { contact: T & { id: string }; overdue: boolean; dueToday: boolean };
 
