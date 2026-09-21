@@ -108,7 +108,7 @@ Choosing not to launch is a deliberate decision recorded here, not an unfinished
 Anyone whose details are stored can request a copy of what is held about them, and request deletion — including the AI-written summary. Two consequences for the design:
 
 1. Summaries are written assuming their subject will read them. No speculation about intent, no assessment of how promising someone is.
-2. Deletion has to actually delete — one contact, all contacts, or the whole account — rather than setting a flag.
+2. Deletion has to actually delete — one contact, all contacts, or the whole account — rather than setting a flag. Built in slice 7; the test for it asserts that no table anywhere holds a row with that user's id afterwards.
 
 Article 14 — informing people whose data was collected from a source other than themselves — is contested ground that every CRM leans on exemptions for. Worth knowing which argument is being relied on rather than not having thought about it.
 
@@ -141,8 +141,46 @@ privacy policy. _Verify OpenAI's current terms rather than trusting this list._
 
 ## User controls
 
-- See exactly what is stored, in plain words
-- Export everything as JSON or CSV
-- Delete a single contact, all contacts, or the account
-- Turn per-contact body retention on and off, with the period visible
-- Disconnect Gmail without deleting data, and delete data without disconnecting
+Built in slice 7, at `/privacy` — reached from Profile.
+
+| Control | Where | What it does |
+|---|---|---|
+| See what is stored | `/privacy` | Counts all fourteen tables as the page loads, each line saying what one row is in plain words. Not a description from memory: the numbers are read from the database, so the page is either right or obviously broken. |
+| Export everything | `/privacy` | One JSON file with every row this account owns. The Gmail refresh token is left out — it is encrypted with a key that is not in the file, and a secret has no business in a download that gets forwarded and saved. |
+| Export the contact list | `/privacy` | CSV, for a spreadsheet or another CRM. |
+| Export one person | their contact page | Everything held about that person, including the AI summary and the messages it cites. This is the file to send when somebody asks what is held on them. |
+| Delete one person | their contact page | Existing Dismiss: the contact, their mail, summaries, touches, promises and drafts. Their address is kept so a later sync does not import them again. |
+| Delete all contacts | `/privacy` | Every contact, everything hanging off them, and all stored message details. The account and the Gmail connection stay. |
+| Delete everything | `/privacy` | The above, the profile, the spending records, and the login itself. Signing in again starts an empty account. |
+| Disconnect Gmail | header | Revokes the token at Google and removes the connection, keeping the data. |
+
+Both of the big deletions need the phrase typed out, because there is no undo.
+
+**Account deletion revokes at Google first, and deletes nothing if Google does not
+confirm.** Deleting the stored row would only make this app forget the token while Google
+went on honouring it. A failure leaves the account entirely intact and says to remove the
+app at `myaccount.google.com/permissions` and try again.
+
+### Body retention: not built, on purpose
+
+The original plan had per-contact opt-in body retention with a visible period. It is not
+built, and the reason is in this document's own logic: a retention period that no scheduled
+job enforces is a lie in a privacy policy, and there is no scheduler. "Message bodies are
+never stored" is a stronger claim than any period could be, and it is true today — bodies are
+read from Gmail when a summary, a draft or a promise scan needs them, and are gone when the
+request ends.
+
+## What to do when someone asks
+
+Somebody in the list writes and asks what is held about them, or asks to be removed. Both are
+their right, and neither needs a lawyer:
+
+1. **A copy.** Open their contact page → **Export**. Send them the file. It contains the
+   record as the app actually keeps it, including what the AI wrote and which messages each
+   claim came from.
+2. **Deletion.** Their contact page → **Dismiss**. The contact and their mail go. Their
+   address stays on a dismissal list so a later sync does not import them again — which is
+   itself a small amount of data about them, kept for the purpose of honouring the request.
+3. **A correction.** Summaries are editable, and the edit is what is kept.
+
+The one thing not to do is answer from memory. Send the file.
