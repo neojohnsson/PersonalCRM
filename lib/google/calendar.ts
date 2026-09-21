@@ -44,11 +44,26 @@ export type GoogleAttendee = {
 export type GoogleEvent = {
   id?: string;
   status?: string;
+  /** Only ever filled by listEventsForWeek, and never written down. */
+  summary?: string;
   start?: { dateTime?: string; date?: string };
   end?: { dateTime?: string; date?: string };
   attendees?: GoogleAttendee[];
   organizer?: { email?: string; self?: boolean };
 };
+
+/**
+ * The same, plus the title, for drawing the week (slice 8b).
+ *
+ * A grid of untitled blocks would be useless, and docs/calendar-and-profile.md
+ * allows it: "Read the start time, end time, title and guest email addresses."
+ * The title is read for the request that draws the page and is never stored —
+ * lib/privacy/holdings.ts says so on /privacy, and calendar_meetings has no
+ * column to put one in.
+ *
+ * Descriptions and attachments stay unasked-for in both.
+ */
+const FIELDS_WITH_TITLES = FIELDS.replace("items(id,status,", "items(id,status,summary,");
 
 /**
  * Google refused the read, with what it said about why.
@@ -79,6 +94,7 @@ export class CalendarReadFailed extends Error {
 export async function listEvents(
   accessToken: string,
   window: { from: Date; to: Date },
+  options: { withTitles?: boolean } = {},
 ): Promise<GoogleEvent[]> {
   const events: GoogleEvent[] = [];
   let pageToken: string | undefined;
@@ -90,7 +106,7 @@ export async function listEvents(
     url.searchParams.set("singleEvents", "true");
     url.searchParams.set("orderBy", "startTime");
     url.searchParams.set("maxResults", String(PAGE_SIZE));
-    url.searchParams.set("fields", FIELDS);
+    url.searchParams.set("fields", options.withTitles ? FIELDS_WITH_TITLES : FIELDS);
     if (pageToken) url.searchParams.set("pageToken", pageToken);
 
     const response = await fetch(url, {
