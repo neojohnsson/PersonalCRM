@@ -74,14 +74,25 @@ to the page in 8b.
 
 ## Part 4 — dates that know your calendar (8a)
 
-`lib/relationship/touch-date.ts` already moves a suggested date off a weekend. It learns two
-more rules:
+`lib/relationship/touch-date.ts` already moves a suggested date off a weekend. It learns one
+more rule:
 
-- **Don't suggest a day you are already full.** A day with meetings back to back is not a day
-  you will write to anyone.
 - **Don't suggest contacting someone you are about to meet.** A meeting already booked with
   them is the follow-up; the AI suggesting "get back to Karin on Tuesday" when you are seeing
   her on Monday is the kind of wrong that makes people stop trusting a tool.
+
+**"Don't suggest a day you are already full" is dropped** (2026-09-21, while building). Two
+reasons, and the second is the real one:
+
+1. It needs every event in the day, and this slice deliberately stores only meetings with
+   contacts. Making it work would mean a new table of busy minutes per day — more storage,
+   for a rule nothing else needs.
+2. A next touch means *write an email*, which takes ten minutes. "Your Tuesday is full of
+   meetings" is a poor reason not to write one. The rule sounded useful in a plan and does
+   not survive being asked what it is for.
+
+If a version of it ever earns its place, it belongs where the data already is: 8b's page
+reads the whole week live from Google to draw the grid.
 
 ## Part 5 — the page (8b)
 
@@ -120,17 +131,20 @@ like whose turn it is.
 
 **8a**
 
-- [ ] A meeting with a contact sets their last contact date, and counts as two exchanges
-- [ ] Reply rate and reply speed are unchanged by meetings
-- [ ] An event with more than eight guests is ignored
-- [ ] An event with two contacts on it counts for both
-- [ ] Whose turn it is is byte-for-byte unchanged by any meeting
-- [ ] A suggested next-touch date skips a day already full, and is not suggested at all when a
-      meeting with that person is already booked
-- [ ] `calendar_meetings` and `google_calendar` pass the two-user RLS test
-- [ ] No event description or attachment is ever read — asserted in code, like
-      `tests/no-send.test.ts` asserts there is no send endpoint
-- [ ] Deleting the account removes both new tables (slice 7's test, unedited)
+- [x] A meeting with a contact sets their last contact date, and counts as two exchanges
+- [x] Reply rate and reply speed are unchanged by meetings
+- [x] An event with more than eight guests is ignored
+- [x] An event with two contacts on it counts for both
+- [x] Whose turn it is is byte-for-byte unchanged by any meeting
+- [x] A suggested next-touch date is not offered at all when a meeting with that person is
+      already booked, and is unchanged when the calendar is not connected. ("Skips a day
+      already full" was dropped — see Part 4.)
+- [x] `calendar_meetings` and `google_calendar` pass the two-user RLS test
+- [x] No event description or attachment is ever read — asserted at the wire: a test reads
+      the URL the app sends and fails if `description`, `summary`, `location`, `attachments`
+      or `conference` appears in the `fields` parameter. Google cannot send back what it was
+      never asked for
+- [x] Deleting the account removes both new tables (slice 7's test, unedited)
 
 **8b**
 

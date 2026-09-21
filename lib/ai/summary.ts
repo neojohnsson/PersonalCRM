@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { aiConfig, type AiConfig } from "@/lib/ai/config";
 import { readConversation, type ConversationMessage } from "@/lib/ai/conversation";
 import { loadThreadContext, writerOf } from "@/lib/ai/thread";
+import { nextMeetingWith } from "@/lib/calendar/next-meeting";
 import { openNextTouch, openNextTouches } from "@/lib/relationship/next-touch";
 import { estimateTokens, maxCostOf } from "@/lib/ai/models";
 import { createStructuredResponse, type JsonSchema } from "@/lib/ai/openai";
@@ -274,6 +275,8 @@ export function checkSummary(
   conversation: ConversationMessage[],
   addresses: string[],
   today: string,
+  /** The next meeting already booked with them, YYYY-MM-DD (slice 8a). */
+  meetingWith: string | null = null,
 ): CheckedSummary {
   const messages = new Map(conversation.map((message) => [message.ref, message]));
   const addressRefs = new Map(addresses.map((address, index) => [`a${index + 1}`, address]));
@@ -332,7 +335,7 @@ export function checkSummary(
     if (realSources("next_touch", touch!.sources, false)) {
       const due = touchDate(
         { timing: touch!.timing, date: touch!.date?.trim() || null, month: touch!.month?.trim() || null },
-        { today, ...lastDays(conversation) },
+        { today, ...lastDays(conversation), meetingWith },
       );
       touchOn = due?.dueOn ?? null;
       touchRough = due?.rough ?? false;
@@ -503,9 +506,11 @@ export async function generateSummary(
   // What the user has already planned — with this contact, and with anyone
   // else in these threads, so the model doesn't suggest what's already there
   // (docs/thread-context-plan.md, Part 3).
-  const [planned, plannedWithOthers] = await Promise.all([
+  const [planned, plannedWithOthers, meetingWith] = await Promise.all([
     openNextTouch(db, userId, contactId),
     plannedWithParticipants(db, userId, contactId, participants),
+    // Slice 8a: don't suggest writing to somebody you are about to see.
+    nextMeetingWith(db, userId, contactId, options.now ?? new Date()),
   ]);
 
   const input = buildInput(
@@ -541,7 +546,7 @@ export async function generateSummary(
     },
   );
 
-  const checked = checkSummary(raw, conversation, addresses, today);
+  const checked = checkSummary(raw, conversation, addresses, today, meetingWith);
   const newest = conversation[conversation.length - 1].at;
 
   return savePending(db, userId, contactId, {

@@ -50,6 +50,13 @@ export type TimingContext = {
   lastFromYou: string | null;
   /** The day of their last email, YYYY-MM-DD; null if they never wrote. */
   lastFromThem: string | null;
+  /**
+   * The next meeting with this contact, YYYY-MM-DD, if the calendar is
+   * connected and one is booked (slice 8a). A suggestion that falls on or
+   * before it is dropped: you are seeing them, and the meeting is the
+   * follow-up.
+   */
+  meetingWith?: string | null;
 };
 
 /** A suggested date, or null when there's no touch to suggest or no honest date for one. */
@@ -104,7 +111,16 @@ export function touchDate(input: TimingInput, context: TimingContext): TouchDate
 
   if (dueOn === null) return null;
   dueOn = laterDate(onWorkingDay(dueOn), today);
-  return dueOn <= addDays(today, MAX_DAYS_AHEAD) ? { dueOn, rough } : null;
+  if (dueOn > addDays(today, MAX_DAYS_AHEAD)) return null;
+
+  // You are seeing them before the day this would suggest, so there is nothing
+  // to plan: the meeting is the follow-up. Telling somebody to "get back to
+  // Karin on Tuesday" when they are seeing her on Monday is the kind of wrong
+  // that makes a person stop trusting the whole feature (slice 8a).
+  const meeting = context.meetingWith;
+  if (meeting && meeting >= today && meeting <= dueOn) return null;
+
+  return { dueOn, rough };
 }
 
 // ── Calendar arithmetic ─────────────────────────────────────────────────────

@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { aiConfig, type AiConfig } from "@/lib/ai/config";
+import { nextMeetingWith } from "@/lib/calendar/next-meeting";
 import { readConversation } from "@/lib/ai/conversation";
 import { estimateTokens, maxCostOf } from "@/lib/ai/models";
 import { createStructuredResponse } from "@/lib/ai/openai";
@@ -302,6 +303,9 @@ async function readOneContact(
   const conversation = await readConversation(token, thread);
   if (conversation.length === 0) return { promises: [], dropped: [] };
 
+  // Slice 8a: a promise is not worth a date when you are seeing them first.
+  const meetingWith = await nextMeetingWith(db, userId, candidate.contactId);
+
   const input = buildPromiseInput(candidate.name, conversation, today);
   const estimateUsd = maxCostOf(
     config.model,
@@ -333,7 +337,7 @@ async function readOneContact(
     },
   );
 
-  const checked = checkPromises(raw, conversation, today);
+  const checked = checkPromises(raw, conversation, today, meetingWith);
   if (!candidate.plannedOn) return checked;
 
   // You already chose a day. Only something due before it is news.
