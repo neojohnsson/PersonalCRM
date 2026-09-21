@@ -244,7 +244,7 @@ Ordered by how much they'd be worth.
 1. **Email-address confidence badges — your own invention.** Your Växjö sheet already grades addresses ✅ published / 🟡 format-confirmed / 🚩 check first, and records the domain's format rule. No personal CRM does this. Guess an address from a proven company format, show the confidence, learn the format from addresses you've actually corresponded with, and downgrade on bounce. This is the most distinctive idea in your whole project and it came from you, not from the AI.
 2. **Import a contact sheet.** Paste or upload a markdown/CSV list like `vaxjo-companies.md` and have it become contacts. Instantly makes the app useful on day one instead of after a month of syncing.
 3. **Company view.** Group contacts by company, see everyone you know there, whose turn it is at that company as a whole. Your sheet is already organised this way.
-4. **Calendar signal.** A meeting in the calendar is the strongest warmth signal that exists — far stronger than email. One extra scope, big accuracy win. Also lets suggested next-touch dates avoid full days and notice a meeting already booked with the person (the user's request, 2026-09-17). Page designed: `docs/calendar-and-profile.md`.
+4. **Calendar signal.** A meeting in the calendar is the strongest warmth signal that exists — far stronger than email. One extra scope, big accuracy win. Also lets suggested next-touch dates avoid full days and notice a meeting already booked with the person (the user's request, 2026-09-17). Page designed: `docs/calendar-and-profile.md`. _Scheduled as **slice 8** on 2026-09-20 — no longer "later"._
 5. **Meeting notes → follow-ups.** You listed this and it's good; it needs a notes source to exist first, so it's a v2 feature that plugs into the promise-detection you already built.
 6. **Intro paths.** "You want to reach X. You already talk to Y at the same company." Genuinely useful and uses only data you already have.
 7. **Bounce handling.** Read bounce messages, mark the address invalid, surface the alternate. Cheap and it protects you from the 🟡 addresses.
@@ -286,10 +286,13 @@ Weekly brief, promise/deadline detection across every thread (the referral check
 **Slice 7 — the part that makes it a portfolio piece**
 Privacy page, export, real deletion, the written-up compliance decision. Then record a 90-second demo.
 
-**Slice 8 — web research** _(added 2026-09-17)_
+**Slice 8 — the calendar** _(scheduled 2026-09-20; was idea 4 in §6)_
+The strongest warmth signal there is, and the one thing the next-touch date rules were built for and never had. Split in two: **8a** the signal — a separate read-only Google Calendar connection, meetings with contacts counted toward warmth, dates that skip a day you are full and a person you are about to see; **8b** the page, from `design/Calendar.dc.html`. No AI anywhere in it. Plan: `docs/slice-8-plan.md`.
+
+**Slice 9 — web research** _(added 2026-09-17; was slice 8)_
 §3.11 as written: a "research this person" button, one contact at a time, public web search only, every fact with its source link, dated, pending until approved. Never LinkedIn, never data brokers. Behind a **per-user setting**, so a paid plan can switch it on later without rebuilding it. Can also feed drafts and summaries — still one click, still sources.
 
-**Slice 9 — release, with plans** _(added 2026-09-17; only if the project goes public)_
+**Slice 10 — release, with plans** _(added 2026-09-17; was slice 9; only if the project goes public)_
 What letting strangers sign in with Gmail actually takes:
 - **Google OAuth verification and the yearly CASA security assessment** for restricted Gmail scopes (§5.1) — the biggest cost and the reason the app is in testing mode today.
 - **Plans**: for example Free (sync, whose turn, warmth, next touch), Pro (AI summaries and drafts, a higher monthly cap), Premium (web research). The monthly AI cap and the per-user settings already built are what plans switch.
