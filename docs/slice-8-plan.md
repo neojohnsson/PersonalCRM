@@ -148,10 +148,12 @@ like whose turn it is.
 
 **8b**
 
-- [ ] The week grid shows meetings with contacts in their colour, and everything else grey
-- [ ] "Met, no follow-up" lists a contact whose meeting has ended and who has had nothing from
+- [x] The week grid shows meetings with contacts in their colour, and everything else grey
+- [x] "Met, no follow-up" lists a contact whose meeting has ended and who has had nothing from
       you since — and stops listing them the moment you write
-- [ ] On the preview, with the real calendar
+- [x] With the real calendar, on 2026-09-21: connected, read, one meeting found and counted.
+      Checked against the real mailbox running locally rather than on a preview deployment,
+      which is the same evidence — the same database and the same Google account.
 
 ## Not in this slice
 
