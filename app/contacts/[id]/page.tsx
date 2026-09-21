@@ -22,6 +22,7 @@ import {
   type TurnPill,
 } from "@/lib/relationship/describe";
 import { loadRelationship, type Relationship } from "@/lib/relationship/load";
+import { wholeDaysBetween } from "@/lib/relationship/whose-turn";
 import { standingOf } from "@/lib/relationship/standing";
 import { openNextTouch, openNextTouches } from "@/lib/relationship/next-touch";
 import { canDraft } from "@/lib/google/scopes";
@@ -555,7 +556,7 @@ function StatStrip({ relationship, hasEmails }: { relationship: Relationship; ha
     );
   }
 
-  const { replyRate, replySpeed, lastContact, exchanges } = warmth.signals;
+  const { replyRate, replySpeed, lastContact, exchanges, meetings } = warmth.signals;
 
   return (
     <div className="flex flex-col gap-[9px]">
@@ -591,10 +592,25 @@ function StatStrip({ relationship, hasEmails }: { relationship: Relationship; ha
           value={String(exchanges.count)}
           caption={`since ${dayMonthYear(exchanges.since)}`}
         />
+        {/* Slice 8a. Only shown once there is a meeting to report: with no
+            calendar connected an empty tile would say "nothing here" in the
+            least useful way possible. */}
+        {meetings.count > 0 && meetings.lastAt && (
+          <Stat
+            label="Met"
+            value={lastContactText(wholeDaysBetween(meetings.lastAt, new Date()))}
+            caption={
+              meetings.count === 1
+                ? "once, from your calendar"
+                : `${meetings.count} times, from your calendar`
+            }
+          />
+        )}
       </div>
       <p className="pl-0.5 text-[11.5px] font-medium text-ink-faint">
-        The {warmth.score} is these four numbers and nothing else — no AI opinion about how the
+        The {warmth.score} is these numbers and nothing else &mdash; no AI opinion about how the
         relationship is going.
+        {meetings.count > 0 && " A meeting counts as contact, and as two exchanges."}
       </p>
     </div>
   );

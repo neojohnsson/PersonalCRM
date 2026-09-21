@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Touch } from "@/lib/relationship/touches";
-import { BANDS, REPLY_RATE_WINDOW, WEIGHTS, bandOf, warmth } from "@/lib/relationship/warmth";
+import {
+  BANDS,
+  EXCHANGES_PER_MEETING,
+  REPLY_RATE_WINDOW,
+  WEIGHTS,
+  bandOf,
+  warmth,
+} from "@/lib/relationship/warmth";
 
 const NOW = new Date("2026-09-16T12:00:00Z");
 const HOUR = 60 * 60 * 1000;
@@ -40,6 +47,9 @@ describe("warmth", () => {
       replySpeed: { medianMs: (10 * HOUR + 2 * DAY) / 2, replies: 2 },
       lastContact: { days: 4, from: "them", at: touches[3].at },
       exchanges: { count: 3, since: touches[0].at },
+      // No calendar connected, so no meetings — the signal is still reported,
+      // because a score is always shown with every input behind it.
+      meetings: { count: 0, lastAt: null },
     });
 
     // 35 × (1 − 4/90) + 30 × 2/2 + 12 (median 29h: within 3 days) + 15 × 3/10
@@ -181,5 +191,85 @@ describe("bandOf", () => {
     expect(bandOf(BANDS.cooling)).toBe("cooling");
     expect(bandOf(BANDS.cooling - 1)).toBe("cold");
     expect(bandOf(0)).toBe("cold");
+  });
+});
+
+/**
+ * Slice 8a: a meeting counts, and it counts for more than an email
+ * (plan.md §6.4, "far stronger than email").
+ */
+describe("warmth, with meetings", () => {
+  const met = (msAgo: number) => ({ startedAt: new Date(NOW.getTime() - msAgo) });
+
+  it("counts a meeting as the last contact, ahead of an older message", () => {
+    const touches = [at("outbound", 30 * DAY), at("inbound", 29 * DAY)];
+
+    const withoutIt = warmth(touches, NOW)!;
+    const withIt = warmth(touches, NOW, [met(2 * DAY)])!;
+
+    expect(withoutIt.signals.lastContact).toMatchObject({ days: 29, from: "them" });
+    // Neither of you wrote it, so it is neither "you" nor "them".
+    expect(withIt.signals.lastContact).toMatchObject({ days: 2, from: "meeting" });
+    expect(withIt.score).toBeGreaterThan(withoutIt.score);
+  });
+
+  it("leaves last contact alone when the newest thing is still a message", () => {
+    const touches = [at("outbound", 10 * DAY), at("inbound", 1 * DAY)];
+
+    const result = warmth(touches, NOW, [met(20 * DAY)])!;
+
+    expect(result.signals.lastContact).toMatchObject({ days: 1, from: "them" });
+    expect(result.signals.meetings).toEqual({ count: 1, lastAt: met(20 * DAY).startedAt });
+  });
+
+  it("counts each meeting as two exchanges", () => {
+    const touches = [at("outbound", 10 * DAY), at("inbound", 9 * DAY)];
+
+    const mail = warmth(touches, NOW)!;
+    const andMet = warmth(touches, NOW, [met(8 * DAY), met(4 * DAY)])!;
+
+    expect(mail.signals.exchanges.count).toBe(1);
+    expect(andMet.signals.exchanges.count).toBe(1 + 2 * EXCHANGES_PER_MEETING);
+    expect(andMet.points.exchanges).toBeGreaterThan(mail.points.exchanges);
+  });
+
+  it("ignores a meeting that hasn't happened yet", () => {
+    const touches = [at("outbound", 10 * DAY), at("inbound", 9 * DAY)];
+    const nextWeek = { startedAt: new Date(NOW.getTime() + 7 * DAY) };
+
+    const result = warmth(touches, NOW, [nextWeek])!;
+
+    // A booking is not contact. It would also mean a score that fell again the
+    // moment the meeting was cancelled.
+    expect(result.signals.meetings).toEqual({ count: 0, lastAt: null });
+    expect(result.signals.lastContact.days).toBe(9);
+    expect(result).toEqual(warmth(touches, NOW));
+  });
+
+  it("leaves reply rate and reply speed untouched: a meeting has no reply time", () => {
+    const touches = [at("outbound", 10 * DAY), at("inbound", 9 * DAY), at("outbound", 3 * DAY)];
+
+    const mail = warmth(touches, NOW)!;
+    const andMet = warmth(touches, NOW, [met(1 * DAY)])!;
+
+    expect(andMet.signals.replyRate).toEqual(mail.signals.replyRate);
+    expect(andMet.signals.replySpeed).toEqual(mail.signals.replySpeed);
+    expect(andMet.points.replyRate).toBe(mail.points.replyRate);
+    expect(andMet.points.replySpeed).toBe(mail.points.replySpeed);
+  });
+
+  it("counts a relationship as starting at the first meeting, if that came first", () => {
+    const touches = [at("outbound", 10 * DAY)];
+    const firstMet = met(40 * DAY);
+
+    const result = warmth(touches, NOW, [firstMet])!;
+
+    expect(result.signals.exchanges.since).toEqual(firstMet.startedAt);
+  });
+
+  it("still has no score for someone you have only ever met", () => {
+    // Three of the four signals are about mail, so this would be a number with
+    // almost no inputs. Documented in warmth.ts rather than guessed at.
+    expect(warmth([], NOW, [met(2 * DAY)])).toBeNull();
   });
 });

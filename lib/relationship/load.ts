@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { touchesByContact, type ContactAddress, type StoredMessage, type Touch } from "@/lib/relationship/touches";
-import { warmth, type Warmth } from "@/lib/relationship/warmth";
+import { warmth, type Warmth, type WarmthMeeting } from "@/lib/relationship/warmth";
 import { whoseTurn, type Turn } from "@/lib/relationship/whose-turn";
 import { supabaseError } from "@/lib/supabase/errors";
 import { DEFAULT_PAGE_SIZE, readAll } from "@/lib/supabase/read-all";
@@ -43,6 +43,9 @@ export const NO_MAIL: Relationship = {
 /** A thread the user has said needs nothing more, and when they said it. */
 type SettledRow = { contact_id: string; thread_id: string; settled_at: string };
 
+/** A meeting with a contact (slice 8a). Warmth needs only when it started. */
+type MeetingRow = { contact_id: string; started_at: string };
+
 const MESSAGE_COLUMNS =
   "gmail_message_id, thread_id, direction, internal_date, from_email, to_emails, cc_emails, subject";
 
@@ -54,7 +57,7 @@ export async function loadRelationships(
   const now = options.now ?? new Date();
   const pageSize = options.pageSize ?? DEFAULT_PAGE_SIZE;
 
-  const [addresses, messages, settled, contacts] = await Promise.all([
+  const [addresses, messages, settled, contacts, meetings] = await Promise.all([
     readAll<ContactAddress>(
       (from, to) =>
         db
@@ -94,9 +97,24 @@ export async function loadRelationships(
       "Couldn't load contacts",
       pageSize,
     ),
+    // Meetings, if the calendar is connected. A missing table would be an
+    // error; an unconnected calendar is simply no rows.
+    readAll<MeetingRow>(
+      (from, to) =>
+        db
+          .from("calendar_meetings")
+          .select("contact_id, started_at")
+          .eq("user_id", userId)
+          .eq("accepted", true)
+          .order("started_at")
+          .range(from, to),
+      "Couldn't load meetings",
+      pageSize,
+    ),
   ]);
 
   const settledBy = settledByContact(settled);
+  const metBy = meetingsByContact(meetings);
 
   // Every contact gets an entry, not only the ones with mail: "never chase" is
   // a thing you said about the person, and it holds whether they ever wrote.
@@ -109,7 +127,7 @@ export async function loadRelationships(
     const turn = whoseTurn(touches, now);
     relationships.set(contactId, {
       turn,
-      warmth: warmth(touches, now),
+      warmth: warmth(touches, now, metBy.get(contactId) ?? []),
       messageCount: touches.length,
       settledAt: settledFor(settledBy.get(contactId), turn),
       neverChase: relationships.get(contactId)?.neverChase ?? false,
@@ -117,6 +135,16 @@ export async function loadRelationships(
   }
 
   return relationships;
+}
+
+function meetingsByContact(rows: MeetingRow[]): Map<string, WarmthMeeting[]> {
+  const byContact = new Map<string, WarmthMeeting[]>();
+  for (const row of rows) {
+    const met = byContact.get(row.contact_id) ?? [];
+    met.push({ startedAt: new Date(row.started_at) });
+    byContact.set(row.contact_id, met);
+  }
+  return byContact;
 }
 
 function settledByContact(rows: SettledRow[]): Map<string, Map<string, Date>> {
@@ -152,7 +180,7 @@ export async function loadRelationship(
 ): Promise<Relationship> {
   const now = options.now ?? new Date();
 
-  const [touches, settledResult, contactResult] = await Promise.all([
+  const [touches, settledResult, contactResult, meetingsResult] = await Promise.all([
     contactTouches(db, userId, contactId, options),
     db
       .from("settled_threads")
@@ -166,9 +194,18 @@ export async function loadRelationship(
       .eq("user_id", userId)
       .eq("id", contactId)
       .maybeSingle<{ never_chase: boolean }>(),
+    db
+      .from("calendar_meetings")
+      .select("contact_id, started_at")
+      .eq("user_id", userId)
+      .eq("contact_id", contactId)
+      .eq("accepted", true)
+      .order("started_at")
+      .returns<MeetingRow[]>(),
   ]);
   if (settledResult.error) throw supabaseError(settledResult.error, "Couldn't load settled threads");
   if (contactResult.error) throw supabaseError(contactResult.error, "Couldn't load the contact");
+  if (meetingsResult.error) throw supabaseError(meetingsResult.error, "Couldn't load meetings");
 
   const neverChase = contactResult.data?.never_chase ?? false;
   if (!touches) return { ...NO_MAIL, neverChase };
@@ -176,7 +213,7 @@ export async function loadRelationship(
   const turn = whoseTurn(touches, now);
   return {
     turn,
-    warmth: warmth(touches, now),
+    warmth: warmth(touches, now, meetingsResult.data.map((row) => ({ startedAt: new Date(row.started_at) }))),
     messageCount: touches.length,
     settledAt: settledFor(settledByContact(settledResult.data).get(contactId), turn),
     neverChase,

@@ -27,6 +27,7 @@ const warmth = (band: Band): Relationship["warmth"] => ({
     replySpeed: { medianMs: null, replies: 0 },
     lastContact: { days: 0, from: "them", at: latest.at },
     exchanges: { count: 2, since: latest.at },
+    meetings: { count: 0, lastAt: null },
   },
   points: { lastContact: 0, replyRate: 0, replySpeed: 0, exchanges: 0 },
 });
