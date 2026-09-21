@@ -117,8 +117,14 @@ uploading a CV under "Files, which is coming soon" — a feature that is not in 
 - [x] A `waiting_on_them` touch offers no draft and says "Waiting on them"; a touch with no
       kind behaves exactly as it does today
 - [x] `/privacy` and `docs/privacy.md` say the same thing about titles as the code does
-- [x] With the real mailbox: the two Autosvar contacts stop being people waiting on a reply,
-      and the Home and Contacts counts agree
+- [x] With the real mailbox, 2026-09-21: **four** stored Autosvar messages are now skipped,
+      not the two the report saw — from michael.hjelm@vaxjo.se, omsorgsnamnden@vaxjo.se,
+      myndighetsavdelningen@vaxjo.se and niklas.hedlund@combitech.com. Zero false positives
+      among the other eighteen inbound subjects, which include "Sv:", "Re:" and
+      "Digitalt utanförskap LNU". Niklas Hedlund is the referral target from Martin Ryd's
+      summary and his only inbound message is that auto-reply, so he was sitting in Your turn
+      on the strength of a machine answering.
+- [ ] Home and Contacts counts agree on the preview — pending, needs a person to look
 
 ## Not in this slice
 
