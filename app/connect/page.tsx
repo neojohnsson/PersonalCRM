@@ -1,3 +1,6 @@
+import { CalendarPanel } from "@/app/connect/calendar-panel";
+import { calendarConnection } from "@/lib/google/calendar-tokens";
+import { createClient } from "@/lib/supabase/server";
 import { APP_NAME } from "@/lib/app-config";
 import { requireUser } from "@/lib/auth";
 import {
@@ -49,6 +52,13 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 const FALLBACK_ERROR = "Something went wrong connecting Gmail. Try again.";
 
+/** ?calendar=… after the calendar's own consent, which is not an error. */
+const CALENDAR_NOTES: Record<string, string> = {
+  connected: "Your calendar is connected, and the last three months have been read.",
+  unread:
+    "Your calendar is connected, but reading it didn't finish. Press Read my calendar below.",
+};
+
 /**
  * The screen that runs before Google's consent screen.
  *
@@ -68,9 +78,21 @@ const FALLBACK_ERROR = "Something went wrong connecting Gmail. Try again.";
 export default async function ConnectPage({
   searchParams,
 }: PageProps<"/connect">) {
-  await requireUser();
+  const user = await requireUser();
+  const supabase = await createClient();
 
-  const { error } = await searchParams;
+  // Slice 8a: the calendar is its own connection, so this page shows both.
+  const calendar = await calendarConnection(supabase, user.id);
+  const meetings = calendar
+    ? ((
+        await supabase
+          .from("calendar_meetings")
+          .select("event_id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+      ).count ?? 0)
+    : 0;
+
+  const { error, calendar: calendarNote } = await searchParams;
   const errorMessage =
     typeof error === "string"
       ? (ERROR_MESSAGES[error] ?? FALLBACK_ERROR)
@@ -97,6 +119,13 @@ export default async function ConnectPage({
           <Callout role="alert" icon="alert">
             {errorMessage}
           </Callout>
+        )}
+
+        {/* Slice 8a: the calendar's own outcome, which is not an error. Fixed
+            messages only, for the same reason as the error ones — anyone can
+            craft a link to /connect?calendar=anything. */}
+        {typeof calendarNote === "string" && CALENDAR_NOTES[calendarNote] && (
+          <Callout icon="info">{CALENDAR_NOTES[calendarNote]}</Callout>
         )}
 
         <div className="flex flex-col gap-[22px] rounded-[18px] bg-white px-6 py-[26px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] sm:px-[30px]">
@@ -201,18 +230,26 @@ export default async function ConnectPage({
             app.
           </Callout>
 
-          <div className="flex flex-wrap items-center gap-4">
-            {/* A POST, for the same reason as the Gmail button above. */}
-            <form action="/api/auth/google/calendar" method="post">
-              <button
-                type="submit"
-                className="flex items-center gap-[9px] rounded-full bg-white px-[26px] py-3.5 text-[14.5px] font-semibold tracking-[-0.01em] shadow-[0_1px_2px_rgba(20,20,25,.05)] transition hover:bg-paper-tint"
-              >
-                Connect your calendar
-                <Icon name="arrow" className="size-4" />
-              </button>
-            </form>
-          </div>
+          {calendar ? (
+            <CalendarPanel
+              email={calendar.email}
+              meetings={meetings}
+              readThrough={calendar.syncedThrough}
+            />
+          ) : (
+            <div className="flex flex-wrap items-center gap-4">
+              {/* A POST, for the same reason as the Gmail button above. */}
+              <form action="/api/auth/google/calendar" method="post">
+                <button
+                  type="submit"
+                  className="flex items-center gap-[9px] rounded-full bg-white px-[26px] py-3.5 text-[14.5px] font-semibold tracking-[-0.01em] shadow-[0_1px_2px_rgba(20,20,25,.05)] transition hover:bg-paper-tint"
+                >
+                  Connect your calendar
+                  <Icon name="arrow" className="size-4" />
+                </button>
+              </form>
+            </div>
+          )}
         </Section>
       </div>
     </main>

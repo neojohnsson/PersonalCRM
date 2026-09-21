@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { encrypt } from "@/lib/crypto";
 import { googleCalendarCallbackUrl } from "@/lib/google/redirect";
 import { canReadCalendar, parseGrantedScopes } from "@/lib/google/scopes";
+import { readCalendar } from "@/lib/calendar/read";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -96,6 +97,15 @@ export async function GET(request: NextRequest) {
     );
     if (saveError) {
         return back(request, "calendar_save_failed");
+    }
+
+    // Read it once straight away, so connecting does something rather than
+    // leaving a token and an empty page. A failure here does not undo the
+    // connection — the page has a "Read my calendar" button for that.
+    try {
+        await readCalendar(supabase, user.id);
+    } catch {
+        return clearState(NextResponse.redirect(new URL("/connect?calendar=unread", request.url)));
     }
 
     return clearState(NextResponse.redirect(new URL("/connect?calendar=connected", request.url)));
