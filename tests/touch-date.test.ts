@@ -103,3 +103,45 @@ describe("touchDate", () => {
     expect(date("whenever")).toBeNull();
   });
 });
+
+/**
+ * Slice 8a: a meeting already booked with them is the follow-up, so there is
+ * nothing to plan.
+ */
+describe("touchDate, when you are seeing them anyway", () => {
+  it("suggests nothing when the meeting comes first", () => {
+    // they_will_get_back is 14 days after their last message: 26 September.
+    const withoutCalendar = date("they_will_get_back");
+    expect(withoutCalendar).toEqual({ dueOn: "2026-09-28", rough: false });
+
+    // Seeing them on the 22nd, before that day: the meeting is the follow-up.
+    expect(date("they_will_get_back", {}, context({ meetingWith: "2026-09-22" }))).toBeNull();
+  });
+
+  it("still suggests a day when the meeting is after it", () => {
+    // Meeting in November, suggestion in September: you would write first.
+    expect(date("they_will_get_back", {}, context({ meetingWith: "2026-11-10" }))).toEqual({
+      dueOn: "2026-09-28",
+      rough: false,
+    });
+  });
+
+  it("suggests nothing when the meeting is on the very day it would pick", () => {
+    expect(date("reply_owed", {}, context({ meetingWith: "2026-09-18" }))).toBeNull();
+  });
+
+  it("ignores a meeting that has already been and gone", () => {
+    // Yesterday's meeting is contact that happened; warmth counted it, and it
+    // is no reason to skip planning the next thing.
+    expect(date("reply_owed", {}, context({ meetingWith: "2026-09-16" }))).toEqual({
+      dueOn: "2026-09-18",
+      rough: false,
+    });
+  });
+
+  it("changes nothing at all with no calendar connected", () => {
+    for (const timing of ["reply_owed", "referral", "waiting_on_them", "they_will_get_back"]) {
+      expect(date(timing, {}, context({ meetingWith: null }))).toEqual(date(timing));
+    }
+  });
+});

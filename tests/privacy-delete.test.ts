@@ -102,7 +102,10 @@ async function tablesHolding(userId: string): Promise<string[]> {
       .select("*", { count: "exact", head: true })
       .eq("user_id", userId);
     if (error) throw error;
-    if ((count ?? 0) > 0) found.push(table);
+    // Null means the table isn't there to answer — which would make "no rows
+    // left" pass for a table that simply doesn't exist (lib/privacy/holdings.ts).
+    if (count === null) throw new Error(`No count for "${table}". Has every migration been run?`);
+    if (count > 0) found.push(table);
   }
   return found;
 }

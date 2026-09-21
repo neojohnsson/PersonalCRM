@@ -20,3 +20,17 @@ export const GOOGLE_CALLBACK_PATH = "/api/auth/google/callback";
 export function googleCallbackUrl(request: { url: string }): string {
   return new URL(GOOGLE_CALLBACK_PATH, request.url).toString();
 }
+
+/**
+ * The same thing for the calendar's own consent (slice 8a). A separate path, so
+ * the two connections can never be mistaken for each other on the way back —
+ * and so revoking one leaves the other alone.
+ *
+ * This path also has to be listed under Authorised redirect URIs in Google
+ * Cloud, for every address the app runs on, exactly like the Gmail one.
+ */
+export const GOOGLE_CALENDAR_CALLBACK_PATH = "/api/auth/google/calendar/callback";
+
+export function googleCalendarCallbackUrl(request: { url: string }): string {
+  return new URL(GOOGLE_CALENDAR_CALLBACK_PATH, request.url).toString();
+}

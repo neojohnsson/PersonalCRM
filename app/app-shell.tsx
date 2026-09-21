@@ -8,8 +8,9 @@ import { initials } from "@/lib/format";
  *
  * Differences from the design, on purpose:
  *   - The sidebar holds only pages that exist: Home, Your week, Promises,
- *     Contacts and Seen once.
- *     The design's Add, Calendar and Settings icons arrive with their pages,
+ *     Calendar, Contacts and Seen once. Calendar joined in slice 8b with
+ *     design/Calendar.dc.html's own icon, taken from that screen's sidebar.
+ *     The design's Add and Settings icons arrive with their pages,
  *     because a nav item that goes nowhere would be a lie. The header's centred
  *     page switcher is left out for the same reason.
  *   - The header's search and notification icons are left out — nothing
@@ -32,7 +33,7 @@ export function AppShell({
   userEmail: string | undefined;
   headerRight?: React.ReactNode;
   /** Which sidebar entry is the current page. */
-  active?: "home" | "brief" | "promises" | "contacts" | "seen-once" | "profile";
+  active?: "home" | "brief" | "promises" | "calendar" | "contacts" | "seen-once" | "profile";
   /** People waiting in Seen once; the design's orange dot shows when above 0. */
   seenOnceCount?: number;
   children: React.ReactNode;
@@ -55,8 +56,8 @@ export function AppShell({
             <path d="M5.5 9.4V20h13V9.4" />
           </NavItem>
           {/* Your week sits under Home: it's the same question over a week.
-              A sheet with lines, not the design's calendar icon — that one
-              belongs to the Calendar page, which doesn't exist yet. */}
+              A sheet with lines rather than the design's calendar icon, which
+              belongs to the Calendar page below. */}
           <NavItem href="/brief" label="Your week" active={active === "brief"}>
             <rect x="3.5" y="4.5" width="17" height="15" rx="3" />
             <path d="M7.5 9.5h9" />
@@ -68,6 +69,12 @@ export function AppShell({
           <NavItem href="/promises" label="Promises" active={active === "promises"}>
             <path d="M8.5 10.5c0-2 1.4-3.5 3.5-3.5" />
             <path d="M4 18V7.5a2.5 2.5 0 0 1 2.5-2.5h11A2.5 2.5 0 0 1 20 7.5v6a2.5 2.5 0 0 1-2.5 2.5H8z" />
+          </NavItem>
+          {/* design/Calendar.dc.html's own sidebar icon, from the screen it
+              belongs to: a month box with two pegs on top. */}
+          <NavItem href="/calendar" label="Calendar" active={active === "calendar"}>
+            <rect x="3.5" y="5" width="17" height="15.5" rx="2.6" />
+            <path d="M3.5 10h17M8 3v4M16 3v4" />
           </NavItem>
           <NavItem href="/contacts" label="Contacts" active={active === "contacts"}>
             <circle cx="9.5" cy="8" r="3.3" />

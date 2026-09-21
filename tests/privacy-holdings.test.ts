@@ -98,6 +98,7 @@ describe("what the app holds", () => {
     // stops telling the whole truth. This is the check against that.
     expect(holdings.map((holding) => holding.table).sort()).toEqual([
       "ai_usage",
+      "calendar_meetings",
       "contact_drafts",
       "contact_emails",
       "contact_summaries",
@@ -106,6 +107,7 @@ describe("what the app holds", () => {
       "gmail_messages",
       "gmail_sync_state",
       "google_accounts",
+      "google_calendar",
       "next_touches",
       "profiles",
       "promises",

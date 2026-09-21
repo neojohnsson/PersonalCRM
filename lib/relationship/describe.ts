@@ -77,8 +77,16 @@ export function lastContactText(daysAgo: number): string {
   return `${daysAgo} days ago`;
 }
 
-/** Under "Last contact": who wrote it — and, when it's your turn, that you haven't answered. */
-export function lastContactCaption(from: "you" | "them", turn: Turn): string {
+/**
+ * Under "Last contact": who wrote it — and, when it's your turn, that you
+ * haven't answered.
+ *
+ * "meeting" means the most recent contact was neither of you writing: you met
+ * (slice 8a). It wins over whose turn it is, because the meeting happened after
+ * the last message and is the more recent truth.
+ */
+export function lastContactCaption(from: "you" | "them" | "meeting", turn: Turn): string {
+  if (from === "meeting") return "you met";
   if (turn.kind === "yours") return "they wrote, you didn't";
   if (turn.kind === "theirs") return "you wrote, they haven't yet";
   return from === "you" ? "you wrote last" : "they wrote last";

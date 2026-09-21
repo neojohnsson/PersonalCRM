@@ -218,6 +218,8 @@ export function checkPromises(
   raw: RawPromises,
   conversation: ConversationMessage[],
   today: string,
+  /** The next meeting already booked with them, YYYY-MM-DD (slice 8a). */
+  meetingWith: string | null = null,
 ): CheckedPromises {
   const messages = new Map(conversation.map((message) => [message.ref, message]));
   const earliest = addDays(today, EARLIEST_DAYS);
@@ -264,7 +266,7 @@ export function checkPromises(
       stated ??
       touchDate(
         { timing: entry.timing, date: null, month: entry.month?.trim() || null },
-        { today, ...lastDays(conversation) },
+        { today, ...lastDays(conversation), meetingWith },
       )?.dueOn ??
       null;
 

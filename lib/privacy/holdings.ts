@@ -80,6 +80,12 @@ const HOLDINGS: Omit<Holding, "count">[] = [
     what: "A reply waiting to be written into Gmail. Once it is in Gmail the text is deleted here and only the Gmail draft id is kept.",
   },
   {
+    table: "calendar_meetings",
+    group: "people",
+    label: "Meetings",
+    what: "That you were in a meeting with a contact, and when. No title, no description and no other guests — the app never asks Google for them.",
+  },
+  {
     table: "seen_once_dismissals",
     group: "people",
     label: "Dismissed addresses",
@@ -96,6 +102,12 @@ const HOLDINGS: Omit<Holding, "count">[] = [
     group: "you",
     label: "Your Gmail connection",
     what: "The Google address you connected, the permissions you granted, and a refresh token — encrypted, and used only to read your mail and write drafts.",
+  },
+  {
+    table: "google_calendar",
+    group: "you",
+    label: "Your calendar connection",
+    what: "The Google account whose calendar is connected, the permissions you granted, and a refresh token — encrypted. Read-only: nothing here can create or change an event.",
   },
   {
     table: "profiles",
@@ -125,9 +137,17 @@ const HOLDINGS: Omit<Holding, "count">[] = [
 export const HOLDING_TABLES = HOLDINGS.map((holding) => holding.table);
 
 /**
- * Count each table for this user. Fourteen small counting queries in parallel —
- * `head: true` asks the database for the number only, so no personal data is
- * read to build the page that describes it.
+ * Count each table for this user. One small counting query per table, in
+ * parallel — `head: true` asks the database for the number only, so no personal
+ * data is read to build the page that describes it.
+ *
+ * A null count is treated as a failure, not as zero (2026-09-21). Asking
+ * PostgREST to count a table that does not exist returns no error and no
+ * number, so a table that was never created, or was renamed, or is missing
+ * because a migration has not been run, would quietly appear on the page as
+ * "0" — which reads as "none of that is stored" when the truth is "this page
+ * has no idea". The whole claim of this page is that it is either right or
+ * obviously broken, so it has to break.
  */
 export async function loadHoldings(db: SupabaseClient, userId: string): Promise<Holding[]> {
   return Promise.all(
@@ -137,7 +157,12 @@ export async function loadHoldings(db: SupabaseClient, userId: string): Promise<
         .select("*", { count: "exact", head: true })
         .eq("user_id", userId);
       if (error) throw supabaseError(error, `Couldn't count ${holding.label.toLowerCase()}`);
-      return { ...holding, count: count ?? 0 };
+      if (count === null) {
+        throw new Error(
+          `The database returned no number for "${holding.table}". Has every migration been run?`,
+        );
+      }
+      return { ...holding, count };
     }),
   );
 }
