@@ -14,8 +14,22 @@ import type { OpenTouch, Person } from "@/lib/relationship/today";
  */
 
 export const BRIEF_SIZE = 8;
-export const YOUR_TURN_MAX = 3;
-export const GOING_QUIET_MAX = 2;
+
+/**
+ * A cap per reason, so no single reason can fill the whole list.
+ *
+ * Changed 2026-09-21, after the first outside test: ten next touches all fell
+ * on the same Monday, and with only "waiting" capped the eight rows were nearly
+ * all plans. Everything is capped now, and the sum of the caps is larger than
+ * BRIEF_SIZE on purpose — the mix is what gets cut, not one reason at a time.
+ */
+export const REASON_MAX: Record<BriefReason, number> = {
+  overdue: 3,
+  due_this_week: 3,
+  waiting: 3,
+  going_quiet: 2,
+  about_to_cool: 2,
+};
 
 /** Their turn for this long counts as going quiet (as on the home page). */
 export const GOING_QUIET_DAYS = 14;
@@ -27,7 +41,15 @@ export const COOLING_TO_DAYS = 80;
 /** Someone you wrote to this recently doesn't need a nudge. */
 export const JUST_WROTE_DAYS = 3;
 
-export const BRIEF_REASONS = ["waiting", "overdue", "due_this_week", "going_quiet", "about_to_cool"] as const;
+/**
+ * The order the brief shows them in, most urgent first.
+ *
+ * A day you chose and missed, or one that is today, comes before somebody who
+ * has been waiting three days (changed 2026-09-21, at the user's request):
+ * "today" is the more urgent word, and under the old order the things due today
+ * were what fell off the bottom of the eight.
+ */
+export const BRIEF_REASONS = ["overdue", "due_this_week", "waiting", "going_quiet", "about_to_cool"] as const;
 export type BriefReason = (typeof BRIEF_REASONS)[number];
 
 export type BriefEntry<T> = {
@@ -110,45 +132,55 @@ export function pickBrief<T>(
   // out of the list above.
   const planned = [...people].sort(byWait);
 
-  // 1. Waiting on you longest.
-  sorted
-    .filter((person) => person.relationship.turn.kind === "yours")
-    .slice(0, YOUR_TURN_MAX)
-    .forEach((person) => {
-      const waited = daysOf(person.relationship);
-      take(person, "waiting", `They wrote ${days(waited)} ago and you haven't answered.`, waited);
-    });
-
-  // 2 and 3. Next touches: overdue first, then the rest of this week.
+  // Next touches: overdue first, then the rest of this week. Capped like the
+  // rest, by counting what has already been taken under each reason.
+  let overdueTaken = 0;
+  let thisWeekTaken = 0;
   for (const person of planned) {
     const touch = touchByContact.get(person.contact.id);
     if (!touch) continue;
     const late = daysBetweenDates(touch.due_on, week.today);
     if (touch.due_on < week.today) {
+      if (overdueTaken >= REASON_MAX.overdue) continue;
+      overdueTaken += 1;
       take(person, "overdue", `You planned this for ${days(late)} ago${reasonTail(touch)}.`, late);
     } else if (touch.due_on <= week.end) {
+      if (thisWeekTaken >= REASON_MAX.due_this_week) continue;
+      thisWeekTaken += 1;
       // `late` is negative for a day still to come, so the soonest (-1, tomorrow)
       // sorts above the furthest (-3, Sunday).
       take(person, "due_this_week", `You planned to get back to them ${dayWord(touch.due_on)}${reasonTail(touch)}.`, late);
     }
   }
 
-  // 4. Going quiet.
+  // Waiting on you longest. After the touches on purpose: `take` keeps the
+  // first reason a person is claimed under, so the passes have to run in the
+  // same order the reasons are listed in. An overdue plan beats a wait.
+  sorted
+    .filter((person) => person.relationship.turn.kind === "yours")
+    .slice(0, REASON_MAX.waiting)
+    .forEach((person) => {
+      const waited = daysOf(person.relationship);
+      take(person, "waiting", `They wrote ${days(waited)} ago and you haven't answered.`, waited);
+    });
+
+  // Going quiet.
   sorted
     .filter((person) => person.relationship.turn.kind === "theirs" && daysOf(person.relationship) >= GOING_QUIET_DAYS)
-    .slice(0, GOING_QUIET_MAX)
+    .slice(0, REASON_MAX.going_quiet)
     .forEach((person) => {
       const silent = daysOf(person.relationship);
       take(person, "going_quiet", `You wrote ${days(silent)} ago and nothing came back.`, silent);
     });
 
-  // 5. About to go cold: still warm, but the months are adding up.
+  // About to go cold: still warm, but the months are adding up.
   sorted
     .filter((person) => {
       const { warmth } = person.relationship;
       const since = daysOf(person.relationship);
       return warmth !== null && warmth.band !== "cold" && since >= COOLING_FROM_DAYS && since <= COOLING_TO_DAYS;
     })
+    .slice(0, REASON_MAX.about_to_cool)
     .forEach((person) => {
       const since = daysOf(person.relationship);
       take(person, "about_to_cool", `You've talked for months, and it's been ${days(since)}.`, since);

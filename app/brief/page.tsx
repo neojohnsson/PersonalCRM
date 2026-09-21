@@ -126,9 +126,13 @@ export default async function BriefPage() {
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div className="flex flex-col gap-2">
             <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.035em]">Your week</h1>
+            {/* Slice 9a: say that this is a selection, not a list. It is
+                capped at eight and measured from Monday, and the first
+                outside test read it as "everyone who needs you" and found
+                it disagreed with Home. */}
             <p className="text-[12.5px] font-medium text-ink-quiet">
               {entries.length > 0
-                ? `${countOf(entries.length, "person", "people")} worth a message before Sunday`
+                ? `The ${countOf(entries.length, "person", "people")} most worth a message, chosen on Monday`
                 : "Nobody is waiting on you this week"}
             </p>
           </div>

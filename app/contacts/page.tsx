@@ -11,8 +11,20 @@ import { displayName } from "@/lib/contacts/display";
 import { ilikePattern, normaliseQuery } from "@/lib/contacts/search";
 import { avatarColors, countOf, daysAgo, initials } from "@/lib/format";
 import { countDuplicates } from "@/lib/contacts/duplicate-list";
-import { FILTERS, countByFilter, hasTag, matchesFilter, parseFilter, topTags } from "@/lib/relationship/list";
+import {
+  FILTERS,
+  bucketOf,
+  countByFilter,
+  hasTag,
+  matchesFilter,
+  parseFilter,
+  standingRank,
+  topTags,
+  type ListFilter,
+} from "@/lib/relationship/list";
 import { NO_MAIL, loadRelationships, type Relationship } from "@/lib/relationship/load";
+import { standingOf, type Standing } from "@/lib/relationship/standing";
+import { todayIn } from "@/lib/relationship/dates";
 import type { Band } from "@/lib/relationship/warmth";
 import { compareTurns } from "@/lib/relationship/whose-turn";
 import { supabaseError } from "@/lib/supabase/errors";
@@ -64,7 +76,7 @@ type ContactRow = {
   last_contact_at: string | null;
 };
 
-type Item = { contact: ContactRow; relationship: Relationship };
+type Item = { contact: ContactRow; relationship: Relationship; standing: Standing };
 
 export default async function ContactsPage({ searchParams }: PageProps<"/contacts">) {
   const user = await requireUser();
@@ -103,7 +115,8 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
   const requested = typeof params.show === "string" ? Number.parseInt(params.show, 10) : NaN;
   const limit = requested > 0 ? Math.min(requested, MAX_ROWS) : PAGE_SIZE;
 
-  const [contacts, relationships, syncResult, seenOnceResult, totalResult, duplicates] = await Promise.all([
+  const [contacts, relationships, syncResult, seenOnceResult, totalResult, duplicates, touchesResult] =
+    await Promise.all([
     readAll<ContactRow>((from, to) => {
       let page = supabase
         .from("contact_list")
@@ -126,29 +139,62 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
       .is("contact_id", null),
     supabase.from("contacts").select("id", { count: "exact", head: true }).eq("user_id", user.id),
     countDuplicates(supabase, user.id),
+    // Slice 9a: a day already planned is part of what the chips mean, so the
+    // list has to know about it like every other screen does.
+    supabase
+      .from("next_touches")
+      .select("contact_id, due_on")
+      .eq("user_id", user.id)
+      .eq("status", "open")
+      .limit(1000)
+      .returns<{ contact_id: string; due_on: string }[]>(),
   ]);
   if (syncResult.error) throw supabaseError(syncResult.error, "Couldn't load the sync status");
   if (seenOnceResult.error) throw supabaseError(seenOnceResult.error, "Couldn't count Seen once");
   if (totalResult.error) throw supabaseError(totalResult.error, "Couldn't count contacts");
+  if (touchesResult.error) throw supabaseError(touchesResult.error, "Couldn't load next touches");
 
   const sync = syncResult.data as SyncSummary | null;
   const seenOnce = seenOnceResult.count ?? 0;
   const totalContacts = totalResult.count ?? contacts.length;
 
-  const items: Item[] = contacts.map((contact) => ({
-    contact,
-    relationship: relationships.get(contact.id) ?? NO_MAIL,
-  }));
+  // The soonest open touch per contact: what makes a contact "planned".
+  const plannedOn = new Map<string, string>();
+  for (const row of touchesResult.data) {
+    const current = plannedOn.get(row.contact_id);
+    if (!current || row.due_on < current) plannedOn.set(row.contact_id, row.due_on);
+  }
+
+  const today = todayIn("Europe/Stockholm");
+
+  const items: Item[] = contacts.map((contact) => {
+    const relationship = relationships.get(contact.id) ?? NO_MAIL;
+    return {
+      contact,
+      relationship,
+      // The same question every other screen asks, asked the same way.
+      standing: standingOf(
+        {
+          turn: relationship.turn,
+          settledAt: relationship.settledAt,
+          plannedOn: plannedOn.get(contact.id) ?? null,
+          neverChase: relationship.neverChase,
+        },
+        today,
+      ),
+    };
+  });
 
   // Chip counts cover the current search, before a chip is chosen.
-  const counts = countByFilter(items.map((item) => item.relationship.turn));
+  const counts = countByFilter(items.map((item) => item.standing));
   const tags = topTags(items.map((item) => item.contact.tags));
 
   const shown = items
-    .filter((item) => matchesFilter(item.relationship.turn, filter))
+    .filter((item) => matchesFilter(item.standing, filter))
     .filter((item) => (tag ? hasTag(item.contact.tags, tag) : true))
     .sort(
       (a, b) =>
+        standingRank(a.standing) - standingRank(b.standing) ||
         compareTurns(a.relationship.turn, b.relationship.turn) ||
         displayName(a.contact).localeCompare(displayName(b.contact), "sv"),
     );
@@ -353,7 +399,8 @@ function ContactTable({ items, total, moreHref }: { items: Item[]; total: number
         </thead>
 
         <tbody>
-          {items.map(({ contact, relationship }) => {
+          {items.map((item) => {
+            const { contact, relationship } = item;
             const name = displayName(contact);
             const hasName = Boolean(contact.first_name?.trim() || contact.last_name?.trim());
             const { turn, warmth } = relationship;
@@ -385,14 +432,11 @@ function ContactTable({ items, total, moreHref }: { items: Item[]; total: number
                 >
                   {contact.company ?? <span className="text-ink-hush">—</span>}
                 </td>
+                {/* Slice 9a: the label is the bucket that counted the row, so a
+                    row can never say YOUR TURN while its page says Nothing
+                    owed — which is exactly what it did. */}
                 <td className="px-2 whitespace-nowrap">
-                  {turn.kind === "yours" ? (
-                    <span className="text-[10.5px] font-bold tracking-[0.06em] text-accent uppercase">Your turn</span>
-                  ) : turn.kind === "theirs" ? (
-                    <span className="text-[12px] font-medium text-ink-muted">Their turn</span>
-                  ) : (
-                    <span className="text-[12px] font-medium text-ink-hush">No open thread</span>
-                  )}
+                  <BucketLabel bucket={bucketOf(item.standing)} />
                 </td>
                 <td className="hidden px-2 md:table-cell">
                   {warmth ? (
@@ -482,4 +526,27 @@ function NoContactsYet({ sync, seenOnce }: { sync: SyncSummary | null; seenOnce:
       </p>
     </EmptyCard>
   );
+}
+
+/**
+ * What the row says, from the same bucket that counted it into a chip
+ * (slice 9a). The accent is kept for "Your turn" alone: it is the only one
+ * that is asking for something.
+ */
+const BUCKET_LABELS: Record<Exclude<ListFilter, "all">, { text: string; className: string }> = {
+  yours: {
+    text: "Your turn",
+    className: "text-[10.5px] font-bold tracking-[0.06em] text-accent uppercase",
+  },
+  theirs: { text: "Their turn", className: "text-[12px] font-medium text-ink-muted" },
+  quiet: { text: "Going quiet", className: "text-[12px] font-medium text-cooling" },
+  closed: { text: "No open thread", className: "text-[12px] font-medium text-ink-hush" },
+  settled: { text: "Nothing owed", className: "text-[12px] font-medium text-ink-muted" },
+  planned: { text: "Planned", className: "text-[12px] font-medium text-info-ink" },
+  muted: { text: "Just a contact", className: "text-[12px] font-medium text-ink-hush" },
+};
+
+function BucketLabel({ bucket }: { bucket: Exclude<ListFilter, "all"> }) {
+  const label = BUCKET_LABELS[bucket];
+  return <span className={label.className}>{label.text}</span>;
 }

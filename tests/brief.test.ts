@@ -126,7 +126,23 @@ describe("pickBrief", () => {
     const brief = pickBrief(people, [touch("both", "2026-09-13")], WEEK);
 
     expect(brief).toHaveLength(1);
-    expect(brief[0].reason).toBe("waiting");
+    // A day you chose and missed beats a wait (changed 2026-09-21): the passes
+    // run in the order the reasons are listed, and overdue is listed first.
+    expect(brief[0].reason).toBe("overdue");
+  });
+
+  it("does not let one reason fill the whole list", () => {
+    // Ten plans all due the same Monday was the real case: before the caps,
+    // the eight rows were nearly all plans and the people waiting fell off.
+    const planned = Array.from({ length: 6 }, (_, i) => person(`plan${i}`, closed(40)));
+    const waiting = Array.from({ length: 4 }, (_, i) => person(`wait${i}`, yours(10 + i)));
+    const touches = planned.map((p) => touch(p.contact.id, "2026-09-18"));
+
+    const brief = pickBrief([...planned, ...waiting], touches, WEEK);
+    const reasonsUsed = brief.map((entry) => entry.reason);
+
+    expect(reasonsUsed.filter((reason) => reason === "due_this_week")).toHaveLength(3);
+    expect(reasonsUsed.filter((reason) => reason === "waiting")).toHaveLength(3);
   });
 
   it("leaves out a finished conversation, and takes it back when they write again", () => {
