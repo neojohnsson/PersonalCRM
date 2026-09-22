@@ -150,11 +150,18 @@ asked the Assistant to be able to run.
 - [x] Snooze asks how long
 - [x] The contact page lists the conversation, read live and never stored
 - [x] Source numbers are unique per contact
-- [ ] A surname-first name and a `first.last@` address each produce a *suggestion*, and nothing
+- [x] A surname-first name and a `first.last@` address each produce a *suggestion*, and nothing
       is renamed without a press
-- [ ] `/contacts/not-a-uuid` shows the app's own 404 with a way out
-- [ ] Leaving an edited form warns; a failed submit focuses the first error
-- [ ] Your week and Promises are not in the sidebar, and both still work at their addresses
+- [x] `/contacts/not-a-uuid` shows the app's own 404 with a way out
+- [x] Leaving an edited form warns; a failed submit focuses the first error
+- [x] Your week and Promises are not in the sidebar, and both still work at their addresses
+
+### The sweep at the end
+
+Eleven pages at 390px and eight at 1280px, in a real browser (2026-09-22):
+no page scrolls sideways at either width, the bottom bar is on every page on
+a phone, and on desktop the header's switcher is there with the right entry
+marked and the bottom bar hidden. 774 tests pass.
 
 ## Not in this slice
 
