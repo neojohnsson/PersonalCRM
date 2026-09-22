@@ -1,6 +1,14 @@
 @import "tailwindcss";
 
 /*
+ * Touch screens have no hover, so a row action that only appears on hover
+ * cannot be reached at all (slice 9b, Part 1 — the first outside test could
+ * not press Draft reply on a phone). `no-hover:` keeps those actions visible
+ * on any device that cannot hover, whatever its width.
+ */
+@custom-variant no-hover (@media (hover: none));
+
+/*
  * Palette lifted from the design canvas in design/. Kept as tokens so the
  * screens the design agent produces and the screens built here stay in step.
  */

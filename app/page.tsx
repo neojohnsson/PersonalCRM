@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
-import { DisconnectGmailButton } from "@/app/disconnect-gmail-button";
 import { NotNeededButton } from "@/app/not-needed-button";
 import { CARD, EmptyCard, StatusLine } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
@@ -147,7 +146,8 @@ export default async function Home() {
   const { yours, quiet, comingUp } = whoNeedsYou(people, touchesResult.data, today);
 
   // Mondays only: the week's brief is new, so point at it once (slice 6b).
-  // The rest of the week /brief is in the sidebar, where it doesn't interrupt.
+  // The rest of the week it is the quiet line at the foot of this page, which
+  // is where it went when it left the rail (slice 9b, Part 7).
   const week = thisWeek(now);
   const brief = week.start === today ? pickBrief(people, touchesResult.data, week) : [];
 
@@ -159,7 +159,6 @@ export default async function Home() {
       headerRight={
         <>
           <span className="hidden text-[13px] text-ink-faint md:inline">{gmail.email}</span>
-          <DisconnectGmailButton />
           <SignOutButton />
         </>
       }
@@ -360,7 +359,7 @@ function PersonRow({ person, line, daysClass, draftHref }: Row) {
   const days = relationship.turn.kind === "none" ? null : relationship.turn.days;
 
   return (
-    <li className="group relative flex items-center gap-[13px] px-[22px] py-[11px] transition-colors hover:bg-paper-tint">
+    <li className="group relative flex flex-wrap items-center gap-x-[13px] gap-y-2.5 px-[22px] py-[11px] transition-colors hover:bg-paper-tint">
       <span
         aria-hidden="true"
         style={avatarColors(contact.primary_email ?? contact.id)}
@@ -388,21 +387,32 @@ function PersonRow({ person, line, daysClass, draftHref }: Row) {
       </div>
       {/* Slice 6c: say the conversation is finished, without opening it.
           Shown with Draft reply, on the row under the pointer or keyboard
-          focus, so a list of rows doesn't read as a wall of buttons. */}
-      {threadId && (
-        <NotNeededButton
-          contactId={contact.id}
-          threadId={threadId}
-          className="relative z-10 hidden shrink-0 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100 sm:block"
-        />
-      )}
-      {draftHref && (
-        <Link
-          href={draftHref}
-          className="relative z-10 hidden shrink-0 rounded-full bg-ink-deep px-3.5 py-[7px] text-[12px] font-semibold text-white opacity-0 transition hover:bg-ink/85 group-hover:opacity-100 focus-visible:opacity-100 sm:block"
-        >
-          Draft reply
-        </Link>
+          focus, so a list of rows doesn't read as a wall of buttons.
+
+          Slice 9b, Part 1: that only works where there is a pointer. On a
+          phone both were `hidden`, so the two things you can do to a row
+          could not be done at all. They are plainly visible below sm and on
+          any device that cannot hover, and stay hover-revealed on a mouse. */}
+      {(threadId || draftHref) && (
+        // On a phone the actions drop to their own line under the name, indented
+        // past the avatar: four things in one 390px row left the name a stub.
+        <div className="order-last flex w-full shrink-0 items-center gap-2 pl-[45px] sm:order-none sm:w-auto sm:pl-0">
+          {threadId && (
+            <NotNeededButton
+              contactId={contact.id}
+              threadId={threadId}
+              className="relative z-10 transition sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 sm:no-hover:opacity-100"
+            />
+          )}
+          {draftHref && (
+            <Link
+              href={draftHref}
+              className="relative z-10 rounded-full bg-ink-deep px-3.5 py-3 text-[12px] font-semibold text-white transition hover:bg-ink/85 sm:py-[7px] sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 sm:no-hover:opacity-100"
+            >
+              Draft reply
+            </Link>
+          )}
+        </div>
       )}
       {days !== null && (
         <span className={`w-[34px] shrink-0 text-right text-[12.5px] font-semibold tabular-nums ${daysClass}`}>

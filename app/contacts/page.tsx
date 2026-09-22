@@ -2,7 +2,6 @@ import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
 import { EmptyCard, StatusLine } from "@/app/page-parts";
 import { SearchBox } from "@/app/contacts/search-box";
-import { DisconnectGmailButton } from "@/app/disconnect-gmail-button";
 import { SignOutButton } from "@/app/sign-out-button";
 import { SyncButton } from "@/app/sync-button";
 import { APP_NAME } from "@/lib/app-config";
@@ -221,7 +220,6 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
       headerRight={
         <>
           <span className="hidden text-[13px] text-ink-faint md:inline">{gmail.email}</span>
-          <DisconnectGmailButton />
           <SignOutButton />
         </>
       }

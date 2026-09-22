@@ -38,7 +38,7 @@ function SubmitPill() {
       type="submit"
       disabled={pending}
       title="Nothing more is owed in this conversation"
-      className="rounded-full bg-line-soft px-3.5 py-2 text-[12px] font-semibold text-ink-body transition hover:bg-chip-track disabled:cursor-default disabled:opacity-50"
+      className="rounded-full bg-line-soft px-3.5 py-3 text-[12px] font-semibold text-ink-body transition hover:bg-chip-track disabled:cursor-default disabled:opacity-50 sm:py-2"
     >
       {pending ? "Settling…" : "Not needed"}
     </button>

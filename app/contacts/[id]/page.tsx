@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/app/app-shell";
-import { DisconnectGmailButton } from "@/app/disconnect-gmail-button";
 import { SignOutButton } from "@/app/sign-out-button";
 import { APP_NAME } from "@/lib/app-config";
 import { AiNotConfigured, aiConfig, monthlyCapUsd } from "@/lib/ai/config";
@@ -218,10 +217,7 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
     <AppShell
       userEmail={user.email}
       headerRight={
-        <>
-          {gmailResult.data && <DisconnectGmailButton />}
-          <SignOutButton />
-        </>
+<SignOutButton />
       }
     >
       <main className="flex flex-1 flex-col gap-5 px-4 pt-2.5 pb-7 sm:px-[30px]">

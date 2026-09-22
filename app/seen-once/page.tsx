@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
-import { DisconnectGmailButton } from "@/app/disconnect-gmail-button";
 import { SignOutButton } from "@/app/sign-out-button";
 import { APP_NAME } from "@/lib/app-config";
 import { requireUser } from "@/lib/auth";
@@ -79,12 +78,9 @@ export default async function SeenOncePage({ searchParams }: PageProps<"/seen-on
       headerRight={
         <>
           {gmailResult.data && (
-            <>
-              <span className="hidden text-[13px] text-ink-faint md:inline">
-                {gmailResult.data.email}
-              </span>
-              <DisconnectGmailButton />
-            </>
+            <span className="hidden text-[13px] text-ink-faint md:inline">
+              {gmailResult.data.email}
+            </span>
           )}
           <SignOutButton />
         </>
