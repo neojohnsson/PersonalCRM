@@ -140,14 +140,16 @@ asked the Assistant to be able to run.
 
 ## Done when — a test proves it, not when it renders
 
-- [ ] Every page is reachable at 390px, and the contact page does not scroll sideways
-- [ ] Row actions are reachable without a pointer
-- [ ] The contact header has three controls and a menu, and the menu's delete says delete
-- [ ] The header's Draft reply generates a draft, and is absent when no draft is possible
-- [ ] Not needed, Skip, Snooze, Discard and Just a contact can each be undone from a toast
-- [ ] Snooze asks how long
-- [ ] The contact page lists the conversation, read live and never stored
-- [ ] Source numbers are unique per contact
+- [x] Every page is reachable at 390px, and the contact page does not scroll sideways
+      — measured: 378px wide in a 378px viewport, down from 872
+- [x] Row actions are reachable without a pointer
+- [x] The contact header has three controls and a menu, and the menu's delete says delete
+- [x] The header's Draft reply generates a draft, and is absent when no draft is possible
+- [x] Conversation done, Skip, Snooze, Discard and the reminders switch can each be
+      undone from a toast (migration 0024 for Discard)
+- [x] Snooze asks how long
+- [x] The contact page lists the conversation, read live and never stored
+- [x] Source numbers are unique per contact
 - [ ] A surname-first name and a `first.last@` address each produce a *suggestion*, and nothing
       is renamed without a press
 - [ ] `/contacts/not-a-uuid` shows the app's own 404 with a way out
@@ -174,3 +176,21 @@ asked the Assistant to be able to run.
 7. The small lies: fake controls, the notes timestamp, the 404, the form guard, dates
 8. Your week and Promises out of the sidebar
 9. Preview check at 390px and on desktop, PR
+
+### What actually happened, and why it differs
+
+- **Part 7 came first.** The bottom bar and the header switcher both have to
+  list the same pages, and building them with seven entries only to delete two
+  is wasted work. So the rail dropped to four entries plus Profile before
+  anything else was built.
+- **The header's centred page switcher was added** (not in this plan). Asked
+  for on 2026-09-22; it is in five of the designs and had been left out of all
+  of them. The word variant, because the icons could not be read.
+- **Part 3 became two commits.** Discard needs migration 0024, and a commit
+  that leaves the suite red until somebody runs SQL should say so on its own.
+- **Skip and Mark done keep their pills** rather than moving into a menu as
+  this plan said: three pills is the design's own row, and a menu to explain
+  two buttons is a menu too many. They say which is which in a title and in
+  what the toast says afterwards.
+- **The rail's labels float beside the icons** rather than widening the rail,
+  which would shove every list sideways as the pointer crossed it.
