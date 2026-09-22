@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
-import { NotNeededButton } from "@/app/not-needed-button";
+import { ConversationDoneButton } from "@/app/conversation-done-button";
 import { CARD, EmptyCard, StatusLine } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
 import { SyncButton } from "@/app/sync-button";
@@ -302,7 +302,7 @@ type Row = {
   draftHref?: string;
 };
 
-/** The conversation a row is about, for Not needed. Null when there is no mail. */
+/** The conversation a row is about, for Conversation done. Null when there is no mail. */
 function threadOf({ relationship: { turn } }: Person<ContactRow>): string | null {
   return turn.kind === "none" ? null : turn.threadId;
 }
@@ -399,7 +399,7 @@ function PersonRow({ person, line, daysClass, draftHref }: Row) {
         // past the avatar: four things in one 390px row left the name a stub.
         <div className="order-last flex w-full shrink-0 items-center gap-2 pl-[45px] sm:order-none sm:w-auto sm:pl-0">
           {threadId && (
-            <NotNeededButton
+            <ConversationDoneButton
               contactId={contact.id}
               threadId={threadId}
               className="relative z-10 transition sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 sm:no-hover:opacity-100"

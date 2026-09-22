@@ -101,6 +101,13 @@ html {
   --color-radio-ring: #c5c7cc;
   --color-switch-off: #e4e4e1;
 
+  /* Deleting: the only red in the app. No design covers deletion, so this is
+     not lifted from one -- it is a red at the same depth as the accent
+     (#c2410c), so a destructive button reads as a warning rather than as
+     another primary action. Slice 9b, Part 2. */
+  --color-danger: #b42318;
+  --color-danger-dark: #912018;
+
   /* The left sidebar. */
   --color-rail-active: #303237;
   --color-rail-icon: #75777e;

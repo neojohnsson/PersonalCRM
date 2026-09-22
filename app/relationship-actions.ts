@@ -24,7 +24,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const FOREIGN_KEY_VIOLATION = "23503";
 
-/** "Not needed": this conversation is finished, as of now. */
+/** "Conversation done": this conversation is finished, as of now. */
 export async function settleThread(contactId: string, threadId: string): Promise<void> {
   const user = await requireUser();
   if (!isUuid(contactId) || !threadId.trim()) notFound();

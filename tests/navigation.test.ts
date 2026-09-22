@@ -29,6 +29,16 @@ function tsxFiles(dir: string): string[] {
   });
 }
 
+/**
+ * The source with its comments taken out, for checks about what a screen
+ * *says*. A comment that explains what a button used to be called is exactly
+ * the kind of history this project keeps, so it must not fail a test about
+ * today's wording.
+ */
+function withoutComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+}
+
 /** Every `className="…"` in the app, as one string each. */
 function classNames(): { file: string; value: string }[] {
   return tsxFiles("app").flatMap((file) => {
@@ -146,5 +156,71 @@ describe("Disconnect Gmail", () => {
         readFileSync(file, "utf8").includes("DisconnectGmailButton"),
     );
     expect(users).toEqual([join("app", "profile", "page.tsx")]);
+  });
+});
+
+/**
+ * Slice 9b, Part 2: the contact page's header. Seven controls in a row, one
+ * of which ("Dismiss") deleted the contact without saying so, and one of
+ * which ("Draft reply") did nothing at all.
+ */
+describe("the contact page's header", () => {
+  const PAGE = readFileSync(join("app", "contacts", "[id]", "page.tsx"), "utf8");
+  const MENU = readFileSync(join("app", "contacts", "[id]", "contact-menu.tsx"), "utf8");
+
+  it("is the design's three controls: the pill, the menu, Draft reply", () => {
+    expect(PAGE).toContain("<ContactMenu");
+    expect(PAGE).toContain("<HeaderDraftButton");
+    expect(PAGE).toContain("<TurnPillBadge");
+    // Everything else it had grown is in the menu now, and the two components
+    // that held them are gone.
+    expect(existsSync(join("app", "contacts", "[id]", "dismiss-contact.tsx"))).toBe(false);
+    expect(existsSync(join("app", "contacts", "[id]", "standing-actions.tsx"))).toBe(false);
+    expect(PAGE.includes("StandingActions")).toBe(false);
+    expect(PAGE.includes("DismissContact")).toBe(false);
+  });
+
+  it("can wrap, so the page stops scrolling sideways on a phone", () => {
+    // `shrink-0` on a `flex-wrap` row is why the page was 872px wide at 390px:
+    // the row could never wrap.
+    expect(PAGE).toContain('className="flex flex-wrap items-center gap-[9px] pt-1"');
+    expect(PAGE.includes('flex shrink-0 flex-wrap items-center gap-[9px]')).toBe(false);
+  });
+
+  it("says that deleting deletes, in red", () => {
+    expect(MENU).toContain("Delete contact and their mail");
+    expect(MENU).toContain("LINE_DANGER");
+    expect(MENU).toContain("bg-danger");
+    // A colour class needs its token, or it silently does nothing.
+    expect(readFileSync(join("app", "globals.css"), "utf8")).toContain("--color-danger:");
+    // "Dismiss" was the word nobody read as "delete".
+    expect(MENU.includes(">Dismiss<")).toBe(false);
+  });
+
+  it("has one name for finishing a conversation, not three", () => {
+    // "Nothing owed here", "Not needed" and "Nothing more is owed in this
+    // conversation" were the same action under three names. Comments are
+    // stripped first: the components still explain what they used to say, and
+    // that history is worth keeping.
+    for (const file of tsxFiles("app")) {
+      const source = withoutComments(readFileSync(file, "utf8"));
+      expect(source.includes("Nothing owed here"), `${file} still says "Nothing owed here"`).toBe(false);
+      expect(source.includes("Not needed"), `${file} still says "Not needed"`).toBe(false);
+    }
+    expect(MENU).toContain("Mark this conversation done");
+    expect(readFileSync(join("app", "conversation-done-button.tsx"), "utf8")).toContain(
+      "Conversation done",
+    );
+  });
+
+  it("has a Draft reply that drafts, and no Draft reply when it cannot", () => {
+    const BUTTON = readFileSync(join("app", "contacts", "[id]", "header-draft-button.tsx"), "utf8");
+    // It was href="#draft" on a page where the panel is already visible.
+    expect(BUTTON).toContain("generateDraftAction");
+    expect(PAGE).toContain("{canDraftNow && <HeaderDraftButton");
+    // The four facts that decide it are the four the panel below is given.
+    for (const fact of ["budget.ready", "canDraft(gmailScopes)", "relationship.messageCount > 0"]) {
+      expect(PAGE).toContain(fact);
+    }
   });
 });

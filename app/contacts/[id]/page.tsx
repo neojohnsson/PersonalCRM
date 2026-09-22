@@ -31,8 +31,8 @@ import type { ReferredStatus } from "./summary-card";
 import type { Band } from "@/lib/relationship/warmth";
 import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
-import { DismissContact } from "./dismiss-contact";
-import { StandingActions } from "./standing-actions";
+import { ContactMenu } from "./contact-menu";
+import { HeaderDraftButton } from "./header-draft-button";
 import { DraftCard } from "./draft-card";
 import { NextTouchCard } from "./next-touch-card";
 import { SummaryCard, type AiBudget } from "./summary-card";
@@ -55,14 +55,14 @@ export const metadata = { title: `Contact · ${APP_NAME}` };
  *     empty stat cards.
  *   - The relationship summary card (slice 4) has no design; it's built from
  *     this page's own cards, and says so in app/contacts/[id]/summary-card.tsx.
- *   - The design's "Draft reply" button is here as the header's second action
- *     (slice 5a); it jumps to the draft panel below, which has no design
- *     either (app/contacts/[id]/draft-card.tsx).
- *   - "Draft reply" is slice 5. Its place holds Edit, the one action slice 2 has;
- *     the "···" menu has nothing to hold yet and is left out.
- *   - A "Dismiss" button beside Edit, with a confirm card (./dismiss-contact.tsx).
- *     No design has it; it only shows for a contact with an address, because
- *     dismissing is about skipping someone's mail.
+ *   - The header is the design's three controls as of slice 9b: the standing
+ *     pill, the "···" menu (./contact-menu.tsx) and Draft reply
+ *     (./header-draft-button.tsx). Everything else it had grown -- Edit,
+ *     Nothing owed here, Just a contact, Export, Dismiss -- is in the menu,
+ *     in plain words. Draft reply writes a draft rather than jumping to the
+ *     panel, and is absent when no draft is possible instead of sitting there
+ *     black and dead. The panel it fills has no design of its own
+ *     (./draft-card.tsx).
  *   - plan.md §3.2's "one line on what they do" and "how you know them" have no
  *     place in the design: the first sits under role · company, the second in
  *     the notes card.
@@ -202,6 +202,15 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
   const pill = standingPill(standing);
   const openThreadId = relationship.turn.kind === "none" ? null : relationship.turn.threadId;
 
+  // Whether a draft can be written at all. The panel below works this out
+  // for its own disabled state and its "why not" line; the header button is
+  // absent instead, so the same four facts decide both.
+  const canDraftNow =
+    budget.ready &&
+    canDraft(gmailScopes) &&
+    relationship.messageCount > 0 &&
+    budget.capUsd - budget.spentUsd >= 0.01;
+
   const name = displayName({ ...contact, primary_email: emails[0] ?? null });
   const hasName = Boolean(contact.first_name?.trim() || contact.last_name?.trim());
   const workLine = [contact.role, contact.company].filter(Boolean).join(" · ");
@@ -279,42 +288,21 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
             </div>
           </div>
 
-          <div className="flex shrink-0 flex-wrap items-center gap-[9px] pt-1">
+          {/* Slice 9b, Part 2: the design's own header, which is three
+              things -- the standing pill, the "..." menu and Draft reply. It
+              had grown to seven controls, and `shrink-0` on this row meant
+              the flex-wrap never wrapped: 872px of page at a 390px width. */}
+          <div className="flex flex-wrap items-center gap-[9px] pt-1">
             {pill && <TurnPillBadge pill={pill} />}
-            <Link
-              href={`/contacts/${id}/edit`}
-              className="flex items-center gap-2 rounded-full bg-white px-[18px] py-2.5 text-[13px] font-semibold text-ink-body shadow-[0_1px_2px_rgba(20,20,25,.05)] transition hover:text-ink"
-            >
-              <PencilIcon className="size-[15px]" />
-              Edit
-            </Link>
-            {/* design/ContactDetail.dc.html's primary action. It jumps to the panel
-                below, where the draft is written, read and saved. */}
-            <Link
-              href="#draft"
-              scroll
-              className="flex items-center gap-2 rounded-full bg-ink-deep px-[18px] py-2.5 text-[13px] font-semibold text-white transition hover:bg-ink/85"
-            >
-              <PencilIcon className="size-[15px]" />
-              Draft reply
-            </Link>
-            <StandingActions
+            <ContactMenu
               contactId={contact.id}
+              name={name}
               threadId={openThreadId}
               settled={standing.kind === "settled"}
               neverChase={relationship.neverChase}
+              canDelete={emails.length > 0}
             />
-            {/* Slice 7: the copy you hand over when the person asks what you
-                hold on them (plan.md §5.2). A plain link, because the answer
-                is a file the browser saves. */}
-            <a
-              href={`/contacts/${id}/export`}
-              title="Everything this app holds about them, as a file"
-              className="rounded-full bg-line-soft px-[18px] py-2.5 text-[13px] font-semibold text-ink-body transition-colors hover:bg-chip-track"
-            >
-              Export
-            </a>
-            {emails.length > 0 && <DismissContact contactId={contact.id} name={name} />}
+            {canDraftNow && <HeaderDraftButton contactId={contact.id} hasDraft={draft !== null} />}
           </div>
         </div>
 
