@@ -18,6 +18,8 @@ import {
   type NextTouchErrors,
   type NextTouchValues,
 } from "@/lib/relationship/next-touch";
+import { firstLine } from "@/lib/relationship/conversation";
+import { readThreadLines } from "@/lib/relationship/conversation-read";
 import { snoozeDate } from "@/lib/relationship/snooze";
 import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
@@ -129,6 +131,54 @@ async function move(
     if (error instanceof NextTouchNotFound) return { error: error.message };
     throw error;
   }
+}
+
+/**
+ * The first lines of a thread, for "Every touch" (slice 9b, Part 4).
+ *
+ * Read from Gmail when the card asks for them, which is after the page is on
+ * screen. Three ways this could have been done, and why this one:
+ *
+ *   - Awaiting Gmail while the page renders works, and costs about 700ms on
+ *     every contact page (measured: 1.2s against 350ms for Home). Too much for
+ *     a line of text.
+ *   - A <Suspense> boundary streaming the card is the documented way to avoid
+ *     that, and in this version the boundary never resolved -- the fallback
+ *     stayed on screen. Worth another look in the release slice.
+ *   - So: the card asks for them itself, like the Calendar page's "Read my
+ *     calendar" (app/connect/calendar-actions.ts). The rows are there
+ *     instantly from stored metadata, and the lines arrive a moment later.
+ *
+ * `threadId` comes from the page, so it is CHECKED here rather than trusted:
+ * a thread with no message of yours in it is a thread you cannot read.
+ * Nothing is stored, and no line is ever written to the database.
+ */
+export type ConversationLines = { lines: Record<string, string>; error: string | null };
+
+export async function readConversationLines(threadId: string): Promise<ConversationLines> {
+  const user = await requireUser();
+  if (typeof threadId !== "string" || !threadId.trim() || threadId.length > 100) notFound();
+
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("gmail_messages")
+    .select("gmail_message_id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("thread_id", threadId);
+  if (error) throw supabaseError(error, "Couldn't check the thread");
+  // A null count means the query answered nothing at all, which is not the
+  // same as zero -- the lesson of the privacy page's counts in slice 7.
+  if (count === null) throw new Error("Couldn't check the thread: no count came back");
+  if (count === 0) notFound();
+
+  const read = await readThreadLines(supabase, user.id, threadId);
+  const lines: Record<string, string> = {};
+  for (const message of read.thread?.messages ?? []) {
+    const line = firstLine(message.snippet);
+    if (line) lines[message.id] = line;
+  }
+
+  return { lines, error: read.error };
 }
 
 /** Undo of Skip and Mark done: open again, on the day it had. */

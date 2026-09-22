@@ -72,7 +72,7 @@ export default async function PrivacyPage() {
             <CardHeading title="What leaves this app" caption="And what those services keep" />
             <Away
               who="Google"
-              what="Your mail is read to find who wrote to whom and when, and to read a message when a summary, a draft or a promise needs one. Drafts are written back into your Gmail. Nothing is ever sent."
+              what="Your mail is read to find who wrote to whom and when; to show the first line of each message while you look at a contact; and to read a message when a summary, a draft or a promise needs one. Drafts are written back into your Gmail. Nothing is ever sent."
               keeps="Google already has your mail. This app adds drafts, which sit in your Gmail until you send or delete them."
             />
             <Away

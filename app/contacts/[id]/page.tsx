@@ -20,6 +20,7 @@ import {
   standingPill,
   type TurnPill,
 } from "@/lib/relationship/describe";
+import { conversation, type StoredMessage } from "@/lib/relationship/conversation";
 import { loadRelationship, type Relationship } from "@/lib/relationship/load";
 import { wholeDaysBetween } from "@/lib/relationship/whose-turn";
 import { standingOf } from "@/lib/relationship/standing";
@@ -32,6 +33,7 @@ import type { Band } from "@/lib/relationship/warmth";
 import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 import { ContactMenu } from "./contact-menu";
+import { ConversationCard } from "./conversation-card";
 import { HeaderDraftButton } from "./header-draft-button";
 import { DraftCard } from "./draft-card";
 import { NextTouchCard } from "./next-touch-card";
@@ -308,6 +310,18 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
 
         <StatStrip relationship={relationship} hasEmails={emails.length > 0} />
 
+        {/* Slice 9b, Part 4: the messages themselves. The rows are stored
+            metadata, so they are on screen with the rest of the page; the card
+            asks Gmail for the first lines itself, once it is on screen. */}
+        {thread && thread.messages.length > 0 && (
+          <ConversationCard
+            entries={conversation(thread.messages)}
+            threadId={thread.id}
+            total={relationship.messageCount}
+            gmailLink={gmailLink}
+          />
+        )}
+
         <DraftCard
           // A new key when the draft changes, so the panel's text box starts
           // from the new draft instead of keeping the state it had before
@@ -447,6 +461,8 @@ type Thread = {
   messageCount: number;
   lastFrom: "you" | "them";
   lastAt: string;
+  /** Its messages, metadata only -- what "Every touch" is built from (Part 4). */
+  messages: StoredMessage[];
 };
 
 /** The most recent thread with any of the contact's addresses, and who wrote last in it. */
@@ -470,10 +486,11 @@ async function latestThread(
 
   const { data: messages, error: messagesError } = await supabase
     .from("gmail_messages")
-    .select("direction, internal_date")
+    .select("gmail_message_id, direction, internal_date, subject, from_name, from_email")
     .eq("user_id", userId)
     .eq("thread_id", latest.last_thread_id)
-    .order("internal_date", { ascending: false });
+    .order("internal_date", { ascending: false })
+    .returns<StoredMessage[]>();
   if (messagesError) throw supabaseError(messagesError, "Couldn't load the latest thread");
   if (messages.length === 0) return null;
 
@@ -483,6 +500,7 @@ async function latestThread(
     messageCount: messages.length,
     lastFrom: messages[0].direction === "outbound" ? "you" : "them",
     lastAt: messages[0].internal_date,
+    messages,
   };
 }
 
