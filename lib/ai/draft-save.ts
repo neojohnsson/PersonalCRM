@@ -7,6 +7,9 @@ import { canDraft } from "@/lib/google/scopes";
 import { getAccessToken } from "@/lib/google/tokens";
 import { supabaseError } from "@/lib/supabase/errors";
 
+/** Two pending drafts for one contact: migration 0014's partial unique index. */
+const UNIQUE_VIOLATION = "23505";
+
 /**
  * "Save to Gmail drafts" — the moment a person approves a draft
  * (docs/slice-5a-plan.md, Part 3, step 6).
@@ -26,6 +29,14 @@ export class DraftNotFound extends Error {
 }
 
 /** Gmail hasn't been connected with permission to create drafts. */
+/** A newer pending draft exists, so a discarded one can't be put back. */
+export class NewerDraftExists extends Error {
+  constructor() {
+    super("There's a newer draft for this contact now.");
+    this.name = "NewerDraftExists";
+  }
+}
+
 export class DraftsNotAllowedHere extends Error {
   constructor() {
     super("Reconnect Gmail to allow drafts.");
@@ -135,14 +146,53 @@ export async function saveDraftToGmail(
 
 /** Discard: the pending draft is deleted. Nothing was ever in Gmail. */
 export async function discardDraft(db: SupabaseClient, userId: string, draftId: string): Promise<void> {
+  const now = new Date().toISOString();
   const { data, error } = await db
     .from("contact_drafts")
-    .delete()
+    .update({ status: "discarded", body: null, discarded_at: now, updated_at: now })
     .eq("id", draftId)
     .eq("user_id", userId)
     .eq("status", "pending")
     .select("id");
   if (error) throw supabaseError(error, "Couldn't discard the draft");
+  if (data.length === 0) throw new DraftNotFound();
+}
+
+/**
+ * Undo a Discard (slice 9b, Part 3; migration 0024).
+ *
+ * The row survived the discard, so this is the same row going back to
+ * pending -- but its body was cleared at the moment you pressed Discard, and
+ * `body` here is the text the browser was showing. That is not a new kind of
+ * trust: "Save to Gmail drafts" already sends the text from that same box,
+ * because editing it there is the whole point of a pending draft.
+ *
+ * A contact may have one pending draft (migration 0014's partial index), so
+ * if another was written in the meantime this cannot happen, and the toast
+ * says so rather than swallowing it.
+ */
+export async function restoreDraft(
+  db: SupabaseClient,
+  userId: string,
+  draftId: string,
+  body: string,
+): Promise<void> {
+  if (!body.trim()) throw new DraftNotFound();
+
+  const { data, error } = await db
+    .from("contact_drafts")
+    .update({
+      status: "pending",
+      body: body.slice(0, MAX_BODY_CHARS),
+      discarded_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", draftId)
+    .eq("user_id", userId)
+    .eq("status", "discarded")
+    .select("id");
+  if (error?.code === UNIQUE_VIOLATION) throw new NewerDraftExists();
+  if (error) throw supabaseError(error, "Couldn't put the draft back");
   if (data.length === 0) throw new DraftNotFound();
 }
 
