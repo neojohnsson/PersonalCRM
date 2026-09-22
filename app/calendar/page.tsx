@@ -4,6 +4,8 @@ import { CalendarPanel } from "@/app/connect/calendar-panel";
 import { CARD, EmptyCard } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
 import { buildWeek, clock, mondayOf, weekLabel } from "@/lib/calendar/week";
+import { canWriteCalendar } from "@/lib/google/scopes";
+import { CreateEvent } from "./create-event";
 import { APP_NAME } from "@/lib/app-config";
 import { requireUser } from "@/lib/auth";
 import { displayName } from "@/lib/contacts/display";
@@ -174,13 +176,21 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
           <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.035em]">Calendar</h1>
           <div className="flex items-center gap-[9px]">
             <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-affirm" />
+            {/* Slice 10: this said "read-only · nothing is ever created or
+                changed" until today, which stopped being true the moment the
+                app could create one. It now says what the connection actually
+                allows, which depends on what Google granted. */}
             <p className="text-[12.5px] font-medium text-ink-quiet">
-              {connection.email} &middot; read-only &middot; nothing is ever created or changed
+              {connection.email} &middot;{" "}
+              {canWriteCalendar(connection.scopes)
+                ? "events you create here go on this calendar, never with guests"
+                : "read-only \u2014 connect again to create events"}
             </p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-x-[18px] gap-y-3 pb-0.5">
+          <CreateEvent today={today} canCreate={canWriteCalendar(connection.scopes)} />
           <Legend />
           <div className="flex items-center gap-1.5">
             <WeekStep monday={addDays(monday, -7)} label="Previous week" arrow="‹" />
@@ -260,11 +270,15 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
             readThrough={connection.syncedThrough}
           />
 
-          {/* The design's own note, word for word. */}
+          {/* The design's note, with its last clause corrected in slice 10:
+              it said "no event is ever created or changed", and events can be
+              created now. Nothing is changed or deleted, which is still true
+              and still worth saying. */}
           <p className="px-1 text-[11.5px] leading-[1.55] font-medium text-ink-faint">
             A meeting with a contact counts toward warmth, like an exchange does. Only the time,
-            title and guest addresses are read &mdash; never the description &mdash; and no event
-            is ever created or changed.
+            title and guest addresses are read &mdash; never the description. An event you create
+            here is added with no guests; nothing already in your calendar is ever changed or
+            deleted.
           </p>
         </div>
       </div>
