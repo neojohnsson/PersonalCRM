@@ -20,6 +20,7 @@ import {
   standingPill,
   type TurnPill,
 } from "@/lib/relationship/describe";
+import { suggestName } from "@/lib/contacts/name-suggestion";
 import { conversation, type StoredMessage } from "@/lib/relationship/conversation";
 import { loadRelationship, type Relationship } from "@/lib/relationship/load";
 import { wholeDaysBetween } from "@/lib/relationship/whose-turn";
@@ -34,6 +35,7 @@ import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 import { ContactMenu } from "./contact-menu";
 import { ConversationCard } from "./conversation-card";
+import { NameSuggestionRow } from "./name-suggestion-row";
 import { HeaderDraftButton } from "./header-draft-button";
 import { DraftCard } from "./draft-card";
 import { NextTouchCard } from "./next-touch-card";
@@ -214,6 +216,9 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
     budget.capUsd - budget.spentUsd >= 0.01;
 
   const name = displayName({ ...contact, primary_email: emails[0] ?? null });
+  // Slice 9b, Part 5: "Jönsson Linda", or no name at all and an address that
+  // has one in it. Suggested, never applied (plan.md §5.2).
+  const nameSuggestion = suggestName({ ...contact, primary_email: emails[0] ?? null });
   const hasName = Boolean(contact.first_name?.trim() || contact.last_name?.trim());
   const workLine = [contact.role, contact.company].filter(Boolean).join(" · ");
   const edited = new Date(contact.updated_at).getTime() - new Date(contact.created_at).getTime() > 2_000;
@@ -259,6 +264,10 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
                 <p className="mt-1 max-w-[640px] text-[13.5px] leading-[1.5] text-ink-soft">{contact.one_liner}</p>
               )}
             </div>
+
+            {nameSuggestion && (
+              <NameSuggestionRow contactId={contact.id} suggestion={nameSuggestion} shownAs={name} />
+            )}
 
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
               {emails.map((email) => (

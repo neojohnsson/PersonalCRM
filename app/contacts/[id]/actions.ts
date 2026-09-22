@@ -3,7 +3,8 @@
 import { refresh } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { isUuid } from "@/lib/contacts/contact-form";
+import { LIMITS, isUuid } from "@/lib/contacts/contact-form";
+import { suggestName } from "@/lib/contacts/name-suggestion";
 import { daysBetweenDates, isIsoDate, todayIn } from "@/lib/relationship/dates";
 import {
   MAX_DAYS_AHEAD,
@@ -179,6 +180,79 @@ export async function readConversationLines(threadId: string): Promise<Conversat
   }
 
   return { lines, error: read.error };
+}
+
+/**
+ * "Use Linda Jönsson" on a contact's page (slice 9b, Part 5).
+ *
+ * The suggestion is worked out AGAIN here, from the contact as it is stored,
+ * rather than taking a name from the browser: this way the only names this
+ * action can write are the ones lib/contacts/name-suggestion.ts would offer,
+ * and a POST cannot rename somebody to anything it likes. It answers with the
+ * names the contact had, which is what the toast's Undo needs.
+ */
+export type AcceptedName = { from: { first: string; last: string } } | { error: string };
+
+export async function acceptSuggestedName(contactId: string): Promise<AcceptedName> {
+  const user = await requireUser();
+  if (!isUuid(contactId)) notFound();
+
+  const supabase = await createClient();
+  const { data: contact, error } = await supabase
+    .from("contact_list")
+    .select("first_name, last_name, primary_email")
+    .eq("user_id", user.id)
+    .eq("id", contactId)
+    .maybeSingle<{ first_name: string | null; last_name: string | null; primary_email: string | null }>();
+  if (error) throw supabaseError(error, "Couldn't load the contact");
+  if (!contact) notFound();
+
+  const suggestion = suggestName(contact);
+  if (!suggestion) return { error: "That suggestion doesn't fit this contact any more." };
+
+  const { error: saveError } = await supabase
+    .from("contacts")
+    .update({ first_name: suggestion.first, last_name: suggestion.last })
+    .eq("user_id", user.id)
+    .eq("id", contactId);
+  if (saveError) throw supabaseError(saveError, "Couldn't save the name");
+
+  refresh();
+  return { from: { first: contact.first_name ?? "", last: contact.last_name ?? "" } };
+}
+
+/**
+ * Undo of that: the name goes back to what it was.
+ *
+ * It does take names from the browser, because putting something back means
+ * writing what was there before. That is no more than the edit form already
+ * allows -- any name, on your own contact -- so it is checked the same way:
+ * trimmed, length-capped, and empty becomes null rather than an empty string.
+ */
+export async function setContactName(
+  contactId: string,
+  first: string,
+  last: string,
+): Promise<{ error: string } | null> {
+  const user = await requireUser();
+  if (!isUuid(contactId)) notFound();
+  if (typeof first !== "string" || typeof last !== "string") notFound();
+
+  const trimmed = {
+    first_name: first.trim().slice(0, LIMITS.first_name) || null,
+    last_name: last.trim().slice(0, LIMITS.last_name) || null,
+  };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("contacts")
+    .update(trimmed)
+    .eq("user_id", user.id)
+    .eq("id", contactId);
+  if (error) throw supabaseError(error, "Couldn't put the name back");
+
+  refresh();
+  return null;
 }
 
 /** Undo of Skip and Mark done: open again, on the day it had. */
