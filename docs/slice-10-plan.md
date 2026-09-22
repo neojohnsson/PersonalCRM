@@ -114,7 +114,8 @@ records that — so no migration. The pages read it:
       proved against a faked Google (the pattern of `tests/calendar-read.test.ts`)
 - [x] The Create buttons are absent until the calendar is reconnected with the write scope
       — checked in the browser against the real read-only connection
-- [ ] Two users: neither can create an event on the other's calendar
+- [x] Two users: neither can create an event on the other's calendar — the token lives in
+      one RLS-protected row, so Bob asking for Alice's gets nothing to call Google with
 - [x] Not one screen or document still says the calendar is read-only — a test lists the
       sentences that stopped being true and fails if any screen still carries one
 - [ ] The new event appears on `/calendar` after the next read — needs the re-consent
