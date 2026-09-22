@@ -484,9 +484,14 @@ function ComingUpCard({ touches }: { touches: ComingUp<ContactRow>[] }) {
       )}
 
       {touches.length > shown.length && (
-        <p className="text-[11.5px] font-medium text-ink-ghost">
+        // Slice 9b, Part 6: it read as a link and was a full stop. The rest of
+        // the days you have planned are the contact list's "Planned" filter.
+        <Link
+          href="/contacts?filter=planned"
+          className="text-[11.5px] font-medium text-ink-faint transition-colors hover:text-ink"
+        >
           and {touches.length - shown.length} more later
-        </p>
+        </Link>
       )}
     </section>
   );

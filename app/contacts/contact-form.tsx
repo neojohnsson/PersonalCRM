@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import {
   LIMITS,
   MAX_EMAILS,
@@ -23,6 +23,18 @@ import { saveContact } from "./actions";
  * next to their field; what was typed is handed back too, so nothing is lost.
  * The addresses are a small list kept in state, because rows can be added,
  * removed and reordered; the first one is primary.
+ *
+ * Slice 9b, Part 6 -- three things the first outside test of the app lost work
+ * to:
+ *
+ *   - Clearing a name and pressing Cancel threw everything away without a
+ *     word. Leaving with unsaved changes now asks, both by closing the tab
+ *     (the browser's own prompt, which is all `beforeunload` can do) and by
+ *     pressing Cancel, which is this app's own link and can say more.
+ *   - The first field wasn't focused, so a keyboard was two Tabs from typing.
+ *   - A failed save put its errors at the top of a form you were at the bottom
+ *     of, and nothing moved. Now the first field with an error is scrolled to
+ *     and focused.
  */
 export function ContactForm({
   contactId,
@@ -42,6 +54,44 @@ export function ContactForm({
 
   const [emails, setEmails] = useState<string[]>(initial.emails.length > 0 ? initial.emails : [""]);
 
+  const form = useRef<HTMLFormElement>(null);
+  // Whether anything has been typed since the form was opened or last saved.
+  const [dirty, setDirty] = useState(false);
+  // A save that worked never gets here: the action redirects to the contact,
+  // and a client navigation fires no beforeunload -- so there is no "saved"
+  // state to clear, only the two ways of leaving without saving.
+
+  // The browser's own "leave site?" prompt. It cannot be reworded, and it is
+  // the only thing that can stop a closed tab.
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
+  // The first field, once, when the form opens -- but never stealing the focus
+  // from somebody who has already started typing, and never on a phone, where
+  // it would throw the keyboard up over the page.
+  useEffect(() => {
+    if (window.matchMedia("(hover: none)").matches) return;
+    const first = form.current?.querySelector<HTMLInputElement>("#first_name");
+    if (first && document.activeElement === document.body) first.focus();
+  }, []);
+
+  // A failed save: go to the first thing that is wrong, rather than leaving the
+  // message at the top of a page you are at the bottom of.
+  useEffect(() => {
+    if (!state?.errors) return;
+    const names = Object.keys(state.errors).filter((key) => key !== "form");
+    const target =
+      names.length > 0
+        ? form.current?.querySelector<HTMLElement>(`[name="${names[0]}"]`)
+        : form.current?.querySelector<HTMLElement>('[role="alert"]');
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) target.focus();
+  }, [state]);
+
   function setEmail(index: number, value: string) {
     setEmails((list) => list.map((email, i) => (i === index ? value : email)));
   }
@@ -55,7 +105,13 @@ export function ContactForm({
   }
 
   return (
-    <form action={formAction} noValidate className="flex max-w-2xl flex-col gap-4">
+    <form
+      ref={form}
+      action={formAction}
+      noValidate
+      onInput={() => setDirty(true)}
+      className="flex max-w-2xl flex-col gap-4"
+    >
       {errors.form && (
         <p
           role="alert"
@@ -172,7 +228,16 @@ export function ContactForm({
         >
           {pending ? "Saving…" : "Save contact"}
         </button>
-        <Link href={cancelHref} className="text-[14px] font-medium text-ink-soft hover:text-ink">
+        <Link
+          href={cancelHref}
+          onClick={(event) => {
+            // Inside the app, so this is ours to ask in our own words.
+            if (dirty && !window.confirm("Leave without saving? What you typed will be lost.")) {
+              event.preventDefault();
+            }
+          }}
+          className="text-[14px] font-medium text-ink-soft hover:text-ink"
+        >
           Cancel
         </Link>
       </div>

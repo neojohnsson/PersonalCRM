@@ -224,3 +224,54 @@ describe("the contact page's header", () => {
     }
   });
 });
+
+/**
+ * Slice 9b, Part 6: the controls that were not controls, and the words that
+ * were not true.
+ */
+describe("nothing that looks interactive and isn't", () => {
+  it("has a 404 of its own, for a page and for a contact", () => {
+    expect(existsSync(join("app", "not-found.tsx"))).toBe(true);
+    expect(existsSync(join("app", "contacts", "[id]", "not-found.tsx"))).toBe(true);
+    // Both keep the app shell, so a 404 has a way out of it.
+    for (const file of [join("app", "not-found.tsx"), join("app", "contacts", "[id]", "not-found.tsx")]) {
+      expect(readFileSync(file, "utf8")).toContain("<AppShell");
+    }
+  });
+
+  it("no longer dresses the sort label as a pill", () => {
+    const source = readFileSync(join("app", "contacts", "page.tsx"), "utf8");
+    // It read as a dropdown beside Sync now, and was a label.
+    expect(source.includes("${WHITE_PILL} hidden lg:flex")).toBe(false);
+    expect(source).toContain("sortLabel(sort)");
+    // The order is chosen in the headings instead, and they are real links.
+    expect(source).toContain("function SortHeading(");
+    expect(source).toContain("aria-sort");
+  });
+
+  it("gives the date inputs a Swedish order", () => {
+    // mm/dd/yyyy to somebody in Växjö.
+    for (const file of [
+      join("app", "contacts", "[id]", "next-touch-card.tsx"),
+      join("app", "promises", "promise-card.tsx"),
+    ]) {
+      const source = readFileSync(file, "utf8");
+      expect(source).toContain('type="date"');
+      expect(source, `${file} has a date input with no lang`).toContain('lang="sv"');
+    }
+  });
+
+  it("tells the AI to write dates the way people say them", () => {
+    // It was given ISO dates and wrote them straight back out: "on 2026-09-21".
+    expect(readFileSync(join("lib", "ai", "summary.ts"), "utf8")).toContain("never 2026-09-11");
+  });
+
+  it("warns before an edited contact form is abandoned", () => {
+    const source = readFileSync(join("app", "contacts", "contact-form.tsx"), "utf8");
+    expect(source).toContain("beforeunload");
+    // Cancel is this app's own link, so it asks in words instead.
+    expect(source).toContain("Leave without saving?");
+    // A failed save moves to the first thing that is wrong.
+    expect(source).toContain("scrollIntoView");
+  });
+});

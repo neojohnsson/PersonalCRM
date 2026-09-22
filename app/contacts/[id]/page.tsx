@@ -288,10 +288,18 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
                 </a>
               )}
               {contact.tags.length > 0 && (
+                // Slice 9b, Part 6: the same chips filter the list when you
+                // press them there, and did nothing here. Now they do the same
+                // thing in both places.
                 <ul className="flex flex-wrap gap-[5px]" aria-label="Tags">
                   {(contact.tags as string[]).map((tag) => (
-                    <li key={tag} className="rounded-full bg-chip px-2.5 py-[3px] text-[11px] font-semibold text-ink-soft">
-                      {tag}
+                    <li key={tag}>
+                      <Link
+                        href={`/contacts?tag=${encodeURIComponent(tag)}`}
+                        className="block rounded-full bg-chip px-2.5 py-[3px] text-[11px] font-semibold text-ink-soft transition-colors hover:bg-chip-track hover:text-ink"
+                      >
+                        {tag}
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -369,9 +377,16 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
           <section className={`${CARD} flex min-w-0 flex-1 flex-col gap-[11px] px-[22px] py-[18px]`}>
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Your notes</h2>
-              <span className="text-[11.5px] font-semibold text-ink-faint">
-                {edited ? "Edited" : "Added"} {dayMonth(contact.updated_at)}
-              </span>
+              {/* Slice 9b, Part 6: this is the CONTACT's updated_at, not the
+                  note's, and it sat above "No notes yet." saying "Edited 17
+                  September" -- edited what? There is no timestamp on the note
+                  itself, so it is only shown when there is a note to have
+                  edited, and it says which record it is about. */}
+              {contact.notes && (
+                <span className="text-[11.5px] font-semibold text-ink-faint">
+                  Contact {edited ? "edited" : "added"} {dayMonth(contact.updated_at)}
+                </span>
+              )}
             </div>
 
             {contact.notes ? (

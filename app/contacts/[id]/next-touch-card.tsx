@@ -179,6 +179,10 @@ export function NextTouchCard({
               id="due_on"
               name="due_on"
               type="date"
+              // Slice 9b, Part 6: without this Chrome takes the format from
+              // the browser's locale and offers mm/dd/yyyy to somebody in
+              // Sweden. The whole app's dates are Swedish time already.
+              lang="sv"
               min={today}
               defaultValue={values.due_on}
               aria-invalid={errors.due_on ? true : undefined}

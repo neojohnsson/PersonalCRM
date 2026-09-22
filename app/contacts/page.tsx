@@ -7,6 +7,7 @@ import { SyncButton } from "@/app/sync-button";
 import { APP_NAME } from "@/lib/app-config";
 import { requireUser } from "@/lib/auth";
 import { displayName } from "@/lib/contacts/display";
+import { compareOn, parseSort, sortLabel, type SortKey } from "@/lib/contacts/sort";
 import { ilikePattern, normaliseQuery } from "@/lib/contacts/search";
 import { avatarColors, countOf, daysAgo, initials } from "@/lib/format";
 import { countDuplicates } from "@/lib/contacts/duplicate-list";
@@ -111,6 +112,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
   const query = normaliseQuery(params.q);
   const filter = parseFilter(params.filter);
   const tag = typeof params.tag === "string" && params.tag.trim() ? params.tag.trim() : null;
+  const sort = parseSort(params.sort);
   const requested = typeof params.show === "string" ? Number.parseInt(params.show, 10) : NaN;
   const limit = requested > 0 ? Math.min(requested, MAX_ROWS) : PAGE_SIZE;
 
@@ -188,15 +190,26 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
   const counts = countByFilter(items.map((item) => item.standing));
   const tags = topTags(items.map((item) => item.contact.tags));
 
+  // Whose turn is the default, because that default is the product
+  // (design/canvas.json). A column sort breaks ties with it rather than
+  // replacing it, so two contacts at the same warmth still come out in the
+  // order the app would have chosen.
+  const byTurn = (a: (typeof items)[number], b: (typeof items)[number]) =>
+    standingRank(a.standing) - standingRank(b.standing) ||
+    compareTurns(a.relationship.turn, b.relationship.turn) ||
+    displayName(a.contact).localeCompare(displayName(b.contact), "sv");
+
+  const sortRow = (item: (typeof items)[number]) => ({
+    name: displayName(item.contact),
+    company: item.contact.company,
+    warmth: item.relationship.warmth?.score ?? null,
+    lastAt: item.contact.last_contact_at,
+  });
+
   const shown = items
     .filter((item) => matchesFilter(item.standing, filter))
     .filter((item) => (tag ? hasTag(item.contact.tags, tag) : true))
-    .sort(
-      (a, b) =>
-        standingRank(a.standing) - standingRank(b.standing) ||
-        compareTurns(a.relationship.turn, b.relationship.turn) ||
-        displayName(a.contact).localeCompare(displayName(b.contact), "sv"),
-    );
+    .sort(sort === "turn" ? byTurn : (a, b) => compareOn(sort, sortRow(a), sortRow(b)) || byTurn(a, b));
 
   /** This page's address with some parameters changed; null removes one. */
   const link = (changes: Record<string, string | null>) => {
@@ -204,6 +217,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
       q: query || null,
       filter: filter === "all" ? null : filter,
       tag,
+      sort: sort === "turn" ? null : sort,
       ...changes,
     };
     const next = new URLSearchParams();
@@ -232,9 +246,13 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
 
           <div className="flex w-full flex-wrap items-start gap-2 sm:w-auto">
             <SearchBox query={query} />
-            <span className={`${WHITE_PILL} hidden lg:flex`}>
+            {/* Slice 9b, Part 6: a label, and now it looks like one. As a
+                white pill beside Sync now it read as a dropdown, and the
+                outside test pressed it. The order is chosen in the column
+                headings below. */}
+            <span className="hidden items-center gap-1.5 self-center px-1 text-[12.5px] whitespace-nowrap lg:flex">
               <span className="text-ink-faint">Sorted by</span>
-              <span className="font-semibold">Whose turn</span>
+              <span className="font-semibold text-ink-soft">{sortLabel(sort)}</span>
             </span>
             {sync?.status === "needs_reconnect" ? (
               <Link href="/connect" className={`${WHITE_PILL} font-semibold hover:bg-paper-tint`}>
@@ -291,6 +309,8 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
           <ContactTable
             items={shown.slice(0, limit)}
             total={shown.length}
+            sort={sort}
+            sortHref={(next) => link({ sort: next, show: null })}
             moreHref={
               shown.length > limit && limit < MAX_ROWS ? link({ show: String(limit + PAGE_SIZE) }) : null
             }
@@ -368,7 +388,20 @@ const WARMTH_BAR: Record<Band, string> = {
   cold: "bg-ink-ghost",
 };
 
-function ContactTable({ items, total, moreHref }: { items: Item[]; total: number; moreHref: string | null }) {
+function ContactTable({
+  items,
+  total,
+  sort,
+  sortHref,
+  moreHref,
+}: {
+  items: Item[];
+  total: number;
+  sort: SortKey;
+  /** This page's address ordered by another column; null means the default. */
+  sortHref: (next: SortKey | null) => string;
+  moreHref: string | null;
+}) {
   const heading = "px-2 pt-[11px] pb-[9px] text-[10.5px] font-bold tracking-[0.07em] text-ink-ghost uppercase";
 
   return (
@@ -386,13 +419,43 @@ function ContactTable({ items, total, moreHref }: { items: Item[]; total: number
           <col className="w-[64px]" />
         </colgroup>
 
+        {/* Slice 9b, Part 6: the headings sort now. They looked like every
+            sortable table anybody has used and did nothing at all. One click
+            per heading, one direction per column -- the direction that is
+            useful (lib/contacts/sort.ts). */}
         <thead>
           <tr>
-            <th scope="col" className={`${heading} pl-[22px] text-left`}>Name</th>
-            <th scope="col" className={`${heading} hidden text-left lg:table-cell`}>Company</th>
-            <th scope="col" className={`${heading} text-left`}>Whose turn</th>
-            <th scope="col" className={`${heading} hidden text-left md:table-cell`}>Warmth</th>
-            <th scope="col" className={`${heading} pr-[22px] text-right`}>Last</th>
+            <SortHeading sort={sort} column="name" href={sortHref("name")} className={`${heading} pl-[22px]`}>
+              Name
+            </SortHeading>
+            <SortHeading
+              sort={sort}
+              column="company"
+              href={sortHref("company")}
+              className={`${heading} hidden lg:table-cell`}
+            >
+              Company
+            </SortHeading>
+            <SortHeading sort={sort} column="turn" href={sortHref(null)} className={heading}>
+              Whose turn
+            </SortHeading>
+            <SortHeading
+              sort={sort}
+              column="warmth"
+              href={sortHref("warmth")}
+              className={`${heading} hidden md:table-cell`}
+            >
+              Warmth
+            </SortHeading>
+            <SortHeading
+              sort={sort}
+              column="last"
+              href={sortHref("last")}
+              className={`${heading} pr-[22px]`}
+              align="right"
+            >
+              Last
+            </SortHeading>
           </tr>
         </thead>
 
@@ -547,4 +610,51 @@ const BUCKET_LABELS: Record<Exclude<ListFilter, "all">, { text: string; classNam
 function BucketLabel({ bucket }: { bucket: Exclude<ListFilter, "all"> }) {
   const label = BUCKET_LABELS[bucket];
   return <span className={label.className}>{label.text}</span>;
+}
+
+/**
+ * One sortable column heading (slice 9b, Part 6).
+ *
+ * A real link, so it works without JavaScript, can be opened in a new tab and
+ * keeps the search, filter and tag it was pressed with. `aria-sort` tells a
+ * screen reader which column the list is in — the arrow alone says it only to
+ * people who can see it.
+ *
+ * The column already in use is not a link: pressing it again would do nothing,
+ * and a control that does nothing is the thing this part of the slice is about.
+ */
+function SortHeading({
+  sort,
+  column,
+  href,
+  className,
+  align = "left",
+  children,
+}: {
+  sort: SortKey;
+  column: SortKey;
+  href: string;
+  className: string;
+  align?: "left" | "right";
+  children: React.ReactNode;
+}) {
+  const active = sort === column;
+  const side = align === "right" ? "text-right" : "text-left";
+
+  return (
+    <th scope="col" aria-sort={active ? "other" : "none"} className={`${className} ${side}`}>
+      {active ? (
+        <span className={`inline-flex items-center gap-1 ${align === "right" ? "flex-row-reverse" : ""} text-ink-muted`}>
+          {children}
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" className="size-2">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </span>
+      ) : (
+        <Link href={href} className="transition-colors hover:text-ink-muted">
+          {children}
+        </Link>
+      )}
+    </th>
+  );
 }
