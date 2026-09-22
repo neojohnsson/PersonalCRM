@@ -37,7 +37,7 @@ Mail you sent is always kept, including mail to someone you later dismissed: it'
 
 The filters decide from the sender and the headers only — never from a message body.
 
-Message bodies are fetched live from Gmail when they're needed and are not persisted, **except** for contacts where the user explicitly opts in (not built yet). That retention has a visible period and a delete control, and the period is enforced by a scheduled job — a retention policy that isn't actually enforced is a lie in a privacy policy.
+Message bodies are fetched live from Gmail when they're needed and are not persisted, **except** for contacts where the user explicitly opts in (not built yet). Since slice 9b that includes opening a contact page, which reads the latest thread's first lines (Gmail's own ~200-character snippets) so the page can show the conversation. They are held for the length of that one request and written nowhere — `lib/relationship/conversation-read.ts`. That retention has a visible period and a delete control, and the period is enforced by a scheduled job — a retention policy that isn't actually enforced is a lie in a privacy policy.
 
 ### What the AI summary sends, and what it keeps
 

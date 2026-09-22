@@ -1,10 +1,16 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { useActionState, useState, useTransition } from "react";
+import { useToast } from "@/app/toasts";
 import { MAX_BODY_CHARS, TONES, neverWriteHits, type SavedDraft, type Tone } from "@/lib/ai/draft-types";
 import { timeAgo } from "@/lib/format";
-import { discardDraftAction, generateDraftAction, saveDraftAction, type DraftState } from "./draft-actions";
+import {
+  discardDraftAction,
+  generateDraftAction,
+  restoreDraftAction,
+  saveDraftAction,
+  type DraftState,
+} from "./draft-actions";
 
 /**
  * The draft reply panel on a contact's page (plan.md §3.10;
@@ -201,9 +207,13 @@ export function DraftCard({
               <button type="submit" disabled={busy || !body.trim()} className={SOLID}>
                 {saving ? "Saving to Gmail…" : "Save to Gmail drafts"}
               </button>
-              <PendingButton formAction={discardDraftAction.bind(null, draft.id)} className={GHOST}>
-                Discard
-              </PendingButton>
+              {/* Slice 9b, Part 3: a draft cost money and a minute of waiting,
+                  and this sits next to Save with nothing in between. It is
+                  undoable now -- the row survives as `discarded` (migration
+                  0024) and Undo sends back the text this box was showing,
+                  because the row's own copy is cleared the moment you
+                  press. */}
+              <DiscardButton draftId={draft.id} body={body} disabled={busy} />
             </div>
           </form>
 
@@ -228,20 +238,47 @@ export function DraftCard({
   );
 }
 
-/** A pill that submits to one bound Server Action; disabled while the form is on its way. */
-function PendingButton({
-  formAction,
-  className,
-  children,
+/**
+ * Discard, with an Undo in the toast (slice 9b, Part 3).
+ *
+ * Outside the form on purpose: it is not a submit any more, so pressing it
+ * cannot carry the textarea to Gmail by accident, and the text it needs for
+ * the undo is the same `body` the box holds.
+ */
+function DiscardButton({
+  draftId,
+  body,
+  disabled,
 }: {
-  formAction: () => Promise<void>;
-  className: string;
-  children: React.ReactNode;
+  draftId: string;
+  body: string;
+  disabled: boolean;
 }) {
-  const { pending } = useFormStatus();
+  const toast = useToast();
+  const [pending, start] = useTransition();
+
   return (
-    <button type="submit" formAction={formAction} disabled={pending} className={className}>
-      {children}
+    <button
+      type="button"
+      disabled={disabled || pending}
+      onClick={() =>
+        start(async () => {
+          await discardDraftAction(draftId);
+          toast({
+            message: "Draft discarded.",
+            action: {
+              label: "Undo",
+              run: async () => {
+                const state = await restoreDraftAction(draftId, body);
+                if (state?.error) throw new Error(state.error);
+              },
+            },
+          });
+        })
+      }
+      className={GHOST}
+    >
+      {pending ? "Discarding…" : "Discard"}
     </button>
   );
 }

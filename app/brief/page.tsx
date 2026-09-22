@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
-import { NotNeededButton } from "@/app/not-needed-button";
+import { ConversationDoneButton } from "@/app/conversation-done-button";
 import { countPendingPromises } from "@/lib/ai/promise-list";
 import { CARD, EmptyCard } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
@@ -34,7 +34,7 @@ export const metadata = { title: `Your week · ${APP_NAME}` };
  *     read as five alarms.
  *   - Both buttons show on every row, where Main reveals Draft reply on hover.
  *     The brief exists to be acted on, and there are at most eight rows.
- *   - A third button, Not needed, settles the conversation the row is about
+ *   - A third button, Conversation done, settles the conversation the row is about
  *     (slice 6c). It is Calendar.dc.html's, from the card that suggests a
  *     follow-up — the one place a design says what "this needs nothing from
  *     me" looks like.
@@ -119,7 +119,7 @@ export default async function BriefPage() {
   return (
     <AppShell
       userEmail={user.email}
-      active="brief"
+      active="home"
       seenOnceCount={seenOnceResult.count ?? 0}
       headerRight={<SignOutButton />}
     >
@@ -240,7 +240,7 @@ function BriefRow({ entry }: { entry: BriefEntry<ContactRow> }) {
         </Link>
         {/* Nothing to settle when there is no thread — a row that is here
             because of a next touch on a contact with no mail. */}
-        {threadId && <NotNeededButton contactId={contact.id} threadId={threadId} />}
+        {threadId && <ConversationDoneButton contactId={contact.id} threadId={threadId} />}
       </div>
     </li>
   );

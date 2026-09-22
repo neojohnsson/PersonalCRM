@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { sourceNumbers } from "@/lib/ai/source-numbers";
 import { useFormStatus } from "react-dom";
 import {
   MAX_PART_CHARS,
@@ -336,6 +337,8 @@ function ApprovedSummary({
 
 /** The four parts, each with links to the emails it came from. */
 function Parts({ summary, gmailEmail }: { summary: SavedSummary; gmailEmail: string | null }) {
+  const numbers = sourceNumbers(summary.sources);
+
   return (
     <dl className="grid gap-x-6 gap-y-3 md:grid-cols-2">
       {SUMMARY_PARTS.map((part) => {
@@ -350,7 +353,7 @@ function Parts({ summary, gmailEmail }: { summary: SavedSummary; gmailEmail: str
               ) : (
                 <span className="text-[13px] leading-[1.55] text-ink-hush">Not in these emails</span>
               )}
-              {text && <Sources sources={sources} gmailEmail={gmailEmail} />}
+              {text && <Sources sources={sources} numbers={numbers} gmailEmail={gmailEmail} />}
             </dd>
           </div>
         );
@@ -389,6 +392,8 @@ function Suggestions({
     .filter((person) => person.status.kind !== "done" && person.plannedOn === null)
     .map((person) => person.name);
   const touchReason = allDone ? null : summary.suggested_touch_reason;
+  // The same numbering the parts above use: one "email 1" per page.
+  const numbers = sourceNumbers(summary.sources);
 
   if (fields.length === 0 && !touchReason && referred.length === 0) return null;
 
@@ -404,7 +409,7 @@ function Suggestions({
                 <span className="text-[13px] text-ink-body">
                   <span className="text-ink-muted">{label}:</span> {value}
                 </span>
-                <Sources sources={summary.sources[field] ?? []} gmailEmail={gmailEmail} />
+                <Sources sources={summary.sources[field] ?? []} numbers={numbers} gmailEmail={gmailEmail} />
               </div>
               {same ? (
                 <span className="text-[11.5px] font-medium text-ink-faint">Already on the contact</span>
@@ -457,7 +462,7 @@ function Suggestions({
                   Still to contact: {stillOpen.join(", ")}.
                 </span>
               )}
-              <Sources sources={summary.sources.next_touch ?? []} gmailEmail={gmailEmail} />
+              <Sources sources={summary.sources.next_touch ?? []} numbers={numbers} gmailEmail={gmailEmail} />
             </div>
             <Link href={`/contacts/${contact.id}?touch=${summary.id}#next-touch`} scroll={false} className={GHOST}>
               {contact.hasNextTouch ? "Replace next touch…" : "Fill in next touch"}
@@ -514,10 +519,24 @@ function ReferralLine({ name, status }: { name: string; status: ReferralStatus }
   }
 }
 
-/** "Sources: email 1, email 2" linking to Gmail, or "their address …" for one taken from an address. */
-function Sources({ sources, gmailEmail }: { sources: SourceRef[]; gmailEmail: string | null }) {
+/**
+ * "Sources: email 1, email 2" linking to Gmail, or "their address …" for one
+ * taken from an address.
+ *
+ * `numbers` is the whole summary's numbering (lib/ai/source-numbers.ts), so
+ * email 1 is the same message in every part. It counted from one per part
+ * until slice 9b, which made the numbers lie to anyone reading down the page.
+ */
+function Sources({
+  sources,
+  numbers,
+  gmailEmail,
+}: {
+  sources: SourceRef[];
+  numbers: Map<string, number>;
+  gmailEmail: string | null;
+}) {
   if (sources.length === 0) return null;
-  let emailNumber = 0;
   return (
     <span className="flex flex-wrap items-center gap-x-2 text-[11px] font-medium text-ink-faint">
       Sources:
@@ -532,7 +551,7 @@ function Sources({ sources, gmailEmail }: { sources: SourceRef[]; gmailEmail: st
             rel="noopener noreferrer"
             className="font-semibold text-ink-muted underline decoration-line-strong underline-offset-2 hover:text-ink"
           >
-            email {++emailNumber}
+            email {numbers.get(source.messageId) ?? "?"}
           </a>
         ),
       )}

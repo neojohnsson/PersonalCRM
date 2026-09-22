@@ -24,8 +24,25 @@ import { createClient } from "@/lib/supabase/server";
 
 const FOREIGN_KEY_VIOLATION = "23503";
 
-/** "Not needed": this conversation is finished, as of now. */
-export async function settleThread(contactId: string, threadId: string): Promise<void> {
+/**
+ * Whether the action refreshes the page it was called from.
+ *
+ * It always did, which is right for a form: press, and the page tells you how
+ * things stand. But a row that leaves the list the instant you press it slides
+ * the next row under your cursor, one click from being dismissed as well
+ * (slice 9b, Part 3). A caller that shows a toast with Undo passes
+ * `{ revalidate: false }` and refreshes once itself, when the undo is out of
+ * reach. The database is written either way -- this only decides when the
+ * screen catches up.
+ */
+export type ActionOptions = { revalidate?: boolean };
+
+/** "Conversation done": this conversation is finished, as of now. */
+export async function settleThread(
+  contactId: string,
+  threadId: string,
+  { revalidate = true }: ActionOptions = {},
+): Promise<void> {
   const user = await requireUser();
   if (!isUuid(contactId) || !threadId.trim()) notFound();
 
@@ -45,11 +62,15 @@ export async function settleThread(contactId: string, threadId: string): Promise
   if (error?.code === FOREIGN_KEY_VIOLATION) notFound();
   if (error) throw supabaseError(error, "Couldn't settle the thread");
 
-  refresh();
+  if (revalidate) refresh();
 }
 
 /** Undo: the conversation counts again from the message it was at. */
-export async function reopenThread(contactId: string, threadId: string): Promise<void> {
+export async function reopenThread(
+  contactId: string,
+  threadId: string,
+  { revalidate = true }: ActionOptions = {},
+): Promise<void> {
   const user = await requireUser();
   if (!isUuid(contactId) || !threadId.trim()) notFound();
 
@@ -62,11 +83,15 @@ export async function reopenThread(contactId: string, threadId: string): Promise
     .eq("thread_id", threadId);
   if (error) throw supabaseError(error, "Couldn't reopen the thread");
 
-  refresh();
+  if (revalidate) refresh();
 }
 
 /** "Just a contact": never prompted about, until you say otherwise. */
-export async function setNeverChase(contactId: string, neverChase: boolean): Promise<void> {
+export async function setNeverChase(
+  contactId: string,
+  neverChase: boolean,
+  { revalidate = true }: ActionOptions = {},
+): Promise<void> {
   const user = await requireUser();
   if (!isUuid(contactId)) notFound();
 
@@ -78,5 +103,5 @@ export async function setNeverChase(contactId: string, neverChase: boolean): Pro
     .eq("id", contactId);
   if (error) throw supabaseError(error, "Couldn't change how this contact is handled");
 
-  refresh();
+  if (revalidate) refresh();
 }

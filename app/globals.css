@@ -1,6 +1,14 @@
 @import "tailwindcss";
 
 /*
+ * Touch screens have no hover, so a row action that only appears on hover
+ * cannot be reached at all (slice 9b, Part 1 — the first outside test could
+ * not press Draft reply on a phone). `no-hover:` keeps those actions visible
+ * on any device that cannot hover, whatever its width.
+ */
+@custom-variant no-hover (@media (hover: none));
+
+/*
  * Palette lifted from the design canvas in design/. Kept as tokens so the
  * screens the design agent produces and the screens built here stay in step.
  */
@@ -92,6 +100,13 @@ html {
   /* Profile: an unselected radio's ring, and a switch that's off. */
   --color-radio-ring: #c5c7cc;
   --color-switch-off: #e4e4e1;
+
+  /* Deleting: the only red in the app. No design covers deletion, so this is
+     not lifted from one -- it is a red at the same depth as the accent
+     (#c2410c), so a destructive button reads as a warning rather than as
+     another primary action. Slice 9b, Part 2. */
+  --color-danger: #b42318;
+  --color-danger-dark: #912018;
 
   /* The left sidebar. */
   --color-rail-active: #303237;

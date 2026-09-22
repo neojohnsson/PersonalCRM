@@ -247,6 +247,35 @@ export async function getMessageMetadata(
   );
 }
 
+/**
+ * One thread's messages, headers and snippets (slice 9b, Part 4).
+ *
+ * format=metadata, and the same header list the sync uses -- so this asks
+ * Gmail for nothing the sync doesn't already ask for. What it adds is
+ * `snippet`, the ~200 characters Gmail itself shows in a mailbox list, which
+ * is the "first line" the contact page needs to be worth reading.
+ *
+ * Read while you look at a contact and never written down: no snippet reaches
+ * the database, which is the same rule the promise scan and the calendar's
+ * titles follow (docs/privacy.md).
+ *
+ * Gmail may leave `snippet` out. The timeline is built so that a row without
+ * one still says who wrote, when, and about what (lib/relationship/conversation.ts).
+ */
+export type GmailThread = {
+  id: string;
+  messages?: (GmailMessage & { snippet?: string })[];
+};
+
+export async function getThreadMetadata(accessToken: string, threadId: string): Promise<GmailThread> {
+  const params = new URLSearchParams({ format: "metadata" });
+  for (const header of METADATA_HEADERS) {
+    params.append("metadataHeaders", header);
+  }
+
+  return gmailGet<GmailThread>(accessToken, `/threads/${encodeURIComponent(threadId)}`, params);
+}
+
 /** One MIME part of a full message: the body, or a nested multipart. */
 export type GmailPart = {
   mimeType?: string;

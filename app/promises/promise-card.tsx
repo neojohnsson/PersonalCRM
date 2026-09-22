@@ -86,6 +86,8 @@ export function PromiseCard({ promise }: { promise: PendingPromise }) {
             Follow up
             <input
               type="date"
+              // Swedish order, as on the contact page (slice 9b, Part 6).
+              lang="sv"
               name="due_on"
               value={dueOn}
               onChange={(event) => setDueOn(event.target.value)}

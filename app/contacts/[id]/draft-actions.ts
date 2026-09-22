@@ -4,7 +4,14 @@ import { refresh } from "next/cache";
 import { notFound } from "next/navigation";
 import { AiNotConfigured } from "@/lib/ai/config";
 import { DraftContactNotFound, DraftsNotAllowed, generateDraft } from "@/lib/ai/draft";
-import { DraftNotFound, DraftsNotAllowedHere, discardDraft, saveDraftToGmail } from "@/lib/ai/draft-save";
+import {
+  DraftNotFound,
+  DraftsNotAllowedHere,
+  NewerDraftExists,
+  discardDraft,
+  restoreDraft,
+  saveDraftToGmail,
+} from "@/lib/ai/draft-save";
 import { TONES, type Tone } from "@/lib/ai/draft-types";
 import { OpenAiError, OpenAiNoAnswer } from "@/lib/ai/openai";
 import { NoThreadToReplyTo } from "@/lib/ai/reply";
@@ -83,6 +90,28 @@ export async function discardDraftAction(draftId: string): Promise<void> {
   refresh();
 }
 
+/**
+ * Undo of Discard (slice 9b, Part 3). `body` is the text the panel was
+ * showing when you pressed Discard, because the row's own copy was cleared
+ * then -- a discarded draft holds no message text (migration 0024).
+ */
+export async function restoreDraftAction(draftId: string, body: string): Promise<DraftState> {
+  const user = await requireUser();
+  if (!isUuid(draftId)) notFound();
+  if (typeof body !== "string" || !body.trim()) return { error: "There was no text to put back." };
+
+  try {
+    await restoreDraft(await createClient(), user.id, draftId, body);
+  } catch (error) {
+    const reason = explain(error);
+    if (reason === null) throw error;
+    return { error: reason };
+  }
+
+  refresh();
+  return { error: null };
+}
+
 /** The failures a person can act on, in plain words. None of them include email text. */
 function explain(error: unknown): string | null {
   if (error instanceof AiCapReached) {
@@ -93,6 +122,7 @@ function explain(error: unknown): string | null {
   }
   if (error instanceof NoThreadToReplyTo) return "There's no mail with this contact to reply to yet.";
   if (error instanceof DraftNotFound) return "That draft isn't waiting any more — it was saved or discarded elsewhere.";
+  if (error instanceof NewerDraftExists) return error.message;
   if (error instanceof AiNotConfigured) return "The AI isn't set up on this server: an OpenAI key is missing.";
   if (error instanceof GmailReconnectRequired) return "Gmail access has expired. Reconnect Gmail, then try again.";
   if (error instanceof OpenAiNoAnswer) return "The AI gave no usable answer, so nothing was saved. Try again.";

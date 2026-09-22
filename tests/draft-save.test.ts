@@ -4,10 +4,12 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import {
   DraftNotFound,
   DraftsNotAllowedHere,
+  NewerDraftExists,
   discardDraft,
   gmailDraftsUrl,
   lastSavedDraft,
   pendingDraft,
+  restoreDraft,
   saveDraftToGmail,
 } from "@/lib/ai/draft-save";
 import { GmailApiError } from "@/lib/google/gmail";
@@ -286,5 +288,80 @@ describe("saveDraftToGmail", () => {
     const id = await makePending();
     await discardDraft(db, alice.id, id);
     expect(await pendingDraft(db, alice.id, karinId)).toBeNull();
+  });
+
+  /**
+   * Slice 9b, Part 3 (migration 0024): Discard sat next to Save with nothing
+   * in between, and a draft costs money and a minute of waiting.
+   */
+  describe("undoing a discard", () => {
+    it("keeps the row, throws the text away, and puts back what the browser had", async () => {
+      fakeGmail();
+      const id = await makePending();
+
+      await discardDraft(db, alice.id, id);
+
+      // The row is still there, marked discarded, holding no message text.
+      const { data: row } = await db
+        .from("contact_drafts")
+        .select("status, body, discarded_at, model")
+        .eq("id", id)
+        .single();
+      expect(row!.status).toBe("discarded");
+      expect(row!.body).toBeNull();
+      expect(row!.discarded_at).not.toBeNull();
+      // What it cost and which model wrote it are still recorded.
+      expect(row!.model).toBeTruthy();
+
+      await restoreDraft(db, alice.id, id, "Hej Karin, det text\u00adrutan hade.");
+
+      const back = await pendingDraft(db, alice.id, karinId);
+      expect(back).toMatchObject({ id, body: "Hej Karin, det text\u00adrutan hade." });
+      const { data: after } = await db.from("contact_drafts").select("discarded_at").eq("id", id).single();
+      expect(after!.discarded_at).toBeNull();
+    });
+
+    it("refuses to put back nothing at all", async () => {
+      fakeGmail();
+      const id = await makePending();
+      await discardDraft(db, alice.id, id);
+
+      await expect(restoreDraft(db, alice.id, id, "   ")).rejects.toBeInstanceOf(DraftNotFound);
+    });
+
+    it("won't restore twice, and won't restore what was never discarded", async () => {
+      fakeGmail();
+      const id = await makePending();
+
+      // Never discarded: there is nothing to put back.
+      await expect(restoreDraft(db, alice.id, id, "Hej")).rejects.toBeInstanceOf(DraftNotFound);
+
+      await discardDraft(db, alice.id, id);
+      await restoreDraft(db, alice.id, id, "Hej");
+      await expect(restoreDraft(db, alice.id, id, "Hej again")).rejects.toBeInstanceOf(DraftNotFound);
+    });
+
+    it("says so when a newer draft has been written since", async () => {
+      // One pending draft per contact (migration 0014), so this cannot happen
+      // -- and the toast has to say why rather than swallow it.
+      fakeGmail();
+      const first = await makePending();
+      await discardDraft(db, alice.id, first);
+      const second = await makePending();
+
+      await expect(restoreDraft(db, alice.id, first, "the old one")).rejects.toBeInstanceOf(NewerDraftExists);
+      expect(await pendingDraft(db, alice.id, karinId)).toMatchObject({ id: second });
+    });
+
+    it("lets nobody else put your discarded draft back", async () => {
+      fakeGmail();
+      const id = await makePending();
+      await discardDraft(db, alice.id, id);
+
+      for (const userId of [bob.id, alice.id]) {
+        await expect(restoreDraft(bobDb, userId, id, "attacker")).rejects.toBeInstanceOf(DraftNotFound);
+      }
+      expect(await pendingDraft(db, alice.id, karinId)).toBeNull();
+    });
   });
 });

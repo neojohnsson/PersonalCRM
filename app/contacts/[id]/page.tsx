@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/app/app-shell";
-import { DisconnectGmailButton } from "@/app/disconnect-gmail-button";
 import { SignOutButton } from "@/app/sign-out-button";
 import { APP_NAME } from "@/lib/app-config";
 import { AiNotConfigured, aiConfig, monthlyCapUsd } from "@/lib/ai/config";
@@ -21,6 +20,8 @@ import {
   standingPill,
   type TurnPill,
 } from "@/lib/relationship/describe";
+import { suggestName } from "@/lib/contacts/name-suggestion";
+import { conversation, type StoredMessage } from "@/lib/relationship/conversation";
 import { loadRelationship, type Relationship } from "@/lib/relationship/load";
 import { wholeDaysBetween } from "@/lib/relationship/whose-turn";
 import { standingOf } from "@/lib/relationship/standing";
@@ -32,8 +33,10 @@ import type { ReferredStatus } from "./summary-card";
 import type { Band } from "@/lib/relationship/warmth";
 import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
-import { DismissContact } from "./dismiss-contact";
-import { StandingActions } from "./standing-actions";
+import { ContactMenu } from "./contact-menu";
+import { ConversationCard } from "./conversation-card";
+import { NameSuggestionRow } from "./name-suggestion-row";
+import { HeaderDraftButton } from "./header-draft-button";
 import { DraftCard } from "./draft-card";
 import { NextTouchCard } from "./next-touch-card";
 import { SummaryCard, type AiBudget } from "./summary-card";
@@ -56,14 +59,14 @@ export const metadata = { title: `Contact · ${APP_NAME}` };
  *     empty stat cards.
  *   - The relationship summary card (slice 4) has no design; it's built from
  *     this page's own cards, and says so in app/contacts/[id]/summary-card.tsx.
- *   - The design's "Draft reply" button is here as the header's second action
- *     (slice 5a); it jumps to the draft panel below, which has no design
- *     either (app/contacts/[id]/draft-card.tsx).
- *   - "Draft reply" is slice 5. Its place holds Edit, the one action slice 2 has;
- *     the "···" menu has nothing to hold yet and is left out.
- *   - A "Dismiss" button beside Edit, with a confirm card (./dismiss-contact.tsx).
- *     No design has it; it only shows for a contact with an address, because
- *     dismissing is about skipping someone's mail.
+ *   - The header is the design's three controls as of slice 9b: the standing
+ *     pill, the "···" menu (./contact-menu.tsx) and Draft reply
+ *     (./header-draft-button.tsx). Everything else it had grown -- Edit,
+ *     Nothing owed here, Just a contact, Export, Dismiss -- is in the menu,
+ *     in plain words. Draft reply writes a draft rather than jumping to the
+ *     panel, and is absent when no draft is possible instead of sitting there
+ *     black and dead. The panel it fills has no design of its own
+ *     (./draft-card.tsx).
  *   - plan.md §3.2's "one line on what they do" and "how you know them" have no
  *     place in the design: the first sits under role · company, the second in
  *     the notes card.
@@ -203,7 +206,19 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
   const pill = standingPill(standing);
   const openThreadId = relationship.turn.kind === "none" ? null : relationship.turn.threadId;
 
+  // Whether a draft can be written at all. The panel below works this out
+  // for its own disabled state and its "why not" line; the header button is
+  // absent instead, so the same four facts decide both.
+  const canDraftNow =
+    budget.ready &&
+    canDraft(gmailScopes) &&
+    relationship.messageCount > 0 &&
+    budget.capUsd - budget.spentUsd >= 0.01;
+
   const name = displayName({ ...contact, primary_email: emails[0] ?? null });
+  // Slice 9b, Part 5: "Jönsson Linda", or no name at all and an address that
+  // has one in it. Suggested, never applied (plan.md §5.2).
+  const nameSuggestion = suggestName({ ...contact, primary_email: emails[0] ?? null });
   const hasName = Boolean(contact.first_name?.trim() || contact.last_name?.trim());
   const workLine = [contact.role, contact.company].filter(Boolean).join(" · ");
   const edited = new Date(contact.updated_at).getTime() - new Date(contact.created_at).getTime() > 2_000;
@@ -218,10 +233,7 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
     <AppShell
       userEmail={user.email}
       headerRight={
-        <>
-          {gmailResult.data && <DisconnectGmailButton />}
-          <SignOutButton />
-        </>
+<SignOutButton />
       }
     >
       <main className="flex flex-1 flex-col gap-5 px-4 pt-2.5 pb-7 sm:px-[30px]">
@@ -253,6 +265,10 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
               )}
             </div>
 
+            {nameSuggestion && (
+              <NameSuggestionRow contactId={contact.id} suggestion={nameSuggestion} shownAs={name} />
+            )}
+
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
               {emails.map((email) => (
                 <a key={email} href={`mailto:${email}`} className="flex min-w-0 items-center gap-[7px] text-[12.5px] text-ink-muted hover:text-ink">
@@ -272,10 +288,18 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
                 </a>
               )}
               {contact.tags.length > 0 && (
+                // Slice 9b, Part 6: the same chips filter the list when you
+                // press them there, and did nothing here. Now they do the same
+                // thing in both places.
                 <ul className="flex flex-wrap gap-[5px]" aria-label="Tags">
                   {(contact.tags as string[]).map((tag) => (
-                    <li key={tag} className="rounded-full bg-chip px-2.5 py-[3px] text-[11px] font-semibold text-ink-soft">
-                      {tag}
+                    <li key={tag}>
+                      <Link
+                        href={`/contacts?tag=${encodeURIComponent(tag)}`}
+                        className="block rounded-full bg-chip px-2.5 py-[3px] text-[11px] font-semibold text-ink-soft transition-colors hover:bg-chip-track hover:text-ink"
+                      >
+                        {tag}
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -283,46 +307,37 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
             </div>
           </div>
 
-          <div className="flex shrink-0 flex-wrap items-center gap-[9px] pt-1">
+          {/* Slice 9b, Part 2: the design's own header, which is three
+              things -- the standing pill, the "..." menu and Draft reply. It
+              had grown to seven controls, and `shrink-0` on this row meant
+              the flex-wrap never wrapped: 872px of page at a 390px width. */}
+          <div className="flex flex-wrap items-center gap-[9px] pt-1">
             {pill && <TurnPillBadge pill={pill} />}
-            <Link
-              href={`/contacts/${id}/edit`}
-              className="flex items-center gap-2 rounded-full bg-white px-[18px] py-2.5 text-[13px] font-semibold text-ink-body shadow-[0_1px_2px_rgba(20,20,25,.05)] transition hover:text-ink"
-            >
-              <PencilIcon className="size-[15px]" />
-              Edit
-            </Link>
-            {/* design/ContactDetail.dc.html's primary action. It jumps to the panel
-                below, where the draft is written, read and saved. */}
-            <Link
-              href="#draft"
-              scroll
-              className="flex items-center gap-2 rounded-full bg-ink-deep px-[18px] py-2.5 text-[13px] font-semibold text-white transition hover:bg-ink/85"
-            >
-              <PencilIcon className="size-[15px]" />
-              Draft reply
-            </Link>
-            <StandingActions
+            <ContactMenu
               contactId={contact.id}
+              name={name}
               threadId={openThreadId}
               settled={standing.kind === "settled"}
               neverChase={relationship.neverChase}
+              canDelete={emails.length > 0}
             />
-            {/* Slice 7: the copy you hand over when the person asks what you
-                hold on them (plan.md §5.2). A plain link, because the answer
-                is a file the browser saves. */}
-            <a
-              href={`/contacts/${id}/export`}
-              title="Everything this app holds about them, as a file"
-              className="rounded-full bg-line-soft px-[18px] py-2.5 text-[13px] font-semibold text-ink-body transition-colors hover:bg-chip-track"
-            >
-              Export
-            </a>
-            {emails.length > 0 && <DismissContact contactId={contact.id} name={name} />}
+            {canDraftNow && <HeaderDraftButton contactId={contact.id} hasDraft={draft !== null} />}
           </div>
         </div>
 
         <StatStrip relationship={relationship} hasEmails={emails.length > 0} />
+
+        {/* Slice 9b, Part 4: the messages themselves. The rows are stored
+            metadata, so they are on screen with the rest of the page; the card
+            asks Gmail for the first lines itself, once it is on screen. */}
+        {thread && thread.messages.length > 0 && (
+          <ConversationCard
+            entries={conversation(thread.messages)}
+            threadId={thread.id}
+            total={relationship.messageCount}
+            gmailLink={gmailLink}
+          />
+        )}
 
         <DraftCard
           // A new key when the draft changes, so the panel's text box starts
@@ -362,9 +377,16 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
           <section className={`${CARD} flex min-w-0 flex-1 flex-col gap-[11px] px-[22px] py-[18px]`}>
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Your notes</h2>
-              <span className="text-[11.5px] font-semibold text-ink-faint">
-                {edited ? "Edited" : "Added"} {dayMonth(contact.updated_at)}
-              </span>
+              {/* Slice 9b, Part 6: this is the CONTACT's updated_at, not the
+                  note's, and it sat above "No notes yet." saying "Edited 17
+                  September" -- edited what? There is no timestamp on the note
+                  itself, so it is only shown when there is a note to have
+                  edited, and it says which record it is about. */}
+              {contact.notes && (
+                <span className="text-[11.5px] font-semibold text-ink-faint">
+                  Contact {edited ? "edited" : "added"} {dayMonth(contact.updated_at)}
+                </span>
+              )}
             </div>
 
             {contact.notes ? (
@@ -463,6 +485,8 @@ type Thread = {
   messageCount: number;
   lastFrom: "you" | "them";
   lastAt: string;
+  /** Its messages, metadata only -- what "Every touch" is built from (Part 4). */
+  messages: StoredMessage[];
 };
 
 /** The most recent thread with any of the contact's addresses, and who wrote last in it. */
@@ -486,10 +510,11 @@ async function latestThread(
 
   const { data: messages, error: messagesError } = await supabase
     .from("gmail_messages")
-    .select("direction, internal_date")
+    .select("gmail_message_id, direction, internal_date, subject, from_name, from_email")
     .eq("user_id", userId)
     .eq("thread_id", latest.last_thread_id)
-    .order("internal_date", { ascending: false });
+    .order("internal_date", { ascending: false })
+    .returns<StoredMessage[]>();
   if (messagesError) throw supabaseError(messagesError, "Couldn't load the latest thread");
   if (messages.length === 0) return null;
 
@@ -499,6 +524,7 @@ async function latestThread(
     messageCount: messages.length,
     lastFrom: messages[0].direction === "outbound" ? "you" : "them",
     lastAt: messages[0].internal_date,
+    messages,
   };
 }
 
