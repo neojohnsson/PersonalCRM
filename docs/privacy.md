@@ -161,7 +161,7 @@ confirm.** Deleting the stored row would only make this app forget the token whi
 went on honouring it. A failure leaves the account entirely intact and says to remove the
 app at `myaccount.google.com/permissions` and try again.
 
-### The calendar, from slice 8
+### The calendar, from slice 8 — and writing to it, from slice 10
 
 Only the start, the end, the title and the guest addresses of an event are read, and only
 meetings with someone already in your contacts are stored — as the date and which contact it
@@ -169,8 +169,27 @@ was. No titles are stored: a title is read while the calendar page draws the wee
 thrown away with the request, the same way a message body is. Descriptions and attachments
 are never asked for at all, so Google does not send them.
 
-Nothing in the calendar is ever created, changed or deleted, because the app never asks for a
-write permission. `tests/calendar-scopes.test.ts` fails if any code starts asking.
+**Slice 8 said nothing in the calendar would ever be created, because the app never asked for
+a write permission. Slice 10 changed that, at the user's request (2026-09-22).** The app now
+asks for `calendar.events` as well, and creates an event when you fill in the Create event
+form and press the button. What that does and does not mean:
+
+- **Nothing is created without a press.** There is no scheduled or background write, and no AI
+  path that skips the form. "A suggestion, never a silent calendar entry" (`plan.md` §3.4).
+- **No guests, ever.** A guest list makes Google email an invitation to each guest, which is
+  the app causing mail to reach a person — the thing the send rule exists to prevent. The one
+  file that writes has no field for a guest, and `tests/calendar-scopes.test.ts` fails if any
+  other file learns to write at all.
+- **Nothing is changed or deleted.** `calendar.events` permits both. No code does either, the
+  test bans the API paths for update, delete, quickAdd and import, and moving or cancelling an
+  event is done in Google Calendar.
+- **No description is written**, for the same reason none is read.
+
+The scope is the honest cost of this: `calendar.events` grants the ability to edit any event
+you have, not only the ones this app made. The narrower `calendar.app.created` — which can
+only touch a calendar the app itself created — was offered and declined, because it would put
+these events on a separate calendar rather than the one you actually look at
+(`docs/slice-10-plan.md`).
 
 ### Body retention: not built, on purpose
 

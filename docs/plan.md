@@ -75,7 +75,7 @@ Straight from your Notion list, plus what the sheet you already built by hand ne
 
 - **Next contact date + a reason** ("said to check back after the budget in October").
 - Snooze, skip, mark done.
-- **Promise and deadline detection** — the AI reads a thread and proposes "follow up after September 20" as a *suggested* date you confirm. Suggestion, never a silent calendar entry.
+- **Promise and deadline detection** — the AI reads a thread and proposes "follow up after September 20" as a *suggested* date you confirm. Suggestion, never a silent calendar entry. _Still true after slice 10, which can write to the calendar: the writing happens when you fill in a form and press Create, never on its own._
 - **Suggested dates when the emails give none** (added 2026-09-17, the user's request) — the AI names the kind of timing and why ("a referral: follow up soon"), and plain rules in code turn that into a date, skipping weekends. Same case, same date; the form still decides.
 - **Referrals checked against your own mail** (added 2026-09-17) — "Martin referred you to Niklas Hedlund": the AI picks out the referral, and code — not the AI — checks whether you've written to Niklas since. Done → no touch; not done → "Contact Niklas Hedlund (Martin's referral)". Other contacts' mail is never sent to the AI for this. _Built early, 2026-09-17 (branch `referral-check`): a referral named in a summary is checked each time the contact page opens._
 - Overdue list on the front page.
@@ -287,7 +287,7 @@ Weekly brief, promise/deadline detection across every thread (the referral check
 Privacy page, export, real deletion, the written-up compliance decision. Then record a 90-second demo.
 
 **Slice 8 — the calendar** _(scheduled 2026-09-20; was idea 4 in §6)_
-The strongest warmth signal there is, and the one thing the next-touch date rules were built for and never had. Split in two: **8a** the signal — a separate read-only Google Calendar connection, meetings with contacts counted toward warmth, dates that skip a day you are full and a person you are about to see; **8b** the page, from `design/Calendar.dc.html`. No AI anywhere in it. Plan: `docs/slice-8-plan.md`.
+The strongest warmth signal there is, and the one thing the next-touch date rules were built for and never had. Split in two: **8a** the signal — a separate read-only Google Calendar connection, meetings with contacts counted toward warmth, dates that skip a day you are full and a person you are about to see; **8b** the page, from `design/Calendar.dc.html`. No AI anywhere in it. Plan: `docs/slice-8-plan.md`. _The read-only half of that was reversed by slice 10 on 2026-09-22: the app can create an event now, never with guests and never without a press._
 
 **Slice 9 — what the first real test found** _(added 2026-09-21)_
 The first end-to-end test by somebody who had not built the app, against the real mailbox. **9a** the logic: one answer to "who needs you" on every screen, auto-replies that are not people waiting, waiting-on-them touches that offer no draft. **9b** the interface: mobile navigation, the contact header, undo, the thread timeline, names, a real 404. Plans: `docs/slice-9a-plan.md`, `docs/slice-9b-plan.md`.

@@ -173,3 +173,61 @@ describe("what Google actually granted", () => {
     expect(parseGrantedScopes(undefined)).toEqual([]);
   });
 });
+
+/**
+ * Slice 10, decision 5: every screen and document that promised read-only is
+ * corrected in the same slice as the change. Slice 8b spent a day with a
+ * privacy page and a piece of code that disagreed, and this is that lesson
+ * written as a test.
+ */
+describe("what the app says about the calendar", () => {
+  const SENTENCES_THAT_ARE_NO_LONGER_TRUE = [
+    "cannot create, change or delete anything in your calendar",
+    "no event is ever created or changed",
+    "Nothing in the calendar is ever created, changed or deleted",
+    "view events and nothing else",
+    "asks for permission to view events",
+    "there never will be",
+  ];
+
+  it("no longer says it cannot create an event", () => {
+    const pages = SOURCE_DIRS.flatMap(sourceFiles).concat([
+      join("docs", "privacy.md"),
+      join("docs", "plan.md"),
+    ]);
+
+    const offenders = pages.flatMap((file) => {
+      const raw = readFileSync(file, "utf8");
+      // A code comment quoting the sentence it replaced is how this project
+      // keeps its history -- it is the screen's own words that must not say
+      // it. Markdown has no comments, so only source is stripped.
+      const source = file.endsWith(".md")
+        ? raw
+        : raw.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+
+      return SENTENCES_THAT_ARE_NO_LONGER_TRUE.filter((sentence) => source.includes(sentence)).map(
+        (sentence) => `${file}: "${sentence}"`,
+      );
+    });
+
+    expect(offenders).toEqual([]);
+  });
+
+  it("says on the consent screen what creating an event does and does not do", () => {
+    const connect = readFileSync(join("app", "connect", "page.tsx"), "utf8");
+
+    // The screen where you grant a permission is the last place that may
+    // describe an old one.
+    expect(connect).toContain("never with guests");
+    expect(connect).toMatch(/editing and deleting/i);
+  });
+
+  it("says the same thing in the privacy document", () => {
+    const privacy = readFileSync(join("docs", "privacy.md"), "utf8");
+
+    expect(privacy).toContain("No guests, ever.");
+    expect(privacy).toContain("Nothing is created without a press.");
+    // And names the scope's real cost rather than only its use.
+    expect(privacy).toContain("calendar.app.created");
+  });
+});

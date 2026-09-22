@@ -33,7 +33,10 @@ None of this uses AI. It is plain computation, like whose turn it is and warmth.
 
 ### Rules
 
-- **Read-only.** Ask for the smallest Google scope that is enough
+- **Read-only.** Ask for the smallest Google scope that is enough _(slice 10 added
+  `calendar.events` so the app can create an event you fill in: `docs/slice-10-plan.md`. The
+  principle stands -- it is still the smallest scope that does the job, and the one narrower
+  option was offered to the user and declined for a reason written down there.)_
   (`calendar.events.readonly`, or `calendar.readonly` if listing calendars turns
   out to need it). Check the current scope names before building.
 - **Read** the start time, end time, title and guest email addresses. **Don't

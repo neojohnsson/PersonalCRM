@@ -223,11 +223,23 @@ export default async function ConnectPage({
             Only meetings with someone already in your contacts are stored, as the date and
             which contact it was. No titles, no other guests.
           </Item>
+          {/* Slice 10 (2026-09-22) reversed slice 8's "view and nothing
+              else". This is the correction, in the same slice as the change:
+              the screen where you grant a permission is the last place that
+              may describe an old one. */}
           <Callout icon="info">
-            This app asks for permission to <strong>view</strong> events and nothing else. It
-            cannot create, change or delete anything in your calendar, because it never asks
-            for the permission that would allow it. A follow-up date stays a date inside this
-            app.
+            This app asks to <strong>view</strong> events, and &mdash; since it can now put
+            things in your calendar &mdash; to <strong>create</strong> them. It creates one only
+            when you fill in the form and press the button, <strong>never with guests</strong>,
+            because a guest list makes Google email an invitation and this app never causes mail
+            to reach anybody. It changes and deletes nothing: moving or cancelling an event is
+            done in Google Calendar.
+          </Callout>
+          <Callout icon="info">
+            Worth knowing, as with drafts: the permission Google grants for creating events also
+            technically allows <strong>editing and deleting</strong> any event you have. No code
+            here does either, a test fails if that changes, and you are told rather than left to
+            read it on the next screen.
           </Callout>
 
           {calendar ? (

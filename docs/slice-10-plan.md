@@ -106,16 +106,18 @@ records that — so no migration. The pages read it:
 
 ## Done when — a test proves it, not when it renders
 
-- [ ] `REQUESTED_CALENDAR_SCOPES` is those three, pinned exactly, and the other five write
+- [x] `REQUESTED_CALENDAR_SCOPES` is those three, pinned exactly, and the other five write
       scopes appear nowhere
-- [ ] No source file can add a guest, send an invitation, update, delete, quick-add or import
-      an event — each its own case
-- [ ] An event is created on the primary calendar with no `attendees` and `sendUpdates=none`,
+- [x] No source file can add a guest, send an invitation, update, delete, quick-add or import
+      an event — each its own case, and one file only may POST to the Calendar API at all
+- [x] An event is created on the primary calendar with no `attendees` and `sendUpdates=none`,
       proved against a faked Google (the pattern of `tests/calendar-read.test.ts`)
-- [ ] The Create buttons are absent until the calendar is reconnected with the write scope
+- [x] The Create buttons are absent until the calendar is reconnected with the write scope
+      — checked in the browser against the real read-only connection
 - [ ] Two users: neither can create an event on the other's calendar
-- [ ] Not one screen or document still says the calendar is read-only
-- [ ] The new event appears on `/calendar` after the next read
+- [x] Not one screen or document still says the calendar is read-only — a test lists the
+      sentences that stopped being true and fails if any screen still carries one
+- [ ] The new event appears on `/calendar` after the next read — needs the re-consent
 
 ## Not in this slice
 

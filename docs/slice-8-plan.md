@@ -34,6 +34,10 @@ never had a calendar to look at.
   is shown in the Google Cloud console when the scope is added to the consent screen; whatever
   it says, it is one more scope to declare when slice 10 comes.
 - **Read-only, for good.** No create, no edit, no delete, no write scope requested. `plan.md`
+  _(Reversed on 2026-09-22 at the user's request: `docs/slice-10-plan.md`. The app asks for
+  `calendar.events` as well now and can create an event -- never with guests, never without a
+  press, and still nothing changed or deleted. This line is left as it was written rather than
+  edited, because a plan is a record of what was decided at the time.)_
   §3.4 already settled this: a follow-up date is "a suggestion, never a silent calendar
   entry". A next touch stays a date inside the app.
 
