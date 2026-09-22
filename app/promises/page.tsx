@@ -59,7 +59,7 @@ export default async function PromisesPage() {
   return (
     <AppShell
       userEmail={user.email}
-      active="promises"
+      active="home"
       seenOnceCount={seenOnceResult.count ?? 0}
       headerRight={<SignOutButton />}
     >

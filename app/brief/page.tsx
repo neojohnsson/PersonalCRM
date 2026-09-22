@@ -119,7 +119,7 @@ export default async function BriefPage() {
   return (
     <AppShell
       userEmail={user.email}
-      active="brief"
+      active="home"
       seenOnceCount={seenOnceResult.count ?? 0}
       headerRight={<SignOutButton />}
     >

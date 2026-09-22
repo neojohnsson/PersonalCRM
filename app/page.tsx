@@ -266,6 +266,19 @@ export default async function Home() {
             </section>
           </div>
         </div>
+
+        {/* Slice 9b, Part 7: Your week and Promises left the rail, so Home is
+            the way in until the Assistant's cards replace them. The Monday
+            card above only shows on a Monday; these two work every day. */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-1 text-[12px] font-medium text-ink-faint">
+          <span>Also here, until the Assistant replaces them:</span>
+          <Link href="/brief" className="font-semibold text-ink-soft transition-colors hover:text-ink">
+            Your week
+          </Link>
+          <Link href="/promises" className="font-semibold text-ink-soft transition-colors hover:text-ink">
+            Promises
+          </Link>
+        </div>
       </main>
     </AppShell>
   );
