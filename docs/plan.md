@@ -289,10 +289,19 @@ Privacy page, export, real deletion, the written-up compliance decision. Then re
 **Slice 8 — the calendar** _(scheduled 2026-09-20; was idea 4 in §6)_
 The strongest warmth signal there is, and the one thing the next-touch date rules were built for and never had. Split in two: **8a** the signal — a separate read-only Google Calendar connection, meetings with contacts counted toward warmth, dates that skip a day you are full and a person you are about to see; **8b** the page, from `design/Calendar.dc.html`. No AI anywhere in it. Plan: `docs/slice-8-plan.md`.
 
-**Slice 9 — web research** _(added 2026-09-17; was slice 8)_
+**Slice 9 — what the first real test found** _(added 2026-09-21)_
+The first end-to-end test by somebody who had not built the app, against the real mailbox. **9a** the logic: one answer to "who needs you" on every screen, auto-replies that are not people waiting, waiting-on-them touches that offer no draft. **9b** the interface: mobile navigation, the contact header, undo, the thread timeline, names, a real 404. Plans: `docs/slice-9a-plan.md`, `docs/slice-9b-plan.md`.
+
+**Slice 10 — the calendar can be written to** _(decided 2026-09-22)_
+Reverses slice 8's read-only calendar at the user's request: `calendar.events` on a re-consent, a Create event button on the calendar page and on a contact, **never with guests** — a guest list makes Google email an invitation, which is the app causing mail to reach a person. The read-only test narrows rather than disappearing, and every page that promises read-only in writing is corrected in the same slice. `docs/assistant-plan.md`, Slice A.
+
+**Slice 11 — the Assistant** _(decided 2026-09-22)_
+A workspace at `/assistant`: cards built from what the app already computes, a chat box underneath, and an AI that does the safe reversible things on its own and asks for a draft, an event or an expensive read. Replaces Your week and Promises in the sidebar and then deletes both pages. Behind one boolean, because it is what a **premium** plan would charge for. Amends the "every AI output waits for approval" rule deliberately, and says so. `docs/assistant-plan.md`, Slice B.
+
+**Slice 12 — web research** _(added 2026-09-17; was slice 8, then 9)_
 §3.11 as written: a "research this person" button, one contact at a time, public web search only, every fact with its source link, dated, pending until approved. Never LinkedIn, never data brokers. Behind a **per-user setting**, so a paid plan can switch it on later without rebuilding it. Can also feed drafts and summaries — still one click, still sources.
 
-**Slice 10 — release, with plans** _(added 2026-09-17; was slice 9; only if the project goes public)_
+**Slice 13 — release, with plans** _(added 2026-09-17; was slice 9, then 10; only if the project goes public)_
 What letting strangers sign in with Gmail actually takes:
 - **Google OAuth verification and the yearly CASA security assessment** for restricted Gmail scopes (§5.1) — the biggest cost and the reason the app is in testing mode today.
 - **Plans**: for example Free (sync, whose turn, warmth, next touch), Pro (AI summaries and drafts, a higher monthly cap), Premium (web research). The monthly AI cap and the per-user settings already built are what plans switch.
