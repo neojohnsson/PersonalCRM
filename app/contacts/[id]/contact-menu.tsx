@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useFormStatus } from "react-dom";
 import { reopenThread, setNeverChase, settleThread } from "@/app/relationship-actions";
+import { useToast } from "@/app/toasts";
 import { dismissContact } from "./actions";
 
 /**
@@ -101,8 +102,10 @@ export function ContactMenu({
               </Link>
 
               {threadId && (
-                <MenuForm
-                  action={(settled ? reopenThread : settleThread).bind(null, contactId, threadId)}
+                <MenuAction
+                  run={() => (settled ? reopenThread : settleThread)(contactId, threadId)}
+                  undo={() => (settled ? settleThread : reopenThread)(contactId, threadId)}
+                  done={settled ? "The conversation counts again." : "Conversation marked done."}
                   idle={settled ? "Count this conversation again" : "Mark this conversation done"}
                   busy={settled ? "Reopening…" : "Marking…"}
                   note={
@@ -110,11 +113,14 @@ export function ContactMenu({
                       ? "You marked it done, so nobody is waiting. Press to count it again."
                       : "Nothing more is owed here, so it stops asking you about it."
                   }
+                  onRan={() => setView("closed")}
                 />
               )}
 
-              <MenuForm
-                action={setNeverChase.bind(null, contactId, !neverChase)}
+              <MenuAction
+                run={() => setNeverChase(contactId, !neverChase)}
+                undo={() => setNeverChase(contactId, neverChase)}
+                done={neverChase ? "Reminders are on again." : "Reminders off for this person."}
                 idle={neverChase ? "Start reminding me again" : "Stop reminding me about this person"}
                 busy="Saving…"
                 note={
@@ -122,6 +128,7 @@ export function ContactMenu({
                     ? "Reminders are off. The contact stays, and days you set yourself still show."
                     : "Keeps the contact, and never puts them on Home or in a brief."
                 }
+                onRan={() => setView("closed")}
               />
 
               {/* Slice 7: the copy you hand over when the person asks what you
@@ -172,30 +179,49 @@ const LINE_INK = `${LINE} text-ink`;
 const LINE_DANGER = `${LINE} text-danger`;
 const NOTE = "text-[11.5px] leading-[1.45] text-ink-soft";
 
-/** One menu row that is a Server Action, with its own pending label. */
-function MenuForm({
-  action,
+/**
+ * One menu row that runs a Server Action and then offers Undo (slice 9b,
+ * Part 3). Both rows that use it change one column of one row, and both have
+ * had their opposite since slice 6c -- the toast just puts it within reach.
+ *
+ * Unlike a row on Home, this page refreshes straight away: it is about this
+ * one contact, and the pill by their name would otherwise say the old thing
+ * for eight seconds. Undo refreshes again.
+ */
+function MenuAction({
+  run,
+  undo,
+  done,
   idle,
   busy,
   note,
+  onRan,
 }: {
-  action: () => Promise<void>;
+  run: () => Promise<void>;
+  undo: () => Promise<void>;
+  /** What the toast says once it has happened. */
+  done: string;
   idle: string;
   busy: string;
   note: string;
+  onRan: () => void;
 }) {
-  return (
-    <form action={action}>
-      <MenuSubmit idle={idle} busy={busy} note={note} />
-    </form>
-  );
-}
-
-function MenuSubmit({ idle, busy, note }: { idle: string; busy: string; note: string }) {
-  const { pending } = useFormStatus();
+  const toast = useToast();
+  const [pending, start] = useTransition();
 
   return (
-    <button type="submit" disabled={pending} className={`${ITEM} disabled:cursor-default disabled:opacity-60`}>
+    <button
+      type="button"
+      disabled={pending}
+      onClick={() =>
+        start(async () => {
+          await run();
+          onRan();
+          toast({ message: done, action: { label: "Undo", run: undo } });
+        })
+      }
+      className={`${ITEM} disabled:cursor-default disabled:opacity-60`}
+    >
       <span className={LINE_INK}>{pending ? busy : idle}</span>
       <span className={NOTE}>{note}</span>
     </button>

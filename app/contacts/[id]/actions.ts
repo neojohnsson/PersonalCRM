@@ -4,16 +4,21 @@ import { refresh } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { isUuid } from "@/lib/contacts/contact-form";
-import { todayIn } from "@/lib/relationship/dates";
+import { daysBetweenDates, isIsoDate, todayIn } from "@/lib/relationship/dates";
 import {
+  MAX_DAYS_AHEAD,
+  NewerTouchExists,
   NextTouchNotFound,
   finishNextTouch,
+  moveNextTouch,
+  openNextTouchById,
   parseNextTouchForm,
+  reopenNextTouch,
   setNextTouch,
-  snoozeNextTouch,
   type NextTouchErrors,
   type NextTouchValues,
 } from "@/lib/relationship/next-touch";
+import { snoozeDate } from "@/lib/relationship/snooze";
 import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 
@@ -68,14 +73,79 @@ export async function saveNextTouch(
   };
 }
 
-/** "Snooze": a week later. */
-export async function snoozeTouch(touchId: string): Promise<void> {
+/**
+ * "Snooze", and the Undo of one: the touch moves to a day you chose.
+ *
+ * Slice 9b, Part 3. It used to add seven days and say nothing. The card now
+ * offers Tomorrow, Next week, Next month or a date of your own, and sends the
+ * choice by name -- lib/relationship/snooze.ts turns that name back into a
+ * date here, so a POST cannot name a day the buttons never offered.
+ *
+ * `to` is a date instead, which is the "Pick a date" path and the Undo path:
+ * putting a snooze back means moving the touch to the day it had, and that day
+ * is in the past for an overdue touch, which no choice would ever produce.
+ *
+ * It answers with the day the touch had, so the toast can offer to put it
+ * back. Unlike a row on a list, this page does refresh at once: it is about
+ * this one contact, and the date on the card is the thing you just changed.
+ */
+export type MovedTouch = { from: string; to: string } | { error: string };
+
+export async function snoozeTouch(touchId: string, choice: string): Promise<MovedTouch> {
   const user = await requireUser();
   if (!isUuid(touchId)) notFound();
 
   const supabase = await createClient();
-  await closedIsFine(() => snoozeNextTouch(supabase, user.id, touchId, todayIn()));
+  const touch = await openNextTouchById(supabase, user.id, touchId);
+  if (!touch) return { error: "That next touch isn't open any more." };
+
+  const dueOn = snoozeDate(todayIn(), touch.due_on, choice);
+  if (!dueOn) notFound();
+
+  return move(supabase, user.id, touchId, dueOn);
+}
+
+/** "Pick a date" on the Snooze menu, and Undo, which moves it back. */
+export async function moveTouchTo(touchId: string, dueOn: string): Promise<MovedTouch> {
+  const user = await requireUser();
+  if (!isUuid(touchId)) notFound();
+  if (!isIsoDate(dueOn)) notFound();
+  if (daysBetweenDates(todayIn(), dueOn) > MAX_DAYS_AHEAD) notFound();
+
+  return move(await createClient(), user.id, touchId, dueOn);
+}
+
+async function move(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  touchId: string,
+  dueOn: string,
+): Promise<MovedTouch> {
+  try {
+    const { from } = await moveNextTouch(supabase, userId, touchId, dueOn);
+    refresh();
+    return { from, to: dueOn };
+  } catch (error) {
+    if (error instanceof NextTouchNotFound) return { error: error.message };
+    throw error;
+  }
+}
+
+/** Undo of Skip and Mark done: open again, on the day it had. */
+export async function reopenTouch(touchId: string): Promise<{ error: string } | null> {
+  const user = await requireUser();
+  if (!isUuid(touchId)) notFound();
+
+  try {
+    await reopenNextTouch(await createClient(), user.id, touchId);
+  } catch (error) {
+    if (error instanceof NewerTouchExists || error instanceof NextTouchNotFound) {
+      return { error: error.message };
+    }
+    throw error;
+  }
   refresh();
+  return null;
 }
 
 /** "Skip" and "Mark done". */

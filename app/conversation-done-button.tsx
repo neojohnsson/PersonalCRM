@@ -1,7 +1,9 @@
 "use client";
 
-import { useFormStatus } from "react-dom";
-import { settleThread } from "@/app/relationship-actions";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { reopenThread, settleThread } from "@/app/relationship-actions";
+import { useToast } from "@/app/toasts";
 
 /**
  * "Conversation done" on a row of the home page or the brief: this
@@ -14,12 +16,15 @@ import { settleThread } from "@/app/relationship-actions";
  * menu's "Mark this conversation done". Not "Mark done", which the next touch
  * card already uses for a different thing: a day you planned, which happened.
  *
- * The ghost pill is design/Calendar.dc.html's, which has the same button beside
- * a person the app is suggesting you follow up — the one place a design says
- * what "this needs nothing from me" should look like.
+ * Slice 9b, Part 3: and it does not move the list out from under you.
  *
- * It is undoable from the contact page, and a message that arrives afterwards
- * re-opens the thread by itself, so there is no confirm step in the way.
+ * It used to be a plain form whose Server Action refreshed the page, so the
+ * row left the list the instant you pressed — and the next row slid up under
+ * the cursor, one click away from being dismissed too. The report found that
+ * by doing it. Now the action is told not to refresh: the row stays exactly
+ * where it was, the button becomes "Marked done", and the page only catches up
+ * when the toast's Undo is out of reach. Pressing Undo puts the thread back
+ * and the row with it.
  */
 export function ConversationDoneButton({
   contactId,
@@ -30,24 +35,49 @@ export function ConversationDoneButton({
   threadId: string;
   className?: string;
 }) {
-  return (
-    <form action={settleThread.bind(null, contactId, threadId)} className={className}>
-      <SubmitPill />
-    </form>
-  );
-}
+  const router = useRouter();
+  const toast = useToast();
+  const [done, setDone] = useState(false);
+  const [pending, start] = useTransition();
 
-function SubmitPill() {
-  const { pending } = useFormStatus();
+  const press = () => {
+    start(async () => {
+      await settleThread(contactId, threadId, { revalidate: false });
+      setDone(true);
+      toast({
+        message: "Conversation marked done.",
+        action: {
+          label: "Undo",
+          run: async () => {
+            await reopenThread(contactId, threadId);
+            setDone(false);
+          },
+        },
+        // The list catches up once, when undoing is no longer on offer.
+        onExpire: () => router.refresh(),
+      });
+    });
+  };
 
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      title="Nothing more is owed here, so it stops asking you about it"
-      className="rounded-full bg-line-soft px-3.5 py-[13px] text-[12px] font-semibold text-ink-body transition hover:bg-chip-track disabled:cursor-default disabled:opacity-50 sm:py-2"
-    >
-      {pending ? "Marking…" : "Conversation done"}
-    </button>
+    <div className={className}>
+      <button
+        type="button"
+        onClick={press}
+        disabled={pending || done}
+        title={
+          done
+            ? "Marked done. Undo it from the line at the foot of the screen."
+            : "Nothing more is owed here, so it stops asking you about it"
+        }
+        className={`rounded-full px-3.5 py-[13px] text-[12px] font-semibold transition disabled:cursor-default sm:py-2 ${
+          done
+            ? "bg-line-soft text-ink-faint"
+            : "bg-line-soft text-ink-body hover:bg-chip-track disabled:opacity-50"
+        }`}
+      >
+        {done ? "Marked done" : pending ? "Marking…" : "Conversation done"}
+      </button>
+    </div>
   );
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { APP_NAME } from "@/lib/app-config";
 import { initials } from "@/lib/format";
 import { PAGES, type ActivePage, type PageKey } from "@/lib/nav";
+import { ToastProvider } from "@/app/toasts";
 
 /**
  * The frame around signed-in pages: design/Main.dc.html, ContactList.dc.html
@@ -83,73 +84,75 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-1 bg-paper text-ink">
-      <aside className="sticky top-0 hidden h-dvh w-14 shrink-0 flex-col items-center gap-[3px] self-start bg-ink-deep pt-3.5 pb-4 sm:flex">
-        <div
-          aria-hidden="true"
-          className="mb-3 flex size-[30px] items-center justify-center rounded-[9px] bg-white"
-        >
-          <span className="text-[14px] font-extrabold tracking-[-0.03em] text-ink-deep">
-            {APP_NAME.charAt(0)}
-          </span>
-        </div>
-
-        <nav aria-label="Main" className="flex flex-col items-center gap-[3px]">
-          {PAGES.map((page) => (
-            <NavItem
-              key={page.key}
-              href={page.href}
-              label={page.label}
-              title={page.title}
-              active={active === page.key}
-              dot={page.key === "seen-once" && seenOnceCount > 0}
-            >
-              {ICONS[page.key]}
-            </NavItem>
-          ))}
-        </nav>
-
-        <div className="flex-grow" />
-
-        {userEmail && (
-          // Opens Profile, as in design/Profile.dc.html, which also shows its
-          // active state: a lighter tile behind the avatar with a white ring.
-          <Link
-            href="/profile"
-            aria-current={active === "profile" ? "page" : undefined}
-            className={`group relative mt-1.5 flex size-9 items-center justify-center rounded-[11px] transition-colors ${
-              active === "profile" ? "bg-rail-active" : "hover:bg-rail-active"
-            }`}
+    <ToastProvider>
+      <div className="flex flex-1 bg-paper text-ink">
+        <aside className="sticky top-0 hidden h-dvh w-14 shrink-0 flex-col items-center gap-[3px] self-start bg-ink-deep pt-3.5 pb-4 sm:flex">
+          <div
+            aria-hidden="true"
+            className="mb-3 flex size-[30px] items-center justify-center rounded-[9px] bg-white"
           >
-            <span
-              // A rounded square like the logo tile, not the design's circle:
-              // changed at the user's request, 2026-09-16.
-              className={`flex items-center justify-center rounded-[9px] bg-rail-avatar ${
-                active === "profile" ? "size-7 ring-[1.5px] ring-white" : "size-[30px]"
+            <span className="text-[14px] font-extrabold tracking-[-0.03em] text-ink-deep">
+              {APP_NAME.charAt(0)}
+            </span>
+          </div>
+
+          <nav aria-label="Main" className="flex flex-col items-center gap-[3px]">
+            {PAGES.map((page) => (
+              <NavItem
+                key={page.key}
+                href={page.href}
+                label={page.label}
+                title={page.title}
+                active={active === page.key}
+                dot={page.key === "seen-once" && seenOnceCount > 0}
+              >
+                {ICONS[page.key]}
+              </NavItem>
+            ))}
+          </nav>
+
+          <div className="flex-grow" />
+
+          {userEmail && (
+            // Opens Profile, as in design/Profile.dc.html, which also shows its
+            // active state: a lighter tile behind the avatar with a white ring.
+            <Link
+              href="/profile"
+              aria-current={active === "profile" ? "page" : undefined}
+              className={`group relative mt-1.5 flex size-9 items-center justify-center rounded-[11px] transition-colors ${
+                active === "profile" ? "bg-rail-active" : "hover:bg-rail-active"
               }`}
             >
-              <span className="text-[10.5px] font-bold text-white">{initials(null, userEmail)}</span>
-              <span className="sr-only">Profile</span>
-            </span>
-            <HoverLabel>{`Profile · ${userEmail}`}</HoverLabel>
-          </Link>
-        )}
-      </aside>
+              <span
+                // A rounded square like the logo tile, not the design's circle:
+                // changed at the user's request, 2026-09-16.
+                className={`flex items-center justify-center rounded-[9px] bg-rail-avatar ${
+                  active === "profile" ? "size-7 ring-[1.5px] ring-white" : "size-[30px]"
+                }`}
+              >
+                <span className="text-[10.5px] font-bold text-white">{initials(null, userEmail)}</span>
+                <span className="sr-only">Profile</span>
+              </span>
+              <HoverLabel>{`Profile · ${userEmail}`}</HoverLabel>
+            </Link>
+          )}
+        </aside>
 
-      {/* Room for the bottom bar, which is fixed and would otherwise cover the
-          last row of every page. */}
-      <div className="flex min-w-0 flex-1 flex-col pb-[74px] sm:pb-0">
-        <header className="relative flex h-[60px] shrink-0 items-center gap-3 px-4 sm:px-[26px]">
-          <span className="text-[15px] font-semibold tracking-tight sm:hidden">{APP_NAME}</span>
-          <PageSwitcher active={active} />
-          <div className="ml-auto flex items-center gap-2">{headerRight}</div>
-        </header>
+        {/* Room for the bottom bar, which is fixed and would otherwise cover the
+            last row of every page. */}
+        <div className="flex min-w-0 flex-1 flex-col pb-[74px] sm:pb-0">
+          <header className="relative flex h-[60px] shrink-0 items-center gap-3 px-4 sm:px-[26px]">
+            <span className="text-[15px] font-semibold tracking-tight sm:hidden">{APP_NAME}</span>
+            <PageSwitcher active={active} />
+            <div className="ml-auto flex items-center gap-2">{headerRight}</div>
+          </header>
 
-        {children}
+          {children}
+        </div>
+
+        <BottomBar active={active} seenOnceCount={seenOnceCount} userEmail={userEmail} />
       </div>
-
-      <BottomBar active={active} seenOnceCount={seenOnceCount} userEmail={userEmail} />
-    </div>
+    </ToastProvider>
   );
 }
 

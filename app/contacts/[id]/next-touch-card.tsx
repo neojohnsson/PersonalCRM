@@ -1,10 +1,19 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { useActionState, useEffect, useState, useTransition } from "react";
+import { useToast } from "@/app/toasts";
+import { dayMonth } from "@/lib/format";
 import { dateBadge, dueText } from "@/lib/relationship/describe";
 import { MAX_REASON_LENGTH, type NextTouch } from "@/lib/relationship/next-touch";
-import { finishTouch, saveNextTouch, snoozeTouch, type SetNextTouchState } from "./actions";
+import { snoozeChoices } from "@/lib/relationship/snooze";
+import {
+  finishTouch,
+  moveTouchTo,
+  reopenTouch,
+  saveNextTouch,
+  snoozeTouch,
+  type SetNextTouchState,
+} from "./actions";
 
 /**
  * The Next touch card of design/ContactDetail.dc.html: the reason in quotes,
@@ -91,10 +100,38 @@ export function NextTouchCard({
             <Badge isoDate={touch.due_on} />
           </div>
 
-          <form className="flex flex-wrap gap-[7px]">
-            <GhostSubmit formAction={snoozeTouch.bind(null, touch.id)}>Snooze</GhostSubmit>
-            <GhostSubmit formAction={finishTouch.bind(null, touch.id, "skipped")}>Skip</GhostSubmit>
-            <GhostSubmit formAction={finishTouch.bind(null, touch.id, "done")}>Mark done</GhostSubmit>
+          {/* Slice 9b, Part 3: all three say what they do, and all three can
+              be undone from the toast. Snooze asks how long instead of
+              silently adding a week; Skip and Mark done carry their meaning in
+              a title and in what the toast says afterwards. The plan put those
+              two in a menu -- three pills is the design's own row, and a menu
+              to explain two buttons is a menu too many. */}
+          <div className="flex flex-wrap gap-[7px]">
+            <SnoozeMenu
+              touchId={touch.id}
+              today={today}
+              dueOn={touch.due_on}
+              onPickDate={() => {
+                setFromSuggestion(false);
+                setOpenedAt(saves);
+              }}
+            />
+            <TouchAction
+              touchId={touch.id}
+              run={() => finishTouch(touch.id, "skipped")}
+              idle="Skip"
+              busy="Skipping…"
+              title="It didn't happen, and you're not picking another day"
+              done="Skipped, and nothing is planned now."
+            />
+            <TouchAction
+              touchId={touch.id}
+              run={() => finishTouch(touch.id, "done")}
+              idle="Mark done"
+              busy="Marking…"
+              title="It happened. The touch is closed and kept as a record"
+              done="Marked done."
+            />
             <button
               type="button"
               onClick={() => {
@@ -105,7 +142,7 @@ export function NextTouchCard({
             >
               Change
             </button>
-          </form>
+          </div>
         </>
       ) : (
         <form action={formAction} noValidate className="flex flex-col gap-3">
@@ -213,27 +250,181 @@ function Due({ dueOn, today }: { dueOn: string; today: string }) {
   );
 }
 
+const GHOST =
+  "rounded-full bg-line-soft px-[13px] py-1.5 text-[12px] font-semibold text-ink-body transition-colors hover:bg-chip-track disabled:cursor-default disabled:opacity-60";
+
 /**
- * A grey pill that submits the card's form to one bound Server Action. No
- * `name`: React reserves it for buttons whose formAction is a function. While
- * one is on its way, all three are disabled, so nothing is sent twice.
+ * Snooze, which now asks how long (slice 9b, Part 3).
+ *
+ * The choices come from lib/relationship/snooze.ts and are sent by NAME, so
+ * the server works out the date itself and a POST cannot name a day the menu
+ * never offered. Each one shows its date beside it, because "Next month" on
+ * its own is the same guess the silent seven days was.
+ *
+ * A touch due a long way off has no choices at all -- none of them would push
+ * it later -- so the pill opens the date form instead of an empty menu.
  */
-function GhostSubmit({
-  formAction,
-  children,
+function SnoozeMenu({
+  touchId,
+  today,
+  dueOn,
+  onPickDate,
 }: {
-  formAction: () => Promise<void>;
-  children: React.ReactNode;
+  touchId: string;
+  today: string;
+  dueOn: string;
+  onPickDate: () => void;
 }) {
-  const { pending } = useFormStatus();
+  const toast = useToast();
+  const [open, setOpen] = useState(false);
+  const [pending, start] = useTransition();
+  const choices = snoozeChoices(today, dueOn);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  const choose = (key: string) => {
+    setOpen(false);
+    start(async () => {
+      const moved = await snoozeTouch(touchId, key);
+      if ("error" in moved) {
+        toast({ message: moved.error });
+        return;
+      }
+      toast({
+        message: `Moved to ${dayMonth(moved.to)}.`,
+        action: {
+          label: "Undo",
+          run: async () => {
+            const back = await moveTouchTo(touchId, moved.from);
+            if ("error" in back) throw new Error(back.error);
+          },
+        },
+      });
+    });
+  };
+
+  if (choices.length === 0) {
+    return (
+      <button type="button" onClick={onPickDate} className={GHOST} title="Pick a later day yourself">
+        Snooze
+      </button>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        disabled={pending}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        className={GHOST}
+      >
+        {pending ? "Moving…" : "Snooze"}
+      </button>
+
+      {open && (
+        <>
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-10 cursor-default"
+          />
+          {/* Above the pill: the card sits at the bottom of the page on a
+              phone, where a menu below it would be off the screen. */}
+          <div
+            role="dialog"
+            aria-label="Snooze until"
+            className="absolute bottom-full left-0 z-20 mb-2 flex w-[240px] flex-col overflow-hidden rounded-[14px] bg-white py-1 shadow-[0_1px_2px_rgba(20,20,25,.06),0_12px_32px_rgba(20,20,25,.14)]"
+          >
+            {choices.map((choice) => (
+              <button
+                key={choice.key}
+                type="button"
+                onClick={() => choose(choice.key)}
+                className="flex items-baseline justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-paper-tint"
+              >
+                <span className="text-[13px] font-semibold text-ink">{choice.label}</span>
+                <span className="text-[11.5px] text-ink-soft">{dayMonth(choice.dueOn)}</span>
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onPickDate();
+              }}
+              className="border-t border-line-soft px-4 py-2.5 text-left text-[13px] font-semibold text-ink transition-colors hover:bg-paper-tint"
+            >
+              Pick a date…
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Skip or Mark done, each with an Undo in the toast (slice 9b, Part 3).
+ *
+ * Closing a touch was the one thing on this card with no way back; everything
+ * else was a column you could set again. reopenTouch puts it back on the day
+ * it had, unless a newer touch has been set since -- a contact may have only
+ * one open touch (migration 0009), and then the toast says so instead of
+ * failing quietly.
+ */
+function TouchAction({
+  touchId,
+  run,
+  idle,
+  busy,
+  title,
+  done,
+}: {
+  touchId: string;
+  run: () => Promise<void>;
+  idle: string;
+  busy: string;
+  title: string;
+  /** What the toast says once it has happened. */
+  done: string;
+}) {
+  const toast = useToast();
+  const [pending, start] = useTransition();
+
   return (
     <button
-      type="submit"
-      formAction={formAction}
+      type="button"
+      title={title}
       disabled={pending}
-      className="rounded-full bg-line-soft px-[13px] py-1.5 text-[12px] font-semibold text-ink-body transition-colors hover:bg-chip-track disabled:opacity-60"
+      onClick={() =>
+        start(async () => {
+          await run();
+          toast({
+            message: done,
+            action: {
+              label: "Undo",
+              run: async () => {
+                const failed = await reopenTouch(touchId);
+                if (failed) throw new Error(failed.error);
+              },
+            },
+          });
+        })
+      }
+      className={GHOST}
     >
-      {children}
+      {pending ? busy : idle}
     </button>
   );
 }

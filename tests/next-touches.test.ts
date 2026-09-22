@@ -7,7 +7,9 @@ import {
   finishNextTouch,
   openNextTouch,
   setNextTouch,
-  snoozeNextTouch,
+  moveNextTouch,
+  reopenNextTouch,
+  NewerTouchExists,
 } from "@/lib/relationship/next-touch";
 
 /**
@@ -122,21 +124,79 @@ describe("next touches", () => {
     });
   });
 
-  describe("snooze", () => {
-    it("moves a future touch a week after its date", async () => {
+  // Slice 9b, Part 3: Snooze moves a touch to a day you chose, instead of
+  // adding seven days and telling nobody. Which day each choice means is
+  // tests/snooze.test.ts; this is the write itself.
+  describe("move", () => {
+    it("puts the touch on the day given, and says which day it had", async () => {
       const touch = await setNextTouch(aliceClient, alice.id, karinId, { dueOn: addDays(today, 10), reason: null });
 
-      expect((await snoozeNextTouch(aliceClient, alice.id, touch.id, today)).due_on).toBe(addDays(today, 17));
+      const moved = await moveNextTouch(aliceClient, alice.id, touch.id, addDays(today, 17));
+
+      expect(moved.touch.due_on).toBe(addDays(today, 17));
+      // What Undo needs: the day it was on before the press.
+      expect(moved.from).toBe(addDays(today, 10));
     });
 
-    it("moves an overdue touch a week after today, not a week after its old date", async () => {
+    it("moves an overdue touch back to where it was, which is in the past", async () => {
+      // Undo of a snooze is this same call with `from` as the day, and for an
+      // overdue touch that day has already gone.
       const { data } = await aliceClient
         .from("next_touches")
         .insert({ user_id: alice.id, contact_id: karinId, due_on: addDays(today, -3) })
         .select("id")
         .single();
 
-      expect((await snoozeNextTouch(aliceClient, alice.id, data!.id, today)).due_on).toBe(addDays(today, 7));
+      await moveNextTouch(aliceClient, alice.id, data!.id, addDays(today, 7));
+      const back = await moveNextTouch(aliceClient, alice.id, data!.id, addDays(today, -3));
+
+      expect(back.touch.due_on).toBe(addDays(today, -3));
+      expect(back.from).toBe(addDays(today, 7));
+    });
+
+    it("refuses anything that isn't a date", async () => {
+      const touch = await setNextTouch(aliceClient, alice.id, karinId, { dueOn: today, reason: null });
+
+      await expect(moveNextTouch(aliceClient, alice.id, touch.id, "next tuesday")).rejects.toThrow();
+    });
+  });
+
+  // Slice 9b, Part 3: closing a touch was the one action with no way back.
+  describe("reopen", () => {
+    it("opens a skipped touch again, on the day it had", async () => {
+      const touch = await setNextTouch(aliceClient, alice.id, karinId, {
+        dueOn: addDays(today, 4),
+        reason: "ask about the thesis",
+      });
+      await finishNextTouch(aliceClient, alice.id, touch.id, "skipped");
+      expect(await openNextTouch(aliceClient, alice.id, karinId)).toBeNull();
+
+      const reopened = await reopenNextTouch(aliceClient, alice.id, touch.id);
+
+      expect(reopened.status).toBe("open");
+      expect(reopened.due_on).toBe(addDays(today, 4));
+      expect(reopened.reason).toBe("ask about the thesis");
+      const open = await openNextTouch(aliceClient, alice.id, karinId);
+      expect(open!.id).toBe(touch.id);
+    });
+
+    it("opens a touch marked done again too, and won't do it twice", async () => {
+      const touch = await setNextTouch(aliceClient, alice.id, karinId, { dueOn: today, reason: null });
+      await finishNextTouch(aliceClient, alice.id, touch.id, "done");
+
+      await reopenNextTouch(aliceClient, alice.id, touch.id);
+      // Already open: there is nothing closed to reopen.
+      await expect(reopenNextTouch(aliceClient, alice.id, touch.id)).rejects.toBeInstanceOf(NextTouchNotFound);
+    });
+
+    it("says so rather than failing quietly when a newer touch exists", async () => {
+      // A contact may have one open touch (migration 0009), so undoing a skip
+      // after planning something new cannot happen.
+      const touch = await setNextTouch(aliceClient, alice.id, karinId, { dueOn: today, reason: "the old plan" });
+      await finishNextTouch(aliceClient, alice.id, touch.id, "skipped");
+      await setNextTouch(aliceClient, alice.id, karinId, { dueOn: addDays(today, 20), reason: "the new plan" });
+
+      await expect(reopenNextTouch(aliceClient, alice.id, touch.id)).rejects.toBeInstanceOf(NewerTouchExists);
     });
   });
 
@@ -164,20 +224,25 @@ describe("next touches", () => {
 
       await finishNextTouch(aliceClient, alice.id, touch.id, "skipped");
       await expect(finishNextTouch(aliceClient, alice.id, touch.id, "done")).rejects.toBeInstanceOf(NextTouchNotFound);
-      await expect(snoozeNextTouch(aliceClient, alice.id, touch.id, today)).rejects.toBeInstanceOf(NextTouchNotFound);
+      await expect(moveNextTouch(aliceClient, alice.id, touch.id, addDays(today, 7))).rejects.toBeInstanceOf(
+        NextTouchNotFound,
+      );
     });
   });
 
   describe("someone else", () => {
-    it("can't read, snooze, finish, change or delete Alice's touch", async () => {
+    it("can't read, move, finish, reopen, change or delete Alice's touch", async () => {
       const touch = await setNextTouch(aliceClient, alice.id, karinId, { dueOn: addDays(today, 5), reason: "mine" });
 
       const { data: read } = await bobClient.from("next_touches").select("*");
       expect(read).toEqual([]);
 
       for (const userId of [bob.id, alice.id]) {
-        await expect(snoozeNextTouch(bobClient, userId, touch.id, today)).rejects.toBeInstanceOf(NextTouchNotFound);
+        await expect(moveNextTouch(bobClient, userId, touch.id, addDays(today, 7))).rejects.toBeInstanceOf(
+          NextTouchNotFound,
+        );
         await expect(finishNextTouch(bobClient, userId, touch.id, "done")).rejects.toBeInstanceOf(NextTouchNotFound);
+        await expect(reopenNextTouch(bobClient, userId, touch.id)).rejects.toBeInstanceOf(NextTouchNotFound);
       }
 
       const { data: changed } = await bobClient

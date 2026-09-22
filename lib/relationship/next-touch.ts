@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { addDays, daysBetweenDates, isIsoDate, laterDate } from "@/lib/relationship/dates";
+import { daysBetweenDates, isIsoDate } from "@/lib/relationship/dates";
 import { isTiming } from "@/lib/relationship/touch-date";
 import { supabaseError } from "@/lib/supabase/errors";
 
@@ -9,9 +9,10 @@ import { supabaseError } from "@/lib/supabase/errors";
  *
  *   set        the contact's open touch gets this date and reason — created if
  *              there isn't one
- *   snooze     a week after whichever is later: the due date or today
+ *   move       it happens on another day instead (Snooze, and Undo of one)
  *   mark done  it happened; the touch is closed and kept as a record
  *   skip       dropped without doing it; closed too
+ *   reopen     undo of done or skip: open again, on the day it had
  *
  * At most one open touch per contact is enforced by the database
  * (migration 0009). Every function takes the client and user id and filters by
@@ -19,7 +20,6 @@ import { supabaseError } from "@/lib/supabase/errors";
  */
 
 export const MAX_REASON_LENGTH = 300;
-export const SNOOZE_DAYS = 7;
 export const MAX_DAYS_AHEAD = 5 * 366;
 
 export type NextTouchStatus = "open" | "done" | "skipped";
@@ -39,6 +39,16 @@ export type NextTouch = {
 };
 
 const COLUMNS = "id, contact_id, due_on, reason, status, kind";
+
+const UNIQUE_VIOLATION = "23505";
+
+/** Reopening would give the contact two open touches, so a newer one exists. */
+export class NewerTouchExists extends Error {
+  constructor() {
+    super("There's a newer next touch for this contact now.");
+    this.name = "NewerTouchExists";
+  }
+}
 
 /** The touch doesn't exist, isn't open any more, or isn't the caller's. */
 export class NextTouchNotFound extends Error {
@@ -189,16 +199,42 @@ export async function setNextTouch(
   return inserted.data;
 }
 
-/**
- * Move an open touch a week later — counted from the due date, or from today if
- * it's already overdue, so a snoozed touch is never still in the past.
- */
-export async function snoozeNextTouch(
+/** One open touch by its id, or null when it is closed or not theirs. */
+export async function openNextTouchById(
   db: SupabaseClient,
   userId: string,
   touchId: string,
-  today: string,
-): Promise<NextTouch> {
+): Promise<NextTouch | null> {
+  const { data, error } = await db
+    .from("next_touches")
+    .select(COLUMNS)
+    .eq("id", touchId)
+    .eq("user_id", userId)
+    .eq("status", "open")
+    .maybeSingle<NextTouch>();
+  if (error) throw supabaseError(error, "Couldn't load the next touch");
+  return data;
+}
+
+/**
+ * Move an open touch to a day you chose.
+ *
+ * Until slice 9b this was `snoozeNextTouch`, which added seven days and told
+ * nobody. The day now comes from lib/relationship/snooze.ts, which works out
+ * what "Tomorrow", "Next week" and "Next month" mean -- or straight from a
+ * date you typed.
+ *
+ * It answers with the day the touch HAD as well as the touch, because that is
+ * what Undo needs: putting it back is this same call with `from` as the day.
+ */
+export async function moveNextTouch(
+  db: SupabaseClient,
+  userId: string,
+  touchId: string,
+  dueOn: string,
+): Promise<{ touch: NextTouch; from: string }> {
+  if (!isIsoDate(dueOn)) throw new Error(`Not a date: ${dueOn}`);
+
   const { data: current, error } = await db
     .from("next_touches")
     .select(COLUMNS)
@@ -208,8 +244,6 @@ export async function snoozeNextTouch(
     .maybeSingle<NextTouch>();
   if (error) throw supabaseError(error, "Couldn't load the next touch");
   if (!current) throw new NextTouchNotFound();
-
-  const dueOn = addDays(laterDate(current.due_on, today), SNOOZE_DAYS);
 
   // Only if it still has the date this step read: a second press of Snooze in
   // another tab can't push it two weeks.
@@ -222,7 +256,34 @@ export async function snoozeNextTouch(
     .eq("due_on", current.due_on)
     .select(COLUMNS)
     .returns<NextTouch[]>();
-  if (updateError) throw supabaseError(updateError, "Couldn't snooze the next touch");
+  if (updateError) throw supabaseError(updateError, "Couldn't move the next touch");
+  if (data.length === 0) throw new NextTouchNotFound();
+
+  return { touch: data[0], from: current.due_on };
+}
+
+/**
+ * Undo a Skip or a Mark done: the touch is open again, on the day it had.
+ *
+ * Slice 9b, Part 3. Closing a touch was the one action here with no way back
+ * -- everything else was a column you could set again.
+ *
+ * A contact may have only one open touch (migration 0009's partial unique
+ * index), so if a new one was set in the meantime this cannot happen: that is
+ * NewerTouchExists, and the toast says so rather than failing silently.
+ */
+export async function reopenNextTouch(db: SupabaseClient, userId: string, touchId: string): Promise<NextTouch> {
+  const now = new Date().toISOString();
+  const { data, error } = await db
+    .from("next_touches")
+    .update({ status: "open", completed_at: null, updated_at: now })
+    .eq("id", touchId)
+    .eq("user_id", userId)
+    .in("status", ["done", "skipped"])
+    .select(COLUMNS)
+    .returns<NextTouch[]>();
+  if (error?.code === UNIQUE_VIOLATION) throw new NewerTouchExists();
+  if (error) throw supabaseError(error, "Couldn't reopen the next touch");
   if (data.length === 0) throw new NextTouchNotFound();
 
   return data[0];
