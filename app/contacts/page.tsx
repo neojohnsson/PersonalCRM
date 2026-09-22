@@ -219,7 +219,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
       seenOnceCount={seenOnce}
       headerRight={
         <>
-          <span className="hidden text-[13px] text-ink-faint md:inline">{gmail.email}</span>
+          <span className="hidden text-[13px] text-ink-faint lg:inline">{gmail.email}</span>
           <SignOutButton />
         </>
       }

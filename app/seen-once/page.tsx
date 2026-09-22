@@ -78,7 +78,7 @@ export default async function SeenOncePage({ searchParams }: PageProps<"/seen-on
       headerRight={
         <>
           {gmailResult.data && (
-            <span className="hidden text-[13px] text-ink-faint md:inline">
+            <span className="hidden text-[13px] text-ink-faint lg:inline">
               {gmailResult.data.email}
             </span>
           )}

@@ -16,8 +16,8 @@ import { PAGES, type ActivePage, type PageKey } from "@/lib/nav";
  *   - Your week and Promises left the rail in slice 9b (docs/slice-9b-plan.md,
  *     Part 7). Both pages still work: Home links to Your week, and Your week
  *     links to Promises. They are deleted when the Assistant's cards replace
- *     what they do, so a five-entry rail is what the mobile bar and the
- *     header's page switcher are built from.
+ *     what they do, so a four-entry rail is what the bottom bar and the
+ *     header's page switcher are built from, plus Profile at the foot.
  *   - The header's search and notification icons are left out — nothing
  *     behind them yet. The right side holds what the design has no place
  *     for: the connected Gmail address and Sign out.
@@ -139,8 +139,9 @@ export function AppShell({
       {/* Room for the bottom bar, which is fixed and would otherwise cover the
           last row of every page. */}
       <div className="flex min-w-0 flex-1 flex-col pb-[74px] sm:pb-0">
-        <header className="flex h-[60px] shrink-0 items-center gap-3 px-4 sm:px-[26px]">
+        <header className="relative flex h-[60px] shrink-0 items-center gap-3 px-4 sm:px-[26px]">
           <span className="text-[15px] font-semibold tracking-tight sm:hidden">{APP_NAME}</span>
+          <PageSwitcher active={active} />
           <div className="ml-auto flex items-center gap-2">{headerRight}</div>
         </header>
 
@@ -149,6 +150,52 @@ export function AppShell({
 
       <BottomBar active={active} seenOnceCount={seenOnceCount} userEmail={userEmail} />
     </div>
+  );
+}
+
+/**
+ * The header's centred page switcher — the white pill of words that five of
+ * the designs carry (design/Main.dc.html, ContactList.dc.html,
+ * ReviewQueue.dc.html, Calendar.dc.html and ContactDetail.dc.html). It was
+ * left out of every one of them until now, on the grounds that the rail
+ * already went to those pages; you asked for it on 2026-09-22, and it is in
+ * the Assistant design we agreed before building.
+ *
+ * The **word** variant, not the icon one. The designs have both — icons on
+ * Main, ContactList and ReviewQueue, words on Calendar and ContactDetail —
+ * and the first outside test of the app could not tell the rail's icons
+ * apart, so four more unlabelled pills would have been the same mistake
+ * twice. The measurements are ContactDetail's: 4px of padding round the pill,
+ * 6px by 15px per word, 12.5px type, the active one on #f1f1ef.
+ *
+ * Differences from the design, on purpose:
+ *   - An inactive word is ink-soft (#6f7177), not the design's #9c9ea4, which
+ *     is about 2.6:1 against white at 12.5px and hard to read.
+ *   - Hidden below md. Centred absolutely, it would sit under Sign out on a
+ *     narrow window, and on a phone the bottom bar is the switcher.
+ */
+function PageSwitcher({ active }: { active: ActivePage }) {
+  return (
+    <nav
+      aria-label="Switch page"
+      className="absolute left-1/2 hidden -translate-x-1/2 gap-0.5 rounded-full bg-white p-1 shadow-[0_1px_2px_rgba(20,20,25,.05),0_4px_12px_rgba(20,20,25,.06)] md:flex"
+    >
+      {PAGES.map((page) => {
+        const current = active === page.key;
+        return (
+          <Link
+            key={page.key}
+            href={page.href}
+            aria-current={current ? "page" : undefined}
+            className={`rounded-full px-[15px] py-1.5 text-[12.5px] transition-colors ${
+              current ? "bg-chip font-semibold text-ink" : "font-medium text-ink-soft hover:text-ink"
+            }`}
+          >
+            {page.label}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
 
@@ -180,7 +227,9 @@ function BottomBar({
   return (
     <nav
       aria-label="Pages"
-      // pb-[env(...)] keeps the labels clear of the home indicator on an iPhone.
+      // The safe-area padding keeps the labels clear of the home indicator on
+      // an iPhone. Written without the bracket syntax on purpose: Tailwind
+      // scans comments too, and a class candidate in one broke the build.
       className="fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-1px_2px_rgba(20,20,25,.04)] sm:hidden"
     >
       {PAGES.map((page) => (

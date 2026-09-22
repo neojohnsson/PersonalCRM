@@ -65,10 +65,10 @@ describe("the pages you can navigate to", () => {
 });
 
 describe("the sidebar and the bottom bar", () => {
-  it("are both built from the same list", () => {
-    // The rail maps it, the bottom bar maps it. If one grows a hard-coded
-    // entry, the two can drift and a page goes missing on one of them.
-    expect(SHELL.match(/PAGES\.map\(/g)).toHaveLength(2);
+  it("are both built from the same list, and so is the header's switcher", () => {
+    // The rail maps it, the bottom bar maps it, the switcher maps it. If one
+    // grows a hard-coded entry, they drift and a page goes missing from one.
+    expect(SHELL.match(/PAGES\.map\(/g)).toHaveLength(3);
     for (const page of PAGES) {
       if (page.href === "/") continue;
       expect(SHELL.includes(`href="${page.href}"`), `${page.href} is hard-coded`).toBe(false);
@@ -88,6 +88,19 @@ describe("the sidebar and the bottom bar", () => {
     // had tooltips. Labels, then.
     expect(SHELL).toMatch(/\{label\}/);
     expect(SHELL).toContain('label="You"');
+  });
+
+  it("has the header's page switcher, in words, on a wide enough window", () => {
+    // The designs carry it on five screens and it was left out of all of
+    // them until slice 9b. Words, not the icon variant: the same report that
+    // could not read the rail's icons would not read four more.
+    expect(SHELL).toContain("function PageSwitcher(");
+    expect(SHELL).toMatch(/\{page\.label\}/);
+    // Hidden below md, where it would sit under Sign out.
+    expect(SHELL).toMatch(/absolute left-1\/2 hidden[^"]*md:flex/);
+    // Two navigations both called "Pages" would read as one landmark twice.
+    expect(SHELL).toContain('aria-label="Switch page"');
+    expect(SHELL.match(/aria-label="Pages"/g)).toHaveLength(1);
   });
 
   it("gives the rail's icons a label that doesn't wait a second for a tooltip", () => {

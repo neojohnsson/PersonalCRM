@@ -48,8 +48,9 @@ export const metadata = { title: `Who needs you today · ${APP_NAME}` };
  *   - Seen once says "people", not "new people": nothing yet knows who is new
  *     (lib/sync/describe.ts has the same reason).
  *   - The temporary Sync now pill sits beside the date (slice-1-plan.md,
- *     decision 5), and the header's page switcher, search and bell are left
- *     out as on the other pages (app/app-shell.tsx).
+ *     decision 5). The header's search and bell are left out as on the other
+ *     pages; its centred page switcher arrived in slice 9b
+ *     (app/app-shell.tsx).
  */
 
 const YOUR_TURN_ROWS = 8;
@@ -158,7 +159,7 @@ export default async function Home() {
       seenOnceCount={seenOnce}
       headerRight={
         <>
-          <span className="hidden text-[13px] text-ink-faint md:inline">{gmail.email}</span>
+          <span className="hidden text-[13px] text-ink-faint lg:inline">{gmail.email}</span>
           <SignOutButton />
         </>
       }
@@ -407,7 +408,7 @@ function PersonRow({ person, line, daysClass, draftHref }: Row) {
           {draftHref && (
             <Link
               href={draftHref}
-              className="relative z-10 rounded-full bg-ink-deep px-3.5 py-3 text-[12px] font-semibold text-white transition hover:bg-ink/85 sm:py-[7px] sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 sm:no-hover:opacity-100"
+              className="relative z-10 rounded-full bg-ink-deep px-3.5 py-[13px] text-[12px] font-semibold text-white transition hover:bg-ink/85 sm:py-[7px] sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 sm:no-hover:opacity-100"
             >
               Draft reply
             </Link>
