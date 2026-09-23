@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useState, useTransition, type ReactNode } from "react";
 import { runProposedScan, writeProposedDraft, writeProposedSummary } from "@/app/assistant/actions";
 import { createCalendarEvent } from "@/app/connect/calendar-actions";
+import { acceptSuggestedName, setContactName } from "@/app/contacts/[id]/actions";
 import { discardDraftAction, saveDraftAction } from "@/app/contacts/[id]/draft-actions";
 import { priceInWords } from "@/lib/assistant/price";
-import type { Proposal } from "@/lib/assistant/tools";
+import type { NameGuess, Proposal } from "@/lib/assistant/tools";
 import { DURATIONS } from "@/lib/calendar/new-event";
 
 /**
@@ -30,7 +31,8 @@ import { DURATIONS } from "@/lib/calendar/new-event";
  *   - no "To karin@…" line: the address is taken from the thread again when
  *     you press "Save to Gmail" (lib/ai/draft-save.ts), so one shown now
  *     could be out of date by then.
- *   - the summary and promise-scan cards have no design; they reuse this one.
+ *   - the summary, promise-scan and better-names cards have no design; they
+ *     reuse this one.
  */
 
 type Settle = (note: string) => void;
@@ -45,6 +47,8 @@ export function NeedsYouCard({ proposal, onSettled }: { proposal: Proposal; onSe
       return <SummaryCard proposal={proposal} onSettled={onSettled} />;
     case "promise_scan":
       return <ScanCard proposal={proposal} onSettled={onSettled} />;
+    case "names":
+      return <NamesCard names={proposal.names} onSettled={onSettled} />;
   }
 }
 
@@ -370,6 +374,129 @@ function ScanCard({ proposal, onSettled }: { proposal: Extract<Proposal, { kind:
         </>
       )}
       {stage.at === "gone" && <p className="text-[12.5px] text-ink-soft">Not read.</p>}
+    </Card>
+  );
+}
+
+// ── Better names ───────────────────────────────────────────────────────────
+
+type NameRow = NameGuess & {
+  state: "offered" | "renamed";
+  /** What they were called, for Undo — given back by acceptSuggestedName. */
+  from: { first: string; last: string } | null;
+  problem: string | null;
+};
+
+/**
+ * The name rules' guesses, each with Accept, and Accept all. Every press goes
+ * through acceptSuggestedName, the contact page's own action, which works the
+ * suggestion out again from the contact as it is now and writes only that —
+ * so nothing on this card, and nothing the model said, decides a name.
+ */
+function NamesCard({ names, onSettled }: { names: NameGuess[]; onSettled: Settle }) {
+  const [rows, setRows] = useState<NameRow[]>(() =>
+    names.map((guess) => ({ ...guess, state: "offered", from: null, problem: null })),
+  );
+  const [declined, setDeclined] = useState(false);
+  const [pending, start] = useTransition();
+  const offered = rows.filter((row) => row.state === "offered");
+
+  const update = (id: string, change: Partial<NameRow>) =>
+    setRows((list) => list.map((row) => (row.contactId === id ? { ...row, ...change } : row)));
+
+  async function acceptOne(row: NameRow): Promise<boolean> {
+    const answer = await acceptSuggestedName(row.contactId);
+    if ("error" in answer) {
+      update(row.contactId, { problem: answer.error });
+      return false;
+    }
+    update(row.contactId, { state: "renamed", from: answer.from, problem: null });
+    return true;
+  }
+
+  function accept(row: NameRow) {
+    start(async () => {
+      if (await acceptOne(row)) onSettled(`The person renamed ${row.now} to ${row.suggested}.`);
+    });
+  }
+
+  function acceptAll() {
+    start(async () => {
+      let renamed = 0;
+      // One at a time: each is the contact page's action, checked on its own.
+      for (const row of offered) if (await acceptOne(row)) renamed += 1;
+      onSettled(`The person accepted ${renamed} of the suggested names.`);
+    });
+  }
+
+  function undo(row: NameRow) {
+    if (!row.from) return;
+    const from = row.from;
+    start(async () => {
+      const back = await setContactName(row.contactId, from.first, from.last);
+      if (back?.error) return update(row.contactId, { problem: back.error });
+      update(row.contactId, { state: "offered", from: null, problem: null });
+      onSettled(`The person put ${row.suggested}'s old name back.`);
+    });
+  }
+
+  const done = declined || offered.length === 0;
+
+  return (
+    <Card
+      title={names.length === 1 ? "A better name" : "Better names"}
+      state={declined ? "no" : done ? "done" : "needs"}
+      small="Worked out from each address by the app's own rules, not by the AI. Nothing is renamed until you press."
+      error={null}
+    >
+      <ul className="flex max-h-[360px] flex-col overflow-y-auto rounded-[12px] bg-paper">
+        {rows.map((row) => (
+          <li
+            key={row.contactId}
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white px-[13px] py-2.5 first:border-t-0"
+          >
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="text-[13px]">
+                <span className={row.state === "renamed" ? "text-ink-faint line-through" : "text-ink-body"}>
+                  {row.now}
+                </span>
+                <span aria-hidden="true" className="px-1.5 text-ink-faint">→</span>
+                <span className="sr-only"> to </span>
+                <strong className="font-semibold">{row.suggested}</strong>
+              </span>
+              <span className="text-[11.5px] text-ink-soft">{row.why}</span>
+              {row.problem && <span className="text-[11.5px] font-medium text-accent">{row.problem}</span>}
+            </div>
+            {row.state === "renamed" ? (
+              <span className="flex shrink-0 items-center gap-2">
+                <span className="text-[12px] font-semibold text-affirm">Renamed</span>
+                <Quiet onClick={() => undo(row)} disabled={pending}>Undo</Quiet>
+              </span>
+            ) : (
+              !declined && (
+                <Secondary onClick={() => accept(row)} disabled={pending}>Accept</Secondary>
+              )
+            )}
+          </li>
+        ))}
+      </ul>
+      {!done && (
+        <Buttons>
+          <Primary onClick={acceptAll} disabled={pending}>
+            {pending ? "Renaming…" : offered.length === 1 ? "Accept it" : `Accept all ${offered.length}`}
+          </Primary>
+          <Quiet
+            onClick={() => {
+              setDeclined(true);
+              onSettled("The person said no to the suggested names for now.");
+            }}
+            disabled={pending}
+          >
+            No
+          </Quiet>
+        </Buttons>
+      )}
+      {declined && <p className="text-[12.5px] text-ink-soft">Not renamed. The guesses stay on each contact&rsquo;s page.</p>}
     </Card>
   );
 }

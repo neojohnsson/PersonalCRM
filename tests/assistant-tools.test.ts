@@ -111,6 +111,7 @@ describe("the tools the Assistant is given", () => {
       who_needs_you: "read",
       this_week: "read",
       read_latest_thread: "read",
+      things_to_decide: "read",
       add_note: "act",
       change_tags: "act",
       set_next_touch: "act",
@@ -121,6 +122,7 @@ describe("the tools the Assistant is given", () => {
       propose_event: "propose",
       propose_summary: "propose",
       propose_promise_scan: "propose",
+      propose_names: "propose",
     });
   });
 
@@ -354,6 +356,68 @@ describe("somebody else's Assistant", () => {
 });
 
 // ── 5. Notes are its own words ──────────────────────────────────────────────
+
+// ── Things to decide, and better names ─────────────────────────────────────
+
+describe("better names", () => {
+  let lindaId: string;
+
+  beforeAll(async () => {
+    // Surname first, and the address proves it: the rule's "swap" case.
+    const { data } = await alice.db
+      .from("contacts")
+      .insert({ user_id: alice.user.id, first_name: "Jönsson", last_name: "Linda", source: "gmail" })
+      .select("id")
+      .single();
+    lindaId = data!.id;
+    await alice.db.from("contact_emails").insert({
+      user_id: alice.user.id,
+      contact_id: lindaId,
+      email: `linda.jonsson@ljungby-${randomUUID().slice(0, 6)}.se`,
+      is_primary: true,
+    });
+  });
+
+  const nameOf = async (id: string) => {
+    const { data } = await admin.from("contacts").select("first_name, last_name").eq("id", id).single();
+    return data!;
+  };
+
+  it("are read from Things to decide, with what the rule would call each one", async () => {
+    const outcome = await call(alice, "things_to_decide", {});
+    expect(outcome).toMatchObject({ tier: "read" });
+    const result = (outcome as { result: { better_names: { contact_id: string; suggested: string }[] } }).result;
+    expect(result.better_names).toContainEqual(expect.objectContaining({ contact_id: lindaId, suggested: "Linda Jönsson" }));
+  });
+
+  it("are offered as a card, and nothing is renamed by offering them", async () => {
+    const outcome = await call(alice, "propose_names", { contact_ids: null });
+
+    expect(outcome).toMatchObject({
+      tier: "propose",
+      proposal: { kind: "names", names: [expect.objectContaining({ contactId: lindaId, suggested: "Linda Jönsson" })] },
+    });
+    expect(await nameOf(lindaId)).toEqual({ first_name: "Jönsson", last_name: "Linda" });
+  });
+
+  it("come from the rule, never the model: there is no way to pass a name", async () => {
+    const tool = toolDefinitions().find((definition) => definition.name === "propose_names")!;
+    expect(Object.keys((tool.parameters as { properties: object }).properties)).toEqual(["contact_ids"]);
+
+    // A contact the rule has nothing for is refused, however it is asked.
+    const outcome = await call(alice, "propose_names", { contact_ids: [alice.karinId] });
+    expect(outcome).toMatchObject({ refused: expect.stringMatching(/no.*better name/i) });
+  });
+
+  it("are only ever your own", async () => {
+    const outcome = await call(bob, "things_to_decide", {});
+    const result = (outcome as { result: { better_names: { contact_id: string }[] } }).result;
+    expect(result.better_names.map((guess) => guess.contact_id)).not.toContain(lindaId);
+
+    // And Bob naming Alice's contact gets nothing to offer.
+    expect(await call(bob, "propose_names", { contact_ids: [lindaId] })).toMatchObject({ refused: expect.any(String) });
+  });
+});
 
 describe("a note", () => {
   it("cannot copy words out of a message the Assistant has read", async () => {

@@ -266,8 +266,12 @@ describe("what the Assistant is told", () => {
     expect(told).toContain("Never say you wrote, saved, sent or booked something you only proposed.");
   });
 
-  it("does only what it was asked", () => {
+  it("does only what it was asked, and stops rather than doing something else", () => {
     expect(told).toContain("Only do what the person asked for.");
+    // Found 2026-09-23: asked to "do all the Things to decide", it had no way
+    // to see them and moved two next touches instead.
+    expect(told).toContain("If you cannot do what was asked, or are not sure what was meant, say so and stop.");
+    expect(told).toContain("Read it with things_to_decide before answering anything about it.");
   });
 
   it("knows it cannot send, invite, delete, merge or change settings, and says so", () => {

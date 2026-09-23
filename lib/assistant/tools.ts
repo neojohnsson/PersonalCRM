@@ -1,7 +1,10 @@
 import "server-only";
 import { isUuid } from "@/lib/contacts/contact-form";
 import { displayName } from "@/lib/contacts/display";
+import { countDuplicates } from "@/lib/contacts/duplicate-list";
+import { suggestName } from "@/lib/contacts/name-suggestion";
 import { ilikePattern, normaliseQuery } from "@/lib/contacts/search";
+import { countPendingPromises } from "@/lib/ai/promise-list";
 import { summariesFor } from "@/lib/ai/summary-record";
 import { TONES, type Tone } from "@/lib/ai/draft-types";
 import { parseNewEvent } from "@/lib/calendar/new-event";
@@ -76,7 +79,17 @@ export type Proposal =
       minutes: number;
     }
   | { kind: "summary"; contactId: string; name: string; typicalUsd: number | null }
-  | { kind: "promise_scan"; typicalUsd: number | null };
+  | { kind: "promise_scan"; typicalUsd: number | null }
+  | { kind: "names"; names: NameGuess[] };
+
+/**
+ * A better name for one contact, worked out by the rules in
+ * lib/contacts/name-suggestion.ts — never by the model. The model can only say
+ * WHICH contacts; what they would be called comes from the rule, and the press
+ * goes through the contact page's own acceptSuggestedName, which applies the
+ * rule again and nothing else.
+ */
+export type NameGuess = { contactId: string; now: string; suggested: string; why: string };
 
 export type ToolOutcome =
   | { tier: "read"; result: unknown }
@@ -317,6 +330,47 @@ const TOOLS: Tool[] = [
     },
   },
 
+  {
+    name: "things_to_decide",
+    tier: "read",
+    description:
+      "What the page's \"Things to decide\" card lists: contacts with a better name to suggest (each one), " +
+      "duplicate pairs, summaries waiting for approval, and promises waiting. Use it whenever the person " +
+      "mentions Things to decide or any of these.",
+    parameters: object({}),
+    run: async (ctx) => {
+      const [names, duplicates, summaries, promises] = await Promise.all([
+        nameGuesses(ctx),
+        countDuplicates(ctx.db, ctx.userId),
+        ctx.db
+          .from("contact_summaries")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", ctx.userId)
+          .eq("status", "pending"),
+        countPendingPromises(ctx.db, ctx.userId),
+      ]);
+      if (summaries.error) throw supabaseError(summaries.error, "Couldn't count summaries");
+      return {
+        tier: "read",
+        result: {
+          better_names: names.map((guess) => ({
+            contact_id: guess.contactId,
+            now: guess.now,
+            suggested: guess.suggested,
+            why: guess.why,
+          })),
+          better_names_how: "Offer them with propose_names. Only the person can accept a name.",
+          duplicate_pairs: duplicates,
+          duplicates_how: "Only the person can merge, on the Compare page. You cannot merge or propose a merge.",
+          summaries_waiting: summaries.count ?? 0,
+          summaries_how: "Only the person can approve a summary, on the contact's page.",
+          promises_waiting: promises,
+          promises_how: "Only the person can accept or dismiss a promise, on the Promises page.",
+        },
+      };
+    },
+  },
+
   // ── act: the five reversible things, done at once and logged ────────────
   {
     name: "add_note",
@@ -455,6 +509,34 @@ const TOOLS: Tool[] = [
     },
   },
   {
+    name: "propose_names",
+    tier: "propose",
+    description:
+      "Offer the better names the app's rules suggest, as one card: each with Accept, and Accept all. " +
+      "Nothing is renamed until the person presses. You choose which contacts, never the names: pass null " +
+      "for every contact that has a suggestion.",
+    parameters: object({
+      contact_ids: {
+        type: ["array", "null"],
+        items: { type: "string" },
+        description: "Some of the contact_ids from things_to_decide, or null for all of them.",
+      },
+    }),
+    run: async (ctx, args) => {
+      const all = await nameGuesses(ctx);
+      const asked = Array.isArray(args.contact_ids) ? new Set(strings(args.contact_ids)) : null;
+      const names = asked ? all.filter((guess) => asked.has(guess.contactId)) : all;
+      if (names.length === 0) {
+        return { tier: "propose", refused: "None of those contacts has a better name to suggest right now." };
+      }
+      return {
+        tier: "propose",
+        result: `Shown to the person as a card with ${names.length} names.`,
+        proposal: { kind: "names", names },
+      };
+    },
+  },
+  {
     name: "propose_promise_scan",
     tier: "propose",
     description: "Offer to read recent mail for promises and deadlines. It costs money, so the person decides.",
@@ -536,6 +618,32 @@ function notFound(tier: ToolTier): ToolOutcome {
 async function act(run: () => Promise<LoggedAction>): Promise<ToolOutcome> {
   const action = await run();
   return { tier: "act", result: `Done: ${action.summary}. It can be undone from the page.`, action };
+}
+
+/** Every contact the name rules have a suggestion for, as the card on /assistant counts them. */
+async function nameGuesses(ctx: ToolContext): Promise<NameGuess[]> {
+  const contacts = await readAll<{ id: string; first_name: string | null; last_name: string | null; primary_email: string | null }>(
+    (from, to) =>
+      ctx.db
+        .from("contact_list")
+        .select("id, first_name, last_name, primary_email")
+        .eq("user_id", ctx.userId)
+        .order("id")
+        .range(from, to),
+    "Couldn't load contacts",
+  );
+  return contacts.flatMap((contact) => {
+    const suggestion = suggestName(contact);
+    if (!suggestion) return [];
+    return [
+      {
+        contactId: contact.id,
+        now: displayName(contact),
+        suggested: `${suggestion.first} ${suggestion.last}`,
+        why: suggestion.why,
+      },
+    ];
+  });
 }
 
 async function contactName(ctx: ToolContext, id: string): Promise<string | null> {
