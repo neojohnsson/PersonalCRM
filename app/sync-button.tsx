@@ -22,7 +22,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  *
  * Styled as design/ContactList.dc.html's dark pill button ("Add contact").
  */
-export function SyncButton() {
+export function SyncButton({ onDone }: { onDone?: () => void } = {}) {
   const [isSyncing, startSync] = useTransition();
   const [failed, setFailed] = useState(false);
 
@@ -32,7 +32,12 @@ export function SyncButton() {
       try {
         for (let step = 0; step < MAX_STEPS; step++) {
           const result = await syncStep();
-          if (result.done) break;
+          if (result.done) {
+            // The Assistant's sync card (slice 11b) is told; the header's
+            // button needs nothing, as each step already refreshed the page.
+            onDone?.();
+            break;
+          }
           await sleep(result.waitMs);
         }
       } catch {

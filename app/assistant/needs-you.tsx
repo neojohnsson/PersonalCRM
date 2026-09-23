@@ -16,8 +16,9 @@ import { approveSummaryAction, discardSummaryAction } from "@/app/contacts/[id]/
 import { Parts } from "@/app/contacts/[id]/summary-card";
 import { PromiseCard } from "@/app/assistant/promises/promise-card";
 import { addAsContacts, dismissPeople } from "@/app/seen-once/actions";
+import { SyncButton } from "@/app/sync-button";
 import type { PendingPromise } from "@/lib/ai/promise-list";
-import { dayMonth } from "@/lib/format";
+import { dayMonth, timeAgo } from "@/lib/format";
 import { priceInWords } from "@/lib/assistant/price";
 import type { NameGuess, Proposal, SeenOncePerson } from "@/lib/assistant/tools";
 import { DURATIONS } from "@/lib/calendar/new-event";
@@ -72,6 +73,8 @@ export function NeedsYouCard({ proposal, onSettled }: { proposal: Proposal; onSe
       return <PromisesCard promises={proposal.promises} onSettled={onSettled} />;
     case "seen_once":
       return <SeenOnceCard people={proposal.people} onSettled={onSettled} />;
+    case "sync":
+      return <SyncCard lastSyncedAt={proposal.lastSyncedAt} onSettled={onSettled} />;
   }
 }
 
@@ -889,6 +892,44 @@ function SeenOnceCard({ people, onSettled }: { people: SeenOncePerson[]; onSettl
         <Link href="/seen-once/dismissed" className="self-start text-[12.5px] font-semibold text-info-ink">
           The Dismissed page
         </Link>
+      )}
+    </Card>
+  );
+}
+
+// ── A sync ─────────────────────────────────────────────────────────────────
+
+/**
+ * The header's own Sync now button (app/sync-button.tsx), so the sync runs
+ * the same way — one step after another, paced to Gmail's quota — with the
+ * card told when it has finished.
+ */
+function SyncCard({ lastSyncedAt, onSettled }: { lastSyncedAt: string | null; onSettled: Settle }) {
+  const [done, setDone] = useState(false);
+
+  return (
+    <Card
+      title="Sync Gmail now"
+      state={done ? "done" : "needs"}
+      small="It reads who wrote to whom and when, and the subject line — never the words of a message. Keep this tab open until it finishes."
+      error={null}
+    >
+      <p className="text-[12.5px] leading-[1.5] text-ink-body">
+        {done
+          ? "Synced. The cards above are up to date."
+          : lastSyncedAt
+            ? `Last synced ${timeAgo(lastSyncedAt)}.`
+            : "Gmail has not been synced yet."}
+      </p>
+      {!done && (
+        <div className="self-start">
+          <SyncButton
+            onDone={() => {
+              setDone(true);
+              onSettled("The person synced Gmail; the page is up to date.");
+            }}
+          />
+        </div>
       )}
     </Card>
   );

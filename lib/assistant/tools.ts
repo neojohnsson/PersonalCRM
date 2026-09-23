@@ -88,7 +88,8 @@ export type Proposal =
   | { kind: "new_contact"; values: NewContact }
   | { kind: "summary_review"; name: string; summary: SavedSummary; gmailEmail: string | null }
   | { kind: "promises"; promises: PendingPromise[] }
-  | { kind: "seen_once"; people: SeenOncePerson[] };
+  | { kind: "seen_once"; people: SeenOncePerson[] }
+  | { kind: "sync"; lastSyncedAt: string | null };
 
 /** One person in the Seen once queue. Name and subject are from mail headers. */
 export type SeenOncePerson = {
@@ -846,6 +847,31 @@ const TOOLS: Tool[] = [
         tier: "propose",
         result: `Shown to the person as a card with ${people.length} ${people.length === 1 ? "person" : "people"}. Nothing happens until they press.`,
         proposal: { kind: "seen_once", people },
+      };
+    },
+  },
+  {
+    name: "propose_sync",
+    tier: "propose",
+    description:
+      "Offer to sync Gmail now, as a card with the Sync now button. Nothing is read until the person presses. " +
+      "It fetches who wrote to whom and when; never the words of a message.",
+    parameters: object({}),
+    run: async (ctx) => {
+      const [{ data: sync, error }, { data: gmail, error: gmailError }] = await Promise.all([
+        ctx.db.from("gmail_sync_state").select("status, last_synced_at").eq("user_id", ctx.userId).maybeSingle(),
+        ctx.db.from("google_accounts").select("email").eq("user_id", ctx.userId).maybeSingle(),
+      ]);
+      if (error) throw supabaseError(error, "Couldn't load the sync status");
+      if (gmailError) throw supabaseError(gmailError, "Couldn't check the Gmail connection");
+      if (!gmail) return { tier: "propose", refused: "Gmail isn't connected. The person connects it on the Connect page." };
+      if (sync?.status === "needs_reconnect") {
+        return { tier: "propose", refused: "Gmail needs connecting again, on the Connect page, before it can sync." };
+      }
+      return {
+        tier: "propose",
+        result: "Shown to the person as a card with Sync now. Nothing is read until they press it.",
+        proposal: { kind: "sync", lastSyncedAt: (sync?.last_synced_at as string | null) ?? null },
       };
     },
   },

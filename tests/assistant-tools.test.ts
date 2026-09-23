@@ -132,6 +132,7 @@ describe("the tools the Assistant is given", () => {
       propose_summary_review: "propose",
       propose_promises: "propose",
       propose_seen_once: "propose",
+      propose_sync: "propose",
     });
   });
 
@@ -590,6 +591,39 @@ describe("what is waiting on the person", () => {
       .select("id", { count: "exact", head: true })
       .eq("email", stranger);
     expect(count).toBe(0);
+  });
+});
+
+describe("a sync", () => {
+  it("is offered only with Gmail connected, and reads nothing by being offered", async () => {
+    // Alice never connected Gmail.
+    expect(await call(alice, "propose_sync", {})).toMatchObject({ refused: expect.stringMatching(/isn't connected/) });
+
+    // Bob did, and synced once. Written as the connect and the sync would.
+    await admin.from("google_accounts").insert({
+      user_id: bob.user.id,
+      email: "bob@example.com",
+      refresh_token_encrypted: "not-a-real-token",
+      scopes: [],
+    });
+    await admin.from("gmail_sync_state").insert({ user_id: bob.user.id, status: "synced", last_synced_at: "2026-09-23T08:00:00Z" });
+
+    expect(await call(bob, "propose_sync", {})).toMatchObject({
+      tier: "propose",
+      proposal: { kind: "sync", lastSyncedAt: expect.stringMatching(/^2026-09-23T08:00:00/) },
+    });
+    const { data } = await admin.from("gmail_sync_state").select("status, last_synced_at").eq("user_id", bob.user.id).single();
+    expect(data).toMatchObject({ status: "synced", last_synced_at: expect.stringMatching(/^2026-09-23T08:00:00/) });
+  });
+
+  it("is not offered when Gmail needs connecting again", async () => {
+    await admin.from("gmail_sync_state").update({ status: "needs_reconnect" }).eq("user_id", bob.user.id);
+    expect(await call(bob, "propose_sync", {})).toMatchObject({ refused: expect.stringMatching(/needs connecting again/) });
+  });
+
+  it("syncs only through the header's own button", () => {
+    const cards = readFileSync("app/assistant/needs-you.tsx", "utf8");
+    expect(cards).toContain('import { SyncButton } from "@/app/sync-button";');
   });
 });
 
