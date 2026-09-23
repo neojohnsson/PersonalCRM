@@ -87,7 +87,18 @@ export type Proposal =
   | { kind: "contact_edit"; contactId: string; name: string; changes: FieldChange[] }
   | { kind: "new_contact"; values: NewContact }
   | { kind: "summary_review"; name: string; summary: SavedSummary; gmailEmail: string | null }
-  | { kind: "promises"; promises: PendingPromise[] };
+  | { kind: "promises"; promises: PendingPromise[] }
+  | { kind: "seen_once"; people: SeenOncePerson[] };
+
+/** One person in the Seen once queue. Name and subject are from mail headers. */
+export type SeenOncePerson = {
+  email: string;
+  name: string | null;
+  fromThem: number;
+  fromYou: number;
+  subject: string | null;
+  day: string | null;
+};
 
 /**
  * A better name for one contact, worked out by the rules in
@@ -386,30 +397,22 @@ const TOOLS: Tool[] = [
       "contacts. The newest 30, with how much mail each way, and how many there are in all.",
     parameters: object({}),
     run: async (ctx) => {
-      const { data, count, error } = await ctx.db
-        .from("person_tiers")
-        .select("email, name, sent_count, received_count, last_contact_at, last_subject", { count: "exact" })
-        .eq("user_id", ctx.userId)
-        .eq("tier", "seen_once")
-        .is("contact_id", null)
-        .order("last_contact_at", { ascending: false })
-        .limit(SEEN_ONCE_SHOWN);
-      if (error) throw supabaseError(error, "Couldn't load Seen once");
+      const { people, total } = await seenOncePeople(ctx, null);
       return {
         tier: "read",
         result: {
           // Names and subjects are from mail headers: somebody else wrote them.
           untrusted_mail: true,
-          total: count ?? data.length,
-          people: data.map((row) => ({
-            email: row.email as string,
-            name: (row.name as string | null) ?? null,
-            from_them: row.received_count as number,
-            from_you: row.sent_count as number,
-            last_subject: (row.last_subject as string | null) ?? null,
-            last_day: row.last_contact_at ? todayIn("Europe/Stockholm", new Date(row.last_contact_at as string)) : null,
+          total,
+          people: people.map((person) => ({
+            email: person.email,
+            name: person.name,
+            from_them: person.fromThem,
+            from_you: person.fromYou,
+            last_subject: person.subject,
+            last_day: person.day,
           })),
-          how: "Only the person adds or dismisses people, on the Seen once page.",
+          how: "Offer them with propose_seen_once; only the person adds or dismisses anyone.",
         },
       };
     },
@@ -822,6 +825,31 @@ const TOOLS: Tool[] = [
     },
   },
   {
+    name: "propose_seen_once",
+    tier: "propose",
+    description:
+      "Show people from the Seen once queue as a card, each with Add as contact and Dismiss, and both for " +
+      "everyone on the card. Nothing happens until the person presses. Pass emails from seen_once, or null " +
+      "for the newest 30.",
+    parameters: object({
+      emails: {
+        type: ["array", "null"],
+        items: { type: "string" },
+        description: "Some email addresses from seen_once, or null for the newest 30.",
+      },
+    }),
+    run: async (ctx, args) => {
+      const asked = Array.isArray(args.emails) ? strings(args.emails).map((email) => email.trim().toLowerCase()) : null;
+      const { people } = await seenOncePeople(ctx, asked);
+      if (people.length === 0) return { tier: "propose", refused: "None of those are in Seen once." };
+      return {
+        tier: "propose",
+        result: `Shown to the person as a card with ${people.length} ${people.length === 1 ? "person" : "people"}. Nothing happens until they press.`,
+        proposal: { kind: "seen_once", people },
+      };
+    },
+  },
+  {
     name: "propose_promise_scan",
     tier: "propose",
     description: "Offer to read recent mail for promises and deadlines. It costs money, so the person decides.",
@@ -909,6 +937,37 @@ async function act(run: () => Promise<LoggedAction>): Promise<ToolOutcome> {
 const SEEN_ONCE_SHOWN = 30;
 /** How many waiting summaries or promises a read shows. */
 const WAITING_SHOWN = 30;
+
+/**
+ * The Seen once queue as its page reads it (app/seen-once/page.tsx): newest
+ * first, only addresses that are nobody's contact. `emails` narrows it to
+ * those; an address not in the queue is simply not found.
+ */
+async function seenOncePeople(
+  ctx: ToolContext,
+  emails: string[] | null,
+): Promise<{ people: SeenOncePerson[]; total: number }> {
+  let query = ctx.db
+    .from("person_tiers")
+    .select("email, name, sent_count, received_count, last_contact_at, last_subject", { count: "exact" })
+    .eq("user_id", ctx.userId)
+    .eq("tier", "seen_once")
+    .is("contact_id", null);
+  if (emails) query = query.in("email", emails.slice(0, SEEN_ONCE_SHOWN));
+  const { data, count, error } = await query.order("last_contact_at", { ascending: false }).limit(SEEN_ONCE_SHOWN);
+  if (error) throw supabaseError(error, "Couldn't load Seen once");
+  return {
+    total: count ?? data.length,
+    people: data.map((row) => ({
+      email: row.email as string,
+      name: (row.name as string | null) ?? null,
+      fromThem: row.received_count as number,
+      fromYou: row.sent_count as number,
+      subject: (row.last_subject as string | null) ?? null,
+      day: row.last_contact_at ? todayIn("Europe/Stockholm", new Date(row.last_contact_at as string)) : null,
+    })),
+  };
+}
 
 /** Names for a handful of contact ids, as the page shows them. */
 async function contactNames(ctx: ToolContext, ids: string[]): Promise<Map<string, string>> {

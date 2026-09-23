@@ -15,10 +15,11 @@ import { discardDraftAction, saveDraftAction } from "@/app/contacts/[id]/draft-a
 import { approveSummaryAction, discardSummaryAction } from "@/app/contacts/[id]/summary-actions";
 import { Parts } from "@/app/contacts/[id]/summary-card";
 import { PromiseCard } from "@/app/assistant/promises/promise-card";
+import { addAsContacts, dismissPeople } from "@/app/seen-once/actions";
 import type { PendingPromise } from "@/lib/ai/promise-list";
 import { dayMonth } from "@/lib/format";
 import { priceInWords } from "@/lib/assistant/price";
-import type { NameGuess, Proposal } from "@/lib/assistant/tools";
+import type { NameGuess, Proposal, SeenOncePerson } from "@/lib/assistant/tools";
 import { DURATIONS } from "@/lib/calendar/new-event";
 import { FIELD_LABELS, type FieldChange, type NewContact } from "@/lib/contacts/edit-fields";
 
@@ -69,6 +70,8 @@ export function NeedsYouCard({ proposal, onSettled }: { proposal: Proposal; onSe
       return <SummaryReviewCard proposal={proposal} onSettled={onSettled} />;
     case "promises":
       return <PromisesCard promises={proposal.promises} onSettled={onSettled} />;
+    case "seen_once":
+      return <SeenOnceCard people={proposal.people} onSettled={onSettled} />;
   }
 }
 
@@ -802,6 +805,91 @@ function PromisesCard({ promises, onSettled }: { promises: PendingPromise[]; onS
           ),
         )}
       </ul>
+    </Card>
+  );
+}
+
+// ── Seen once ──────────────────────────────────────────────────────────────
+
+/**
+ * People from the Seen once queue, each with the queue's own two buttons —
+ * addAsContacts and dismissPeople, the same Server Actions, which only act on
+ * addresses really in your queue (migration 0007) — and both for everyone
+ * still on the card. Names and subjects are shown as data: they are from mail
+ * headers, written by whoever sent the mail.
+ */
+function SeenOnceCard({ people, onSettled }: { people: SeenOncePerson[]; onSettled: Settle }) {
+  const [decided, setDecided] = useState<Record<string, "added" | "dismissed">>({});
+  const [pending, start] = useTransition();
+  const left = people.filter((person) => !decided[person.email]);
+
+  function act(which: SeenOncePerson[], decision: "added" | "dismissed") {
+    start(async () => {
+      const form = new FormData();
+      for (const person of which) form.append("email", person.email);
+      await (decision === "added" ? addAsContacts(null, form) : dismissPeople(null, form));
+      setDecided((all) => ({ ...all, ...Object.fromEntries(which.map((person) => [person.email, decision])) }));
+      const who = which.length === 1 ? which[0].email : `${which.length} people from Seen once`;
+      onSettled(decision === "added" ? `The person added ${who} as contacts.` : `The person dismissed ${who}.`);
+    });
+  }
+
+  return (
+    <Card
+      title={people.length === 1 ? "Someone from Seen once" : `${people.length} people from Seen once`}
+      state={left.length === 0 ? "done" : "needs"}
+      small="Dismiss forgets the mail they sent and skips them from now on. Changed your mind? Undo it on the Dismissed page."
+      error={null}
+    >
+      <ul className="flex max-h-[380px] flex-col overflow-y-auto rounded-[12px] bg-paper">
+        {people.map((person) => {
+          const done = decided[person.email];
+          return (
+            <li
+              key={person.email}
+              className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-white px-[13px] py-2.5 first:border-t-0"
+            >
+              <div className="flex min-w-0 flex-1 basis-48 flex-col gap-0.5">
+                <span className="truncate text-[13px] font-semibold">{person.name ?? person.email}</span>
+                <span className="truncate text-[11.5px] text-ink-soft">
+                  {person.name ? `${person.email} · ` : ""}
+                  {person.fromThem} from them, {person.fromYou} from you
+                  {person.subject ? ` · “${person.subject}”` : ""}
+                </span>
+              </div>
+              {done ? (
+                <span className={`text-[12px] font-semibold ${done === "added" ? "text-affirm" : "text-ink-soft"}`}>
+                  {done === "added" ? "Added as a contact" : "Dismissed"}
+                </span>
+              ) : (
+                <span className="flex shrink-0 gap-1.5">
+                  <Secondary onClick={() => act([person], "added")} disabled={pending}>
+                    Add
+                  </Secondary>
+                  <Quiet onClick={() => act([person], "dismissed")} disabled={pending}>
+                    Dismiss
+                  </Quiet>
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {left.length > 1 && (
+        <Buttons>
+          <Primary onClick={() => act(left, "added")} disabled={pending}>
+            {pending ? "Working…" : `Add all ${left.length}`}
+          </Primary>
+          <Quiet onClick={() => act(left, "dismissed")} disabled={pending}>
+            Dismiss all {left.length}
+          </Quiet>
+        </Buttons>
+      )}
+      {Object.values(decided).includes("dismissed") && (
+        <Link href="/seen-once/dismissed" className="self-start text-[12.5px] font-semibold text-info-ink">
+          The Dismissed page
+        </Link>
+      )}
     </Card>
   );
 }

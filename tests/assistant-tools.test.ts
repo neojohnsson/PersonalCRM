@@ -131,6 +131,7 @@ describe("the tools the Assistant is given", () => {
       propose_new_contact: "propose",
       propose_summary_review: "propose",
       propose_promises: "propose",
+      propose_seen_once: "propose",
     });
   });
 
@@ -557,6 +558,28 @@ describe("what is waiting on the person", () => {
     expect(cards).toContain('import { PromiseCard } from "@/app/assistant/promises/promise-card";');
     const row = readFileSync("app/assistant/promises/promise-card.tsx", "utf8");
     expect(row).toContain('import { acceptPromise, dismissPromise, type DecideState } from "@/app/assistant/promises/actions";');
+  });
+
+  it("shows Seen once people as a card, and adds or dismisses nobody by showing them", async () => {
+    const outcome = await call(alice, "propose_seen_once", { emails: [stranger.toUpperCase()] });
+
+    expect(outcome).toMatchObject({
+      tier: "propose",
+      proposal: { kind: "seen_once", people: [expect.objectContaining({ email: stranger, fromThem: 1, fromYou: 0 })] },
+    });
+    const { count } = await admin.from("seen_once_dismissals").select("email", { count: "exact", head: true }).eq("email", stranger);
+    expect(count).toBe(0);
+  });
+
+  it("shows nobody who is not in your Seen once", async () => {
+    expect(await call(bob, "propose_seen_once", { emails: [stranger] })).toMatchObject({
+      refused: "None of those are in Seen once.",
+    });
+  });
+
+  it("adds and dismisses only through the Seen once page's own actions", () => {
+    const cards = readFileSync("app/assistant/needs-you.tsx", "utf8");
+    expect(cards).toContain('import { addAsContacts, dismissPeople } from "@/app/seen-once/actions";');
   });
 
   it("changes nothing by being read", async () => {
