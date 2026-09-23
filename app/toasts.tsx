@@ -139,14 +139,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 disabled={toast.state === "running"}
                 className="shrink-0 rounded-full border border-white/25 px-[13px] py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-white/10 disabled:opacity-60"
               >
-                {toast.state === "running" ? "Undoing…" : toast.action.label}
+                {toast.state === "running" ? "Undoing…" : toast.error ? "Try again" : toast.action.label}
               </button>
             )}
 
             <button
               type="button"
               onClick={() => close(true)}
-              aria-label="Close"
+              aria-label={toast.error ? "Dismiss error message" : "Dismiss undo message"}
               className="shrink-0 text-ink-ghost transition-colors hover:text-white"
             >
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="size-[15px]">

@@ -54,6 +54,7 @@ export function SyncButton({ onDone, onCard = false }: { onDone?: () => void; on
         type="button"
         onClick={sync}
         disabled={isSyncing}
+        aria-busy={isSyncing}
         // White, like the design's sort pill: the dark pill beside it is
         // "Add contact", the page's main action. On an Assistant card, which
         // is white itself, it is the card's dark main button instead.

@@ -109,7 +109,13 @@ export async function AppShell({
   return (
     <ToastProvider>
       <div className="flex flex-1 bg-paper text-ink">
-        <aside className="sticky top-0 hidden h-dvh w-14 shrink-0 flex-col items-center gap-[3px] self-start bg-ink-deep pt-3.5 pb-4 sm:flex">
+        <a
+          href="#main-content"
+          className="sr-only fixed left-3 top-3 z-50 rounded-full bg-ink-deep px-4 py-2 text-[13px] font-semibold text-white focus:not-sr-only focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-paper"
+        >
+          Skip to main content
+        </a>
+        <aside className="sticky top-0 z-40 hidden h-dvh w-14 shrink-0 flex-col items-center gap-[3px] self-start bg-ink-deep pt-3.5 pb-4 sm:flex">
           <div
             aria-hidden="true"
             className="mb-3 flex size-[30px] items-center justify-center rounded-[9px] bg-white"
@@ -170,7 +176,9 @@ export async function AppShell({
             <div className="ml-auto flex items-center gap-2">{headerRight}</div>
           </header>
 
-          {children}
+          <div id="main-content" className="flex min-w-0 flex-1 flex-col focus:outline-none" tabIndex={-1}>
+            {children}
+          </div>
         </div>
 
         <BottomBar active={active} pages={pages} seenOnceCount={seenOnceCount} userEmail={userEmail} />
@@ -298,7 +306,7 @@ function BottomItem({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`relative flex min-h-[58px] flex-1 flex-col items-center justify-center gap-1 ${
+      className={`relative flex min-h-[58px] flex-1 flex-col items-center justify-center gap-1 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset ${
         active ? "text-ink" : "text-ink-soft"
       }`}
     >
@@ -352,7 +360,7 @@ function NavItem({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`group relative flex size-9 items-center justify-center rounded-[11px] transition-colors ${
+      className={`group relative flex size-9 items-center justify-center rounded-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-ink-deep ${
         active ? "bg-rail-active text-white" : "text-rail-icon hover:text-white"
       }`}
     >

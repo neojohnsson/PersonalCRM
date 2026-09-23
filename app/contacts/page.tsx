@@ -242,7 +242,10 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
         <h1 className="sr-only">Contacts</h1>
 
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <ListTabs contacts={totalContacts} seenOnce={seenOnce} />
+          <div className="flex flex-wrap items-center gap-4">
+            <h1 className="text-[24px] leading-[1.1] font-bold tracking-[-0.03em]">Contacts</h1>
+            <ListTabs contacts={totalContacts} seenOnce={seenOnce} />
+          </div>
 
           <div className="flex w-full flex-wrap items-start gap-2 sm:w-auto">
             <SearchBox query={query} />
@@ -530,7 +533,7 @@ function ContactTable({
         </tbody>
       </table>
 
-      <div className="flex items-center justify-between border-t border-line-soft px-[22px] py-2.5">
+      <div aria-live="polite" className="flex items-center justify-between border-t border-line-soft px-[22px] py-2.5">
         <span className="text-[11.5px] font-medium text-ink-ghost">
           Showing {items.length.toLocaleString("en-GB")} of {countOf(total, "contact")}
         </span>

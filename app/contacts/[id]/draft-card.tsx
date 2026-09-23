@@ -188,6 +188,9 @@ export function DraftCard({
                 onChange={(event) => setBody(event.currentTarget.value)}
                 className="w-full resize-y rounded-[11px] border border-line-strong bg-white px-3 py-2.5 text-[13.5px] leading-[1.6] text-ink outline-none transition focus:border-ink-faint focus:ring-2 focus:ring-ink/10"
               />
+              <div className="flex justify-end text-[11.5px] tabular-nums text-ink-faint" aria-live="polite">
+                {body.length.toLocaleString("en-GB")} / {MAX_BODY_CHARS.toLocaleString("en-GB")}
+              </div>
             </div>
 
             {hits.length > 0 && (
