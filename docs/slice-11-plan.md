@@ -119,9 +119,17 @@ privacy page promises never happens.
 
 ## 7. Premium
 
-`profiles.assistant_enabled`, a boolean (migration 0025), **on for you, off by default**. Off:
-no sidebar entry, and `/assistant` sends you Home. Slice 13 (release) wires real
-subscriptions to the same flag without touching the feature.
+**`entitlements.assistant`**, in a table of its own (migration 0025), **off by default** and
+switched on for you by one line in the SQL Editor. Off: no sidebar entry, and `/assistant`
+sends you Home. Slice 13 (release) wires real subscriptions to the same flag without touching
+the feature.
+
+_Changed while writing the migration, 2026-09-23:_ this first said a column on `profiles`.
+That would have been a free upgrade for anyone with the browser's developer tools —
+`profiles` lets you update your own row, and RLS decides which row, never which column. The
+new table has a read policy and **no write policy at all**, so nobody can change it through
+the API, including for themselves. The migration also grants nobody: a trial run found two
+real accounts on the project, not one.
 
 ## 8. Your week and Promises go
 
