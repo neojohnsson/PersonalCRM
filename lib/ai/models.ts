@@ -3,7 +3,8 @@
  * (docs/slice-4-plan.md, Part 2 and decision A).
  *
  * Prices in US dollars per million tokens, from
- * https://developers.openai.com/api/docs/pricing — checked 2026-09-17.
+ * https://developers.openai.com/api/docs/pricing — checked 2026-09-17, and
+ * again 2026-09-23 before the Assistant spent anything.
  * When OpenAI changes a price, change it here: the cap is only as right as
  * these numbers. A model not in this list is refused, because its cost
  * couldn't be counted.
@@ -12,7 +13,11 @@
 export type ModelPrice = { input: number; cachedInput: number; output: number };
 
 export const MODEL_PRICES: Record<string, ModelPrice> = {
-  "gpt-5.6-luna": { input: 0.2, cachedInput: 0.02, output: 1.2 },
+  // 2026-09-23: output fell from $1.20 to $0.75, and a "cache writes" price
+  // of $0.25 appeared. OpenAI's usage report does not say which input tokens
+  // were cache writes, so every uncached input token is counted at the higher
+  // $0.25 -- too strict, never too loose, as the cap is meant to be.
+  "gpt-5.6-luna": { input: 0.25, cachedInput: 0.02, output: 0.75 },
   "gpt-5-nano": { input: 0.05, cachedInput: 0.005, output: 0.4 },
   "gpt-5-mini": { input: 0.25, cachedInput: 0.025, output: 2.0 },
   "gpt-5.4-nano": { input: 0.2, cachedInput: 0.02, output: 1.25 },

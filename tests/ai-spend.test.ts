@@ -20,8 +20,8 @@ const admin = createClient(SUPABASE_URL, SECRET_KEY, {
 
 const MODEL = "gpt-5.6-luna";
 const USAGE = { inputTokens: 10_000, cachedInputTokens: 0, outputTokens: 1_000 };
-// 10,000 × $0.20/M + 1,000 × $1.20/M
-const USAGE_COST = 0.0032;
+// 10,000 × $0.25/M + 1,000 × $0.75/M (prices re-checked 2026-09-23)
+const USAGE_COST = 0.00325;
 
 describe("withSpendCap", () => {
   let alice: User;
