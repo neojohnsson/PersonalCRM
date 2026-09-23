@@ -188,6 +188,10 @@ describe("what the app says about the calendar", () => {
     "view events and nothing else",
     "asks for permission to view events",
     "there never will be",
+    // Missed by the first version of this list and found by hand on
+    // 2026-09-23, on the Calendar page's own Connect card.
+    "Nothing in your calendar is ever created or changed",
+    "never asks Google for permission to",
   ];
 
   it("no longer says it cannot create an event", () => {

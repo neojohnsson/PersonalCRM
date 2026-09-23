@@ -1,4 +1,5 @@
 import { CalendarPanel } from "@/app/connect/calendar-panel";
+import { CALENDAR_NOTES } from "@/app/connect/calendar-notes";
 import { calendarConnection } from "@/lib/google/calendar-tokens";
 import { createClient } from "@/lib/supabase/server";
 import { APP_NAME } from "@/lib/app-config";
@@ -52,12 +53,6 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 const FALLBACK_ERROR = "Something went wrong connecting Gmail. Try again.";
 
-/** ?calendar=… after the calendar's own consent, which is not an error. */
-const CALENDAR_NOTES: Record<string, string> = {
-  connected: "Your calendar is connected, and the last three months have been read.",
-  unread:
-    "Your calendar is connected, but reading it didn't finish. Press Read my calendar below.",
-};
 
 /**
  * The screen that runs before Google's consent screen.
