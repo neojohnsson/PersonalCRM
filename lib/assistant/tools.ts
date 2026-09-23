@@ -1,6 +1,7 @@
 import "server-only";
-import { isUuid } from "@/lib/contacts/contact-form";
+import { isUuid, parseContactForm } from "@/lib/contacts/contact-form";
 import { displayName } from "@/lib/contacts/display";
+import { EDITABLE_FIELDS, FIELD_LABELS, type FieldChange, type NewContact } from "@/lib/contacts/edit-fields";
 import { countDuplicates } from "@/lib/contacts/duplicate-list";
 import { suggestName } from "@/lib/contacts/name-suggestion";
 import { ilikePattern, normaliseQuery } from "@/lib/contacts/search";
@@ -80,7 +81,9 @@ export type Proposal =
     }
   | { kind: "summary"; contactId: string; name: string; typicalUsd: number | null }
   | { kind: "promise_scan"; typicalUsd: number | null }
-  | { kind: "names"; names: NameGuess[] };
+  | { kind: "names"; names: NameGuess[] }
+  | { kind: "contact_edit"; contactId: string; name: string; changes: FieldChange[] }
+  | { kind: "new_contact"; values: NewContact };
 
 /**
  * A better name for one contact, worked out by the rules in
@@ -641,6 +644,117 @@ const TOOLS: Tool[] = [
         tier: "propose",
         result: `Shown to the person as a card with ${names.length} names.`,
         proposal: { kind: "names", names },
+      };
+    },
+  },
+  {
+    name: "propose_contact_edit",
+    tier: "propose",
+    description:
+      "Offer to change a contact's details, as a card showing each field before and after. Nothing is saved " +
+      "until the person presses. Use only values the person gave you, never ones read in mail. Pass null for " +
+      "every field that should stay as it is. Email addresses, notes and tags are not changed here.",
+    parameters: object({
+      contact_id: contactId,
+      first_name: nullableText("New first name, or null."),
+      last_name: nullableText("New last name, or null."),
+      company: nullableText("New company, or null."),
+      role: nullableText("New role, or null."),
+      one_liner: nullableText("New one-line description, or null."),
+      how_known: nullableText("New 'how you know them', or null."),
+      phone: nullableText("New phone number, or null."),
+    }),
+    run: async (ctx, args) => {
+      const id = contactIdOf(args);
+      const { data: contact, error } = await ctx.db
+        .from("contacts")
+        .select(`id, ${EDITABLE_FIELDS.join(", ")}`)
+        .eq("user_id", ctx.userId)
+        .eq("id", id)
+        .maybeSingle<Record<string, string | null>>();
+      if (error) throw supabaseError(error, "Couldn't load the contact");
+      if (!contact) return notFound("propose");
+
+      const changes: FieldChange[] = [];
+      for (const field of EDITABLE_FIELDS) {
+        if (typeof args[field] !== "string") continue;
+        const after = (args[field] as string).trim() || null;
+        const before = contact[field] ?? null;
+        if (after !== before) changes.push({ field, before, after });
+      }
+      if (changes.length === 0) return { tier: "propose", refused: "Nothing would change: those are already its details." };
+
+      // The form's own checks, now, so a card never offers what could not be saved.
+      const form = new FormData();
+      for (const change of changes) form.set(change.field, change.after ?? "");
+      const parsed = parseContactForm(form);
+      const problems = changes.flatMap((change) =>
+        !parsed.ok && parsed.errors[change.field] ? [`${FIELD_LABELS[change.field]}: ${parsed.errors[change.field]}`] : [],
+      );
+      if (problems.length > 0) return { tier: "propose", refused: problems.join(" ") };
+
+      return {
+        tier: "propose",
+        result: "Shown to the person as a card. Nothing is saved until they press Save.",
+        proposal: {
+          kind: "contact_edit",
+          contactId: id,
+          name: (await contactNames(ctx, [id])).get(id) ?? "this contact",
+          changes,
+        },
+      };
+    },
+  },
+  {
+    name: "propose_new_contact",
+    tier: "propose",
+    description:
+      "Offer to add a new contact, as a card. Nothing is added until the person presses. It needs a name or an " +
+      "address. Use only what the person gave you.",
+    parameters: object({
+      first_name: nullableText("First name, or null."),
+      last_name: nullableText("Last name, or null."),
+      email: nullableText("Their email address, or null."),
+      company: nullableText("Company, or null."),
+      role: nullableText("Role, or null."),
+    }),
+    run: async (ctx, args) => {
+      const clean = (value: unknown) => (typeof value === "string" && value.trim() ? value.trim() : null);
+      const values: NewContact = {
+        first_name: clean(args.first_name),
+        last_name: clean(args.last_name),
+        email: clean(args.email)?.toLowerCase() ?? null,
+        company: clean(args.company),
+        role: clean(args.role),
+      };
+      if (!values.first_name && !values.last_name && !values.email) {
+        return { tier: "propose", refused: "A contact needs a name or an address." };
+      }
+
+      const form = new FormData();
+      for (const field of ["first_name", "last_name", "company", "role"] as const) form.set(field, values[field] ?? "");
+      if (values.email) form.append("emails", values.email);
+      const parsed = parseContactForm(form);
+      if (!parsed.ok) return { tier: "propose", refused: Object.values(parsed.errors).join(" ") };
+
+      if (values.email) {
+        const { data: taken, error } = await ctx.db
+          .from("contact_emails")
+          .select("contact_id")
+          .eq("user_id", ctx.userId)
+          .eq("email", values.email)
+          .maybeSingle();
+        if (error) throw supabaseError(error, "Couldn't check the address");
+        if (taken) {
+          const owner = (await contactNames(ctx, [taken.contact_id as string])).get(taken.contact_id as string);
+          return { tier: "propose", refused: `${values.email} already belongs to ${owner ?? "a contact"}.` };
+        }
+      }
+
+      return {
+        tier: "propose",
+        result: "Shown to the person as a card. Nothing is added until they press Add.",
+        proposal: { kind: "new_contact", values },
       };
     },
   },

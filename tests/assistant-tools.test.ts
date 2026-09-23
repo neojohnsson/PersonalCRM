@@ -126,12 +126,16 @@ describe("the tools the Assistant is given", () => {
       propose_summary: "propose",
       propose_promise_scan: "propose",
       propose_names: "propose",
+      propose_contact_edit: "propose",
+      propose_new_contact: "propose",
     });
   });
 
   it("include nothing that sends, deletes, merges, invites or changes a setting", () => {
     // A model cannot call a function it was never given. This is the line.
-    const forbidden = /send|delete|remove_contact|dismiss|merge|invite|guest|attendee|profile|privacy|setting|account|export|disconnect/i;
+    // docs/slice-11b-plan.md §3, the never list, by name.
+    const forbidden =
+      /send|delete|remove_contact|dismiss|merge|invite|guest|attendee|profile|privacy|setting|account|export|disconnect|connect_|oauth|token/i;
     for (const name of Object.keys(TOOL_TIERS)) {
       expect(name, name).not.toMatch(forbidden);
     }

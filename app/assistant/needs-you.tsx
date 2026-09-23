@@ -2,13 +2,20 @@
 
 import Link from "next/link";
 import { useState, useTransition, type ReactNode } from "react";
-import { runProposedScan, writeProposedDraft, writeProposedSummary } from "@/app/assistant/actions";
+import {
+  addProposedContact,
+  runProposedScan,
+  saveProposedEdit,
+  writeProposedDraft,
+  writeProposedSummary,
+} from "@/app/assistant/actions";
 import { createCalendarEvent } from "@/app/connect/calendar-actions";
 import { acceptSuggestedName, setContactName } from "@/app/contacts/[id]/actions";
 import { discardDraftAction, saveDraftAction } from "@/app/contacts/[id]/draft-actions";
 import { priceInWords } from "@/lib/assistant/price";
 import type { NameGuess, Proposal } from "@/lib/assistant/tools";
 import { DURATIONS } from "@/lib/calendar/new-event";
+import { FIELD_LABELS, type FieldChange, type NewContact } from "@/lib/contacts/edit-fields";
 
 /**
  * The "Needs you" cards (slice 11, commit 6), from the approved design's
@@ -31,8 +38,8 @@ import { DURATIONS } from "@/lib/calendar/new-event";
  *   - no "To karin@…" line: the address is taken from the thread again when
  *     you press "Save to Gmail" (lib/ai/draft-save.ts), so one shown now
  *     could be out of date by then.
- *   - the summary, promise-scan and better-names cards have no design; they
- *     reuse this one.
+ *   - the summary, promise-scan, better-names and contact cards have no
+ *     design; they reuse this one.
  */
 
 type Settle = (note: string) => void;
@@ -49,6 +56,10 @@ export function NeedsYouCard({ proposal, onSettled }: { proposal: Proposal; onSe
       return <ScanCard proposal={proposal} onSettled={onSettled} />;
     case "names":
       return <NamesCard names={proposal.names} onSettled={onSettled} />;
+    case "contact_edit":
+      return <EditCard proposal={proposal} onSettled={onSettled} />;
+    case "new_contact":
+      return <NewContactCard values={proposal.values} onSettled={onSettled} />;
   }
 }
 
@@ -497,6 +508,169 @@ function NamesCard({ names, onSettled }: { names: NameGuess[]; onSettled: Settle
         </Buttons>
       )}
       {declined && <p className="text-[12.5px] text-ink-soft">Not renamed. The guesses stay on each contact&rsquo;s page.</p>}
+    </Card>
+  );
+}
+
+// ── A contact's details ────────────────────────────────────────────────────
+
+/**
+ * Each field before and after, and Save. The press sends only these fields,
+ * and the server refuses any whose value has changed since this was drawn.
+ * Undo is the same press the other way round.
+ */
+function EditCard({
+  proposal,
+  onSettled,
+}: {
+  proposal: Extract<Proposal, { kind: "contact_edit" }>;
+  onSettled: Settle;
+}) {
+  const [stage, setStage] = useState<"offer" | "saved" | "undone" | "no">("offer");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  const swapped: FieldChange[] = proposal.changes.map((change) => ({
+    ...change,
+    before: change.after,
+    after: change.before,
+  }));
+  const what = proposal.changes.map((change) => FIELD_LABELS[change.field].toLowerCase()).join(", ");
+
+  function press(changes: FieldChange[], next: "saved" | "undone", note: string) {
+    setError(null);
+    start(async () => {
+      const result = await saveProposedEdit(proposal.contactId, changes);
+      if (!result.ok) return setError(result.error);
+      setStage(next);
+      onSettled(note);
+    });
+  }
+
+  return (
+    <Card
+      title={`${proposal.name}’s details`}
+      state={stage === "saved" ? "done" : stage === "offer" ? "needs" : "no"}
+      small="Only what you see here changes. Addresses, notes and tags are changed on their page."
+      error={error}
+    >
+      <Inset>
+        {proposal.changes.map((change) => (
+          <div key={change.field} className="flex flex-wrap items-baseline gap-x-2 text-[13px]">
+            <span className="w-[130px] shrink-0 text-[12px] font-semibold text-ink-soft">
+              {FIELD_LABELS[change.field]}
+            </span>
+            <span className={stage === "saved" ? "text-ink-faint line-through" : "text-ink-body"}>
+              {change.before ?? <em className="text-ink-faint">empty</em>}
+            </span>
+            <span aria-hidden="true" className="text-ink-faint">→</span>
+            <span className="sr-only"> to </span>
+            <strong className="font-semibold">
+              {change.after ?? <em className="font-normal text-ink-faint">empty</em>}
+            </strong>
+          </div>
+        ))}
+      </Inset>
+      {stage === "offer" && (
+        <Buttons>
+          <Primary
+            onClick={() => press(proposal.changes, "saved", `The person saved ${proposal.name}'s new ${what}.`)}
+            disabled={pending}
+          >
+            {pending ? "Saving…" : "Save"}
+          </Primary>
+          <Quiet
+            onClick={() => {
+              setStage("no");
+              onSettled(`The person said no to changing ${proposal.name}'s ${what}.`);
+            }}
+            disabled={pending}
+          >
+            No
+          </Quiet>
+        </Buttons>
+      )}
+      {stage === "saved" && (
+        <Buttons>
+          <Link href={`/contacts/${proposal.contactId}`} className="text-[12.5px] font-semibold text-info-ink">
+            Open {proposal.name}
+          </Link>
+          <Quiet
+            onClick={() => press(swapped, "undone", `The person put ${proposal.name}'s old ${what} back.`)}
+            disabled={pending}
+          >
+            {pending ? "Undoing…" : "Undo"}
+          </Quiet>
+        </Buttons>
+      )}
+      {stage === "undone" && <p className="text-[12.5px] text-ink-soft">Put back as it was.</p>}
+      {stage === "no" && <p className="text-[12.5px] text-ink-soft">Not changed.</p>}
+    </Card>
+  );
+}
+
+/** A new contact, as the Add contact form would make it, without leaving the chat. */
+function NewContactCard({ values, onSettled }: { values: NewContact; onSettled: Settle }) {
+  const [stage, setStage] = useState<{ at: "offer" } | { at: "added"; id: string } | { at: "no" }>({ at: "offer" });
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  const fullName = [values.first_name, values.last_name].filter(Boolean).join(" ");
+  const name = fullName || values.email || "them";
+  const rows: [string, string | null][] = [
+    ["Name", fullName || null],
+    ["Email", values.email],
+    ["Company", values.company],
+    ["Role", values.role],
+  ];
+
+  function add() {
+    setError(null);
+    start(async () => {
+      const result = await addProposedContact(values);
+      if (!result.ok) return setError(result.error);
+      setStage({ at: "added", id: result.id });
+      onSettled(`The person added ${name} as a contact.`);
+    });
+  }
+
+  return (
+    <Card
+      title="Add a contact"
+      state={stage.at === "added" ? "done" : stage.at === "no" ? "no" : "needs"}
+      small="The same as the Add contact form. Their mail is matched to them from the next sync."
+      error={error}
+    >
+      <Inset>
+        {rows
+          .filter(([, value]) => value)
+          .map(([label, value]) => (
+            <div key={label} className="flex flex-wrap items-baseline gap-x-2 text-[13px]">
+              <span className="w-[130px] shrink-0 text-[12px] font-semibold text-ink-soft">{label}</span>
+              <span className="min-w-0 font-medium break-words">{value}</span>
+            </div>
+          ))}
+      </Inset>
+      {stage.at === "offer" && (
+        <Buttons>
+          <Primary onClick={add} disabled={pending}>
+            {pending ? "Adding…" : "Add"}
+          </Primary>
+          <Quiet
+            onClick={() => {
+              setStage({ at: "no" });
+              onSettled(`The person said no to adding ${name}.`);
+            }}
+            disabled={pending}
+          >
+            No
+          </Quiet>
+        </Buttons>
+      )}
+      {stage.at === "added" && (
+        <Link href={`/contacts/${stage.id}`} className="self-start text-[12.5px] font-semibold text-info-ink">
+          Open {name}
+        </Link>
+      )}
+      {stage.at === "no" && <p className="text-[12.5px] text-ink-soft">Not added.</p>}
     </Card>
   );
 }

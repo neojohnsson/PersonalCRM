@@ -10,6 +10,15 @@ import { TONES, type Tone } from "@/lib/ai/draft-types";
 import { ActionRefused, AlreadyUndone, undoAction } from "@/lib/assistant/act";
 import { hasAssistant } from "@/lib/assistant/entitlement";
 import { costSinceUsd } from "@/lib/assistant/price";
+import {
+  EditContactNotFound,
+  addContact,
+  applyFieldChanges,
+  isEditableField,
+  type EditResult,
+  type FieldChange,
+  type NewContact,
+} from "@/lib/contacts/edit-fields";
 import { requireUser } from "@/lib/auth";
 import { isUuid } from "@/lib/contacts/contact-form";
 import { ContactNotFound } from "@/lib/relationship/settle";
@@ -114,4 +123,58 @@ export async function runProposedScan(): Promise<{ scan: ScanState; costUsd: num
   const started = new Date();
   const scan = await runScan();
   return { scan, costUsd: await costSinceUsd(supabase, user.id, "promises", started) };
+}
+
+/**
+ * "Save" on a contact-details card, and its Undo (the same call with before
+ * and after swapped). lib/contacts/edit-fields.ts refuses a field that has
+ * changed since the card was drawn, so neither can overwrite your own edit.
+ * Only the fields the card showed are sent, and only editable ones are taken.
+ */
+export async function saveProposedEdit(contactId: string, changes: FieldChange[]): Promise<EditResult> {
+  const user = await requireUser();
+  if (!isUuid(contactId)) notFound();
+  const supabase = await createClient();
+  if (!(await hasAssistant(supabase, user.id))) notFound();
+
+  const checked = Array.isArray(changes)
+    ? changes.filter(
+        (change) =>
+          isEditableField(change?.field) &&
+          (change.before === null || typeof change.before === "string") &&
+          (change.after === null || typeof change.after === "string"),
+      )
+    : [];
+  if (checked.length !== (Array.isArray(changes) ? changes.length : -1)) {
+    return { ok: false, error: "That detail can only be changed on the contact's own page." };
+  }
+
+  try {
+    const result = await applyFieldChanges(supabase, user.id, contactId, checked);
+    if (result.ok) refresh();
+    return result;
+  } catch (failure) {
+    if (failure instanceof EditContactNotFound) return { ok: false, error: failure.message };
+    throw failure;
+  }
+}
+
+/** "Add" on a new-contact card: the Add contact form's checks and save, without leaving the chat. */
+export async function addProposedContact(
+  values: NewContact,
+): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const user = await requireUser();
+  const supabase = await createClient();
+  if (!(await hasAssistant(supabase, user.id))) notFound();
+
+  const text = (value: unknown) => (typeof value === "string" ? value : null);
+  const result = await addContact(supabase, user.id, {
+    first_name: text(values?.first_name),
+    last_name: text(values?.last_name),
+    company: text(values?.company),
+    role: text(values?.role),
+    email: text(values?.email),
+  });
+  if (result.ok) refresh();
+  return result;
 }
