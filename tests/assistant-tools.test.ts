@@ -130,6 +130,7 @@ describe("the tools the Assistant is given", () => {
       propose_contact_edit: "propose",
       propose_new_contact: "propose",
       propose_summary_review: "propose",
+      propose_promises: "propose",
     });
   });
 
@@ -525,6 +526,37 @@ describe("what is waiting on the person", () => {
     const cards = readFileSync("app/assistant/needs-you.tsx", "utf8");
     expect(cards).toContain('import { approveSummaryAction, discardSummaryAction } from "@/app/contacts/[id]/summary-actions";');
     expect(cards).toContain('import { Parts } from "@/app/contacts/[id]/summary-card";');
+  });
+
+  it("shows waiting promises as a card, and decides nothing by showing them", async () => {
+    const outcome = await call(alice, "propose_promises", { promise_ids: null });
+
+    expect(outcome).toMatchObject({
+      tier: "propose",
+      proposal: {
+        kind: "promises",
+        promises: [expect.objectContaining({ contactId: alice.karinId, dueOn: "2026-09-30", owedBy: "you" })],
+      },
+    });
+    const { data } = await admin.from("promises").select("status").eq("user_id", alice.user.id);
+    expect(data!.map((row) => row.status)).toEqual(["pending"]);
+  });
+
+  it("shows no promise that is not waiting, or not yours", async () => {
+    expect(await call(alice, "propose_promises", { promise_ids: [randomUUID()] })).toMatchObject({
+      refused: "No promises are waiting to be decided.",
+    });
+    const { data } = await admin.from("promises").select("id").eq("user_id", alice.user.id).single();
+    expect(await call(bob, "propose_promises", { promise_ids: [data!.id] })).toMatchObject({
+      refused: "No promises are waiting to be decided.",
+    });
+  });
+
+  it("decides a promise only through the queue's own rows and actions", () => {
+    const cards = readFileSync("app/assistant/needs-you.tsx", "utf8");
+    expect(cards).toContain('import { PromiseCard } from "@/app/assistant/promises/promise-card";');
+    const row = readFileSync("app/assistant/promises/promise-card.tsx", "utf8");
+    expect(row).toContain('import { acceptPromise, dismissPromise, type DecideState } from "@/app/assistant/promises/actions";');
   });
 
   it("changes nothing by being read", async () => {

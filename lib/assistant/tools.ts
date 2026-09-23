@@ -5,7 +5,8 @@ import { EDITABLE_FIELDS, FIELD_LABELS, type FieldChange, type NewContact } from
 import { countDuplicates } from "@/lib/contacts/duplicate-list";
 import { suggestName } from "@/lib/contacts/name-suggestion";
 import { ilikePattern, normaliseQuery } from "@/lib/contacts/search";
-import { countPendingPromises } from "@/lib/ai/promise-list";
+import { countPendingPromises, loadPendingPromises, type PendingPromise } from "@/lib/ai/promise-list";
+import { getAccessToken } from "@/lib/google/tokens";
 import type { SavedSummary } from "@/lib/ai/summary-parts";
 import { summariesFor } from "@/lib/ai/summary-record";
 import { TONES, type Tone } from "@/lib/ai/draft-types";
@@ -85,7 +86,8 @@ export type Proposal =
   | { kind: "names"; names: NameGuess[] }
   | { kind: "contact_edit"; contactId: string; name: string; changes: FieldChange[] }
   | { kind: "new_contact"; values: NewContact }
-  | { kind: "summary_review"; name: string; summary: SavedSummary; gmailEmail: string | null };
+  | { kind: "summary_review"; name: string; summary: SavedSummary; gmailEmail: string | null }
+  | { kind: "promises"; promises: PendingPromise[] };
 
 /**
  * A better name for one contact, worked out by the rules in
@@ -370,7 +372,7 @@ const TOOLS: Tool[] = [
           summaries_waiting: summaries.count ?? 0,
           summaries_how: "Only the person can approve a summary. Show one with propose_summary_review.",
           promises_waiting: promises,
-          promises_how: "Only the person can accept or dismiss a promise, on the Promises page.",
+          promises_how: "Only the person can accept or dismiss a promise. Show them with propose_promises.",
         },
       };
     },
@@ -478,7 +480,7 @@ const TOOLS: Tool[] = [
             owed_by: row.owed_by as string,
             what: row.reason as string,
           })),
-          how: "Only the person accepts or dismisses a promise, on the Promises page.",
+          how: "Show them to the person with propose_promises; only they accept or dismiss one.",
         },
       };
     },
@@ -787,6 +789,35 @@ const TOOLS: Tool[] = [
           summary: pending,
           gmailEmail: (gmail.data?.email as string | undefined) ?? null,
         },
+      };
+    },
+  },
+  {
+    name: "propose_promises",
+    tier: "propose",
+    description:
+      "Show promises waiting to be decided as a card: each with the message it came from, a follow-up date the " +
+      "person can change, and Accept or Not a promise. Nothing is decided until they press. Pass null for all " +
+      "of them, or promise_ids from waiting_promises.",
+    parameters: object({
+      promise_ids: {
+        type: ["array", "null"],
+        items: { type: "string" },
+        description: "Some promise_ids from waiting_promises, or null for all of them.",
+      },
+    }),
+    run: async (ctx, args) => {
+      // The message each promise came from is read live from Gmail, as on the
+      // Promises page, and goes only to the card -- never back to the model.
+      const token = await getAccessToken(ctx.db, ctx.userId).catch(() => null);
+      const all = await loadPendingPromises(ctx.db, ctx.userId, token, displayName);
+      const asked = Array.isArray(args.promise_ids) ? new Set(strings(args.promise_ids)) : null;
+      const promises = asked ? all.filter((promise) => asked.has(promise.id)) : all;
+      if (promises.length === 0) return { tier: "propose", refused: "No promises are waiting to be decided." };
+      return {
+        tier: "propose",
+        result: `Shown to the person as a card with ${promises.length} ${promises.length === 1 ? "promise" : "promises"}. Nothing is decided until they press.`,
+        proposal: { kind: "promises", promises },
       };
     },
   },

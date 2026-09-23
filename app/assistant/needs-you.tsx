@@ -14,6 +14,9 @@ import { acceptSuggestedName, setContactName } from "@/app/contacts/[id]/actions
 import { discardDraftAction, saveDraftAction } from "@/app/contacts/[id]/draft-actions";
 import { approveSummaryAction, discardSummaryAction } from "@/app/contacts/[id]/summary-actions";
 import { Parts } from "@/app/contacts/[id]/summary-card";
+import { PromiseCard } from "@/app/assistant/promises/promise-card";
+import type { PendingPromise } from "@/lib/ai/promise-list";
+import { dayMonth } from "@/lib/format";
 import { priceInWords } from "@/lib/assistant/price";
 import type { NameGuess, Proposal } from "@/lib/assistant/tools";
 import { DURATIONS } from "@/lib/calendar/new-event";
@@ -64,6 +67,8 @@ export function NeedsYouCard({ proposal, onSettled }: { proposal: Proposal; onSe
       return <NewContactCard values={proposal.values} onSettled={onSettled} />;
     case "summary_review":
       return <SummaryReviewCard proposal={proposal} onSettled={onSettled} />;
+    case "promises":
+      return <PromisesCard promises={proposal.promises} onSettled={onSettled} />;
   }
 }
 
@@ -744,6 +749,59 @@ function SummaryReviewCard({
         </Link>
       )}
       {stage === "discarded" && <p className="text-[12.5px] text-ink-soft">Discarded. Nothing was saved to them.</p>}
+    </Card>
+  );
+}
+
+// ── Promises ───────────────────────────────────────────────────────────────
+
+/**
+ * The Promises queue's own rows (app/assistant/promises/promise-card.tsx):
+ * each with the words of the message it came from, the date you can change,
+ * and the queue's own Accept and "Not a promise". A decided row is replaced
+ * by what happened, since nothing reloads this card.
+ */
+function PromisesCard({ promises, onSettled }: { promises: PendingPromise[]; onSettled: Settle }) {
+  const [decided, setDecided] = useState<Record<string, string>>({});
+  const left = promises.filter((promise) => !decided[promise.id]).length;
+
+  function decide(promise: PendingPromise, decision: "accepted" | "dismissed", dueOn: string) {
+    const words =
+      decision === "accepted" ? `Next touch with ${promise.name} on ${dayMonth(dueOn)}.` : "Not a promise. Dismissed.";
+    setDecided((all) => ({ ...all, [promise.id]: words }));
+    onSettled(
+      decision === "accepted"
+        ? `The person accepted the promise with ${promise.name}; a next touch is set for ${dueOn}.`
+        : `The person dismissed the promise with ${promise.name}.`,
+    );
+  }
+
+  return (
+    <Card
+      title={promises.length === 1 ? "A promise to decide" : `${promises.length} promises to decide`}
+      state={left === 0 ? "done" : "needs"}
+      small="Read the message before you accept — the line above it is the AI's, and a “not” turns a promise into its opposite."
+      error={null}
+    >
+      <ul className="-mx-4 flex flex-col border-y border-line-soft">
+        {promises.map((promise) =>
+          decided[promise.id] ? (
+            <li
+              key={promise.id}
+              className="flex items-center gap-2 border-t border-line-soft px-[22px] py-3 text-[12.5px] first:border-t-0"
+            >
+              <strong className="font-semibold">{promise.name}</strong>
+              <span className="text-ink-soft">{decided[promise.id]}</span>
+            </li>
+          ) : (
+            <PromiseCard
+              key={promise.id}
+              promise={promise}
+              onDecided={(decision, dueOn) => decide(promise, decision, dueOn)}
+            />
+          ),
+        )}
+      </ul>
     </Card>
   );
 }
