@@ -12,6 +12,8 @@ import {
 import { createCalendarEvent } from "@/app/connect/calendar-actions";
 import { acceptSuggestedName, setContactName } from "@/app/contacts/[id]/actions";
 import { discardDraftAction, saveDraftAction } from "@/app/contacts/[id]/draft-actions";
+import { approveSummaryAction, discardSummaryAction } from "@/app/contacts/[id]/summary-actions";
+import { Parts } from "@/app/contacts/[id]/summary-card";
 import { priceInWords } from "@/lib/assistant/price";
 import type { NameGuess, Proposal } from "@/lib/assistant/tools";
 import { DURATIONS } from "@/lib/calendar/new-event";
@@ -60,6 +62,8 @@ export function NeedsYouCard({ proposal, onSettled }: { proposal: Proposal; onSe
       return <EditCard proposal={proposal} onSettled={onSettled} />;
     case "new_contact":
       return <NewContactCard values={proposal.values} onSettled={onSettled} />;
+    case "summary_review":
+      return <SummaryReviewCard proposal={proposal} onSettled={onSettled} />;
   }
 }
 
@@ -671,6 +675,75 @@ function NewContactCard({ values, onSettled }: { values: NewContact; onSettled: 
         </Link>
       )}
       {stage.at === "no" && <p className="text-[12.5px] text-ink-soft">Not added.</p>}
+    </Card>
+  );
+}
+
+// ── A waiting summary ──────────────────────────────────────────────────────
+
+/**
+ * The summary as the contact page shows it — its own Parts component, so the
+ * same four parts, the same "email 1, email 2" links to the messages — dated,
+ * with Approve and Discard pressing the contact page's own actions. Editing
+ * and the summary's suggestions for the contact stay on that page, where the
+ * contact is.
+ */
+function SummaryReviewCard({
+  proposal,
+  onSettled,
+}: {
+  proposal: Extract<Proposal, { kind: "summary_review" }>;
+  onSettled: Settle;
+}) {
+  const [stage, setStage] = useState<"offer" | "approved" | "discarded">("offer");
+  const [pending, start] = useTransition();
+  const { summary, name } = proposal;
+  const asOf = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", timeZone: "Europe/Stockholm" }).format(
+    new Date(summary.as_of),
+  );
+
+  function decide(next: "approved" | "discarded") {
+    start(async () => {
+      await (next === "approved" ? approveSummaryAction(summary.id) : discardSummaryAction(summary.id));
+      setStage(next);
+      onSettled(`The person ${next} the summary of ${name}.`);
+    });
+  }
+
+  return (
+    <Card
+      title={`A summary of ${name}`}
+      state={stage === "approved" ? "done" : stage === "discarded" ? "no" : "needs"}
+      small="Check it against the emails before you approve it — the AI can be wrong about people. Its suggestions for the contact are on their page."
+      error={null}
+    >
+      <span className="text-[11.5px] font-medium text-ink-faint">
+        As of {asOf} · written by the AI, {stage === "approved" ? "approved by you" : "not approved yet"}
+      </span>
+      {stage !== "discarded" && (
+        <div className="rounded-[12px] bg-paper px-[13px] py-[11px]">
+          <Parts summary={summary} gmailEmail={proposal.gmailEmail} />
+        </div>
+      )}
+      {stage === "offer" && (
+        <Buttons>
+          <Primary onClick={() => decide("approved")} disabled={pending}>
+            {pending ? "Saving…" : "Approve"}
+          </Primary>
+          <Quiet onClick={() => decide("discarded")} disabled={pending}>
+            Discard
+          </Quiet>
+          <Link href={`/contacts/${summary.contact_id}`} className="text-[12.5px] font-semibold text-info-ink">
+            Edit it on their page
+          </Link>
+        </Buttons>
+      )}
+      {stage === "approved" && (
+        <Link href={`/contacts/${summary.contact_id}`} className="self-start text-[12.5px] font-semibold text-info-ink">
+          Open {name}
+        </Link>
+      )}
+      {stage === "discarded" && <p className="text-[12.5px] text-ink-soft">Discarded. Nothing was saved to them.</p>}
     </Card>
   );
 }

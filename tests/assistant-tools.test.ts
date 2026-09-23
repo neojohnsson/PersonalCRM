@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { copiesFrom, undoAction } from "@/lib/assistant/act";
@@ -128,6 +129,7 @@ describe("the tools the Assistant is given", () => {
       propose_names: "propose",
       propose_contact_edit: "propose",
       propose_new_contact: "propose",
+      propose_summary_review: "propose",
     });
   });
 
@@ -493,6 +495,36 @@ describe("what is waiting on the person", () => {
     expect((seen.people as { email: string }[]).map((person) => person.email)).not.toContain(stranger);
     expect(await resultOf(bob, "waiting_summaries")).toMatchObject({ summaries: [] });
     expect(await resultOf(bob, "waiting_promises")).toMatchObject({ promises: [] });
+  });
+
+  it("offers a waiting summary as a card, and approves nothing by offering it", async () => {
+    const outcome = await call(alice, "propose_summary_review", { contact_id: alice.karinId });
+
+    expect(outcome).toMatchObject({
+      tier: "propose",
+      proposal: {
+        kind: "summary_review",
+        name: "Karin Lindqvist",
+        summary: { status: "pending", who_they_are: "Runs the thesis programme.", as_of: expect.any(String) },
+      },
+    });
+    const { data } = await admin.from("contact_summaries").select("status").eq("contact_id", alice.karinId);
+    expect(data!.map((row) => row.status)).toEqual(["pending"]);
+  });
+
+  it("offers no summary that is not waiting, or not yours", async () => {
+    expect(await call(bob, "propose_summary_review", { contact_id: bob.karinId })).toMatchObject({
+      refused: expect.stringMatching(/No summary of .* is waiting/),
+    });
+    expect(await call(bob, "propose_summary_review", { contact_id: alice.karinId })).toMatchObject({
+      refused: expect.any(String),
+    });
+  });
+
+  it("approves only through the contact page's own actions, drawn as that page draws it", () => {
+    const cards = readFileSync("app/assistant/needs-you.tsx", "utf8");
+    expect(cards).toContain('import { approveSummaryAction, discardSummaryAction } from "@/app/contacts/[id]/summary-actions";');
+    expect(cards).toContain('import { Parts } from "@/app/contacts/[id]/summary-card";');
   });
 
   it("changes nothing by being read", async () => {

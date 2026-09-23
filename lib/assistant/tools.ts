@@ -6,6 +6,7 @@ import { countDuplicates } from "@/lib/contacts/duplicate-list";
 import { suggestName } from "@/lib/contacts/name-suggestion";
 import { ilikePattern, normaliseQuery } from "@/lib/contacts/search";
 import { countPendingPromises } from "@/lib/ai/promise-list";
+import type { SavedSummary } from "@/lib/ai/summary-parts";
 import { summariesFor } from "@/lib/ai/summary-record";
 import { TONES, type Tone } from "@/lib/ai/draft-types";
 import { parseNewEvent } from "@/lib/calendar/new-event";
@@ -83,7 +84,8 @@ export type Proposal =
   | { kind: "promise_scan"; typicalUsd: number | null }
   | { kind: "names"; names: NameGuess[] }
   | { kind: "contact_edit"; contactId: string; name: string; changes: FieldChange[] }
-  | { kind: "new_contact"; values: NewContact };
+  | { kind: "new_contact"; values: NewContact }
+  | { kind: "summary_review"; name: string; summary: SavedSummary; gmailEmail: string | null };
 
 /**
  * A better name for one contact, worked out by the rules in
@@ -366,7 +368,7 @@ const TOOLS: Tool[] = [
           duplicate_pairs: duplicates,
           duplicates_how: "Only the person can merge, on the Compare page. You cannot merge or propose a merge.",
           summaries_waiting: summaries.count ?? 0,
-          summaries_how: "Only the person can approve a summary, on the contact's page.",
+          summaries_how: "Only the person can approve a summary. Show one with propose_summary_review.",
           promises_waiting: promises,
           promises_how: "Only the person can accept or dismiss a promise, on the Promises page.",
         },
@@ -442,7 +444,7 @@ const TOOLS: Tool[] = [
             discussed: row.discussed,
             next_step: row.next_step,
           })),
-          how: "Only the person approves a summary, on the contact's page.",
+          how: "Show one to the person with propose_summary_review; only they approve it.",
         },
       };
     },
@@ -755,6 +757,36 @@ const TOOLS: Tool[] = [
         tier: "propose",
         result: "Shown to the person as a card. Nothing is added until they press Add.",
         proposal: { kind: "new_contact", values },
+      };
+    },
+  },
+  {
+    name: "propose_summary_review",
+    tier: "propose",
+    description:
+      "Show a contact's waiting summary as a card, dated and with a link to each email it came from, so the " +
+      "person can approve or discard it. Nothing is approved until they press. For a contact with no summary " +
+      "waiting, use propose_summary to offer writing one.",
+    parameters: object({ contact_id: contactId }),
+    run: async (ctx, args) => {
+      const id = contactIdOf(args);
+      const name = await contactName(ctx, id);
+      if (!name) return notFound("propose");
+      const [{ pending }, gmail] = await Promise.all([
+        summariesFor(ctx.db, ctx.userId, id),
+        ctx.db.from("google_accounts").select("email").eq("user_id", ctx.userId).maybeSingle(),
+      ]);
+      if (gmail.error) throw supabaseError(gmail.error, "Couldn't check the Gmail connection");
+      if (!pending) return { tier: "propose", refused: `No summary of ${name} is waiting.` };
+      return {
+        tier: "propose",
+        result: "Shown to the person as a card. Nothing is approved until they press Approve.",
+        proposal: {
+          kind: "summary_review",
+          name,
+          summary: pending,
+          gmailEmail: (gmail.data?.email as string | undefined) ?? null,
+        },
       };
     },
   },
