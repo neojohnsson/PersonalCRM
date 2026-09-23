@@ -28,6 +28,7 @@ import {
   type ActContext,
   type LoggedAction,
 } from "./act";
+import { typicalCostUsd } from "./price";
 
 /**
  * Every tool the Assistant is given — and so every thing it can do at all
@@ -58,9 +59,13 @@ import {
 
 export type ToolTier = "read" | "act" | "propose";
 
-/** What the page draws as a "Needs you" card. Nothing has happened yet. */
+/**
+ * What the page draws as a "Needs you" card. Nothing has happened yet.
+ * `typicalUsd` is what the same thing has cost you before (lib/assistant/price.ts),
+ * shown on the card so you know before you press.
+ */
 export type Proposal =
-  | { kind: "draft"; contactId: string; name: string; tone: Tone | null }
+  | { kind: "draft"; contactId: string; name: string; tone: Tone | null; typicalUsd: number | null }
   | {
       kind: "event";
       contactId: string | null;
@@ -70,8 +75,8 @@ export type Proposal =
       time: string;
       minutes: number;
     }
-  | { kind: "summary"; contactId: string; name: string }
-  | { kind: "promise_scan" };
+  | { kind: "summary"; contactId: string; name: string; typicalUsd: number | null }
+  | { kind: "promise_scan"; typicalUsd: number | null };
 
 export type ToolOutcome =
   | { tier: "read"; result: unknown }
@@ -384,7 +389,11 @@ const TOOLS: Tool[] = [
       const name = await contactName(ctx, id);
       if (!name) return notFound("propose");
       const tone = TONES.includes(args.tone as Tone) ? (args.tone as Tone) : null;
-      return { tier: "propose", result: "Shown to the person as a card.", proposal: { kind: "draft", contactId: id, name, tone } };
+      return {
+        tier: "propose",
+        result: "Shown to the person as a card.",
+        proposal: { kind: "draft", contactId: id, name, tone, typicalUsd: await typicalCostUsd(ctx.db, ctx.userId, "draft") },
+      };
     },
   },
   {
@@ -438,7 +447,11 @@ const TOOLS: Tool[] = [
       const id = contactIdOf(args);
       const name = await contactName(ctx, id);
       if (!name) return notFound("propose");
-      return { tier: "propose", result: "Shown to the person as a card.", proposal: { kind: "summary", contactId: id, name } };
+      return {
+        tier: "propose",
+        result: "Shown to the person as a card.",
+        proposal: { kind: "summary", contactId: id, name, typicalUsd: await typicalCostUsd(ctx.db, ctx.userId, "summary") },
+      };
     },
   },
   {
@@ -446,7 +459,12 @@ const TOOLS: Tool[] = [
     tier: "propose",
     description: "Offer to read recent mail for promises and deadlines. It costs money, so the person decides.",
     parameters: object({}),
-    run: async () => ({ tier: "propose", result: "Shown to the person as a card.", proposal: { kind: "promise_scan" } }),
+    run: async (ctx) => ({
+      tier: "propose",
+      result: "Shown to the person as a card.",
+      // Per contact read: a scan is one request each.
+      proposal: { kind: "promise_scan", typicalUsd: await typicalCostUsd(ctx.db, ctx.userId, "promises") },
+    }),
   },
 ];
 

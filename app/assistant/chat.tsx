@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
 import { undoAssistantAction } from "@/app/assistant/actions";
+import { NeedsYouCard } from "@/app/assistant/needs-you";
 import type { ConverseEvent, Said } from "@/lib/assistant/converse";
 import type { Proposal } from "@/lib/assistant/tools";
 
@@ -27,9 +27,9 @@ import type { Proposal } from "@/lib/assistant/tools";
  * turn pass $0.50, and the database refuses to pass the month's budget —
  * neither of those can be talked round from a browser.
  *
- * Differences from the design, for now: a "Needs you" card links to where the
- * thing is done today instead of doing it in place. Doing it in place is the
- * next commit, through the same actions those pages use.
+ * The "Needs you" cards are in needs-you.tsx: each press there goes through
+ * the same Server Action the rest of the app uses, and what you decided is
+ * added to the conversation so the Assistant knows it next turn.
  */
 
 const CONVERSATION_CEILING_USD = 0.5;
@@ -38,7 +38,7 @@ type Entry =
   | { kind: "you"; text: string }
   | { kind: "said"; text: string }
   | { kind: "done"; actions: { id: string; summary: string; undone: boolean; problem: string | null }[] }
-  | { kind: "needs"; proposal: Proposal }
+  | { kind: "needs"; proposals: { key: string; proposal: Proposal }[] }
   | { kind: "stopped"; reason: string };
 
 const STARTERS = [
@@ -127,7 +127,13 @@ export function AssistantChat() {
         return;
       case "proposal":
         answer.push("(Offered a card, waiting for the person.)");
-        add({ kind: "needs", proposal: event.proposal });
+        setEntries((list) => {
+          const last = list[list.length - 1];
+          const card = { key: crypto.randomUUID(), proposal: event.proposal };
+          // Cards in a row sit side by side, as in the design.
+          if (last?.kind === "needs") return [...list.slice(0, -1), { ...last, proposals: [...last.proposals, card] }];
+          return [...list, { kind: "needs", proposals: [card] }];
+        });
         return;
       case "looked":
         setLooking(LOOKING[event.tool] ?? "Looking…");
@@ -149,6 +155,15 @@ export function AssistantChat() {
 
   function add(entry: Entry) {
     setEntries((list) => [...list, entry]);
+  }
+
+  /**
+   * What you decided on a card, as a line of the conversation. The Assistant
+   * only hears words, so this is how it knows next turn that the draft is in
+   * Gmail or the event was declined, instead of offering it again.
+   */
+  function settle(note: string) {
+    setHistory((list) => [...list, { role: "assistant", text: `(${note})` }]);
   }
 
   function markUndone(id: string, problem: string | null) {
@@ -174,7 +189,7 @@ export function AssistantChat() {
           className="flex flex-col gap-[13px] rounded-[18px] bg-white px-5 py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]"
         >
           {entries.map((entry, index) => (
-            <EntryView key={index} entry={entry} onUndone={markUndone} />
+            <EntryView key={index} entry={entry} onUndone={markUndone} onSettled={settle} />
           ))}
           {busy && (
             <p role="status" className="flex items-center gap-2 text-[12.5px] font-medium text-ink-soft">
@@ -274,9 +289,11 @@ const LOOKING: Record<string, string> = {
 function EntryView({
   entry,
   onUndone,
+  onSettled,
 }: {
   entry: Entry;
   onUndone: (id: string, problem: string | null) => void;
+  onSettled: (note: string) => void;
 }) {
   switch (entry.kind) {
     case "you":
@@ -302,7 +319,13 @@ function EntryView({
         </div>
       );
     case "needs":
-      return <NeedsYou proposal={entry.proposal} />;
+      return (
+        <div className="grid gap-3.5 sm:grid-cols-2">
+          {entry.proposals.map(({ key, proposal }) => (
+            <NeedsYouCard key={key} proposal={proposal} onSettled={onSettled} />
+          ))}
+        </div>
+      );
     case "stopped":
       return (
         <p role="status" className="rounded-[12px] bg-accent-tint px-3.5 py-2.5 text-[12.5px] leading-[1.5] font-medium text-[#7c3a12]">
@@ -349,64 +372,6 @@ function DoneRow({
       {action.problem && <span className="w-full text-[11.5px] font-medium text-accent">{action.problem}</span>}
     </div>
   );
-}
-
-/** A "Needs you" card. For now it links to where the thing is done today. */
-function NeedsYou({ proposal }: { proposal: Proposal }) {
-  const view = describe(proposal);
-  return (
-    <div className="flex max-w-[520px] flex-col gap-2.5 rounded-[16px] border border-line px-4 py-3.5">
-      <div className="flex items-center gap-[9px]">
-        <h3 className="text-[13.5px] font-bold tracking-[-0.01em]">{view.title}</h3>
-        <span className="rounded-full bg-accent-tint px-[9px] py-[3px] text-[11px] font-bold text-needs-ink">Needs you</span>
-      </div>
-      <p className="text-[12.5px] leading-[1.5] text-ink-body">{view.body}</p>
-      <Link
-        href={view.href}
-        className="self-start rounded-full bg-ink-deep px-[15px] py-[9px] text-[12.5px] font-semibold text-white transition hover:bg-ink/85"
-      >
-        {view.action}
-      </Link>
-      <p className="text-[11.5px] leading-[1.45] text-ink-soft">{view.small}</p>
-    </div>
-  );
-}
-
-function describe(proposal: Proposal) {
-  switch (proposal.kind) {
-    case "draft":
-      return {
-        title: `A reply to ${proposal.name}`,
-        body: "Written when you press it, from your latest thread with them. About a cent.",
-        href: `/contacts/${proposal.contactId}#draft`,
-        action: "Write it",
-        small: "It lands as a draft in Gmail. You press send there — this app has no send button.",
-      };
-    case "event":
-      return {
-        title: proposal.title,
-        body: `${proposal.date} at ${proposal.time}, for ${proposal.minutes} minutes${proposal.name ? `, with ${proposal.name} in mind` : ""}.`,
-        href: "/calendar",
-        action: "Create it on Calendar",
-        small: "Never with guests: Google would email an invitation. Add people in Google Calendar yourself.",
-      };
-    case "summary":
-      return {
-        title: `A summary of ${proposal.name}`,
-        body: "Written from your mail with them when you press it, and saved only once you approve it.",
-        href: `/contacts/${proposal.contactId}`,
-        action: "Open their page",
-        small: "It costs a little, which is why it asks.",
-      };
-    case "promise_scan":
-      return {
-        title: "Read recent mail for promises",
-        body: "Finds things you or they said would happen, for you to decide on.",
-        href: "/promises",
-        action: "Open Promises",
-        small: "It costs a little, which is why it asks.",
-      };
-  }
 }
 
 function Spark() {
