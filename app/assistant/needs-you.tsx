@@ -2,13 +2,27 @@
 
 import Link from "next/link";
 import { useState, useTransition, type ReactNode } from "react";
-import { runProposedScan, writeProposedDraft, writeProposedSummary } from "@/app/assistant/actions";
+import {
+  addProposedContact,
+  runProposedScan,
+  saveProposedEdit,
+  writeProposedDraft,
+  writeProposedSummary,
+} from "@/app/assistant/actions";
 import { createCalendarEvent } from "@/app/connect/calendar-actions";
 import { acceptSuggestedName, setContactName } from "@/app/contacts/[id]/actions";
 import { discardDraftAction, saveDraftAction } from "@/app/contacts/[id]/draft-actions";
+import { approveSummaryAction, discardSummaryAction } from "@/app/contacts/[id]/summary-actions";
+import { Parts } from "@/app/contacts/[id]/summary-card";
+import { PromiseCard } from "@/app/assistant/promises/promise-card";
+import { addAsContacts, dismissPeople } from "@/app/seen-once/actions";
+import { SyncButton } from "@/app/sync-button";
+import type { PendingPromise } from "@/lib/ai/promise-list";
+import { dayMonth, timeAgo } from "@/lib/format";
 import { priceInWords } from "@/lib/assistant/price";
-import type { NameGuess, Proposal } from "@/lib/assistant/tools";
+import type { NameGuess, Proposal, SeenOncePerson } from "@/lib/assistant/tools";
 import { DURATIONS } from "@/lib/calendar/new-event";
+import { FIELD_LABELS, type FieldChange, type NewContact } from "@/lib/contacts/edit-fields";
 
 /**
  * The "Needs you" cards (slice 11, commit 6), from the approved design's
@@ -31,8 +45,8 @@ import { DURATIONS } from "@/lib/calendar/new-event";
  *   - no "To karin@…" line: the address is taken from the thread again when
  *     you press "Save to Gmail" (lib/ai/draft-save.ts), so one shown now
  *     could be out of date by then.
- *   - the summary, promise-scan and better-names cards have no design; they
- *     reuse this one.
+ *   - the summary, promise-scan, better-names and contact cards have no
+ *     design; they reuse this one.
  */
 
 type Settle = (note: string) => void;
@@ -49,6 +63,18 @@ export function NeedsYouCard({ proposal, onSettled }: { proposal: Proposal; onSe
       return <ScanCard proposal={proposal} onSettled={onSettled} />;
     case "names":
       return <NamesCard names={proposal.names} onSettled={onSettled} />;
+    case "contact_edit":
+      return <EditCard proposal={proposal} onSettled={onSettled} />;
+    case "new_contact":
+      return <NewContactCard values={proposal.values} onSettled={onSettled} />;
+    case "summary_review":
+      return <SummaryReviewCard proposal={proposal} onSettled={onSettled} />;
+    case "promises":
+      return <PromisesCard promises={proposal.promises} onSettled={onSettled} />;
+    case "seen_once":
+      return <SeenOnceCard people={proposal.people} onSettled={onSettled} />;
+    case "sync":
+      return <SyncCard lastSyncedAt={proposal.lastSyncedAt} onSettled={onSettled} />;
   }
 }
 
@@ -497,6 +523,415 @@ function NamesCard({ names, onSettled }: { names: NameGuess[]; onSettled: Settle
         </Buttons>
       )}
       {declined && <p className="text-[12.5px] text-ink-soft">Not renamed. The guesses stay on each contact&rsquo;s page.</p>}
+    </Card>
+  );
+}
+
+// ── A contact's details ────────────────────────────────────────────────────
+
+/**
+ * Each field before and after, and Save. The press sends only these fields,
+ * and the server refuses any whose value has changed since this was drawn.
+ * Undo is the same press the other way round.
+ */
+function EditCard({
+  proposal,
+  onSettled,
+}: {
+  proposal: Extract<Proposal, { kind: "contact_edit" }>;
+  onSettled: Settle;
+}) {
+  const [stage, setStage] = useState<"offer" | "saved" | "undone" | "no">("offer");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  const swapped: FieldChange[] = proposal.changes.map((change) => ({
+    ...change,
+    before: change.after,
+    after: change.before,
+  }));
+  const what = proposal.changes.map((change) => FIELD_LABELS[change.field].toLowerCase()).join(", ");
+
+  function press(changes: FieldChange[], next: "saved" | "undone", note: string) {
+    setError(null);
+    start(async () => {
+      const result = await saveProposedEdit(proposal.contactId, changes);
+      if (!result.ok) return setError(result.error);
+      setStage(next);
+      onSettled(note);
+    });
+  }
+
+  return (
+    <Card
+      title={`${proposal.name}’s details`}
+      state={stage === "saved" ? "done" : stage === "offer" ? "needs" : "no"}
+      small="Only what you see here changes. Addresses, notes and tags are changed on their page."
+      error={error}
+    >
+      <Inset>
+        {proposal.changes.map((change) => (
+          <div key={change.field} className="flex flex-wrap items-baseline gap-x-2 text-[13px]">
+            <span className="w-full shrink-0 text-[12px] font-semibold text-ink-soft sm:w-[130px]">
+              {FIELD_LABELS[change.field]}
+            </span>
+            <span className={stage === "saved" ? "text-ink-faint line-through" : "text-ink-body"}>
+              {change.before ?? <em className="text-ink-faint">empty</em>}
+            </span>
+            <span aria-hidden="true" className="text-ink-faint">→</span>
+            <span className="sr-only"> to </span>
+            <strong className="font-semibold">
+              {change.after ?? <em className="font-normal text-ink-faint">empty</em>}
+            </strong>
+          </div>
+        ))}
+      </Inset>
+      {stage === "offer" && (
+        <Buttons>
+          <Primary
+            onClick={() => press(proposal.changes, "saved", `The person saved ${proposal.name}'s new ${what}.`)}
+            disabled={pending}
+          >
+            {pending ? "Saving…" : "Save"}
+          </Primary>
+          <Quiet
+            onClick={() => {
+              setStage("no");
+              onSettled(`The person said no to changing ${proposal.name}'s ${what}.`);
+            }}
+            disabled={pending}
+          >
+            No
+          </Quiet>
+        </Buttons>
+      )}
+      {stage === "saved" && (
+        <Buttons>
+          <Link href={`/contacts/${proposal.contactId}`} className="text-[12.5px] font-semibold text-info-ink">
+            Open {proposal.name}
+          </Link>
+          <Quiet
+            onClick={() => press(swapped, "undone", `The person put ${proposal.name}'s old ${what} back.`)}
+            disabled={pending}
+          >
+            {pending ? "Undoing…" : "Undo"}
+          </Quiet>
+        </Buttons>
+      )}
+      {stage === "undone" && <p className="text-[12.5px] text-ink-soft">Put back as it was.</p>}
+      {stage === "no" && <p className="text-[12.5px] text-ink-soft">Not changed.</p>}
+    </Card>
+  );
+}
+
+/** A new contact, as the Add contact form would make it, without leaving the chat. */
+function NewContactCard({ values, onSettled }: { values: NewContact; onSettled: Settle }) {
+  const [stage, setStage] = useState<{ at: "offer" } | { at: "added"; id: string } | { at: "no" }>({ at: "offer" });
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  const fullName = [values.first_name, values.last_name].filter(Boolean).join(" ");
+  const name = fullName || values.email || "them";
+  const rows: [string, string | null][] = [
+    ["Name", fullName || null],
+    ["Email", values.email],
+    ["Company", values.company],
+    ["Role", values.role],
+  ];
+
+  function add() {
+    setError(null);
+    start(async () => {
+      const result = await addProposedContact(values);
+      if (!result.ok) return setError(result.error);
+      setStage({ at: "added", id: result.id });
+      onSettled(`The person added ${name} as a contact.`);
+    });
+  }
+
+  return (
+    <Card
+      title="Add a contact"
+      state={stage.at === "added" ? "done" : stage.at === "no" ? "no" : "needs"}
+      small="The same as the Add contact form. Their mail is matched to them from the next sync."
+      error={error}
+    >
+      <Inset>
+        {rows
+          .filter(([, value]) => value)
+          .map(([label, value]) => (
+            <div key={label} className="flex flex-wrap items-baseline gap-x-2 text-[13px]">
+              <span className="w-full shrink-0 text-[12px] font-semibold text-ink-soft sm:w-[130px]">{label}</span>
+              <span className="min-w-0 font-medium break-words">{value}</span>
+            </div>
+          ))}
+      </Inset>
+      {stage.at === "offer" && (
+        <Buttons>
+          <Primary onClick={add} disabled={pending}>
+            {pending ? "Adding…" : "Add"}
+          </Primary>
+          <Quiet
+            onClick={() => {
+              setStage({ at: "no" });
+              onSettled(`The person said no to adding ${name}.`);
+            }}
+            disabled={pending}
+          >
+            No
+          </Quiet>
+        </Buttons>
+      )}
+      {stage.at === "added" && (
+        <Link href={`/contacts/${stage.id}`} className="self-start text-[12.5px] font-semibold text-info-ink">
+          Open {name}
+        </Link>
+      )}
+      {stage.at === "no" && <p className="text-[12.5px] text-ink-soft">Not added.</p>}
+    </Card>
+  );
+}
+
+// ── A waiting summary ──────────────────────────────────────────────────────
+
+/**
+ * The summary as the contact page shows it — its own Parts component, so the
+ * same four parts, the same "email 1, email 2" links to the messages — dated,
+ * with Approve and Discard pressing the contact page's own actions. Editing
+ * and the summary's suggestions for the contact stay on that page, where the
+ * contact is.
+ */
+function SummaryReviewCard({
+  proposal,
+  onSettled,
+}: {
+  proposal: Extract<Proposal, { kind: "summary_review" }>;
+  onSettled: Settle;
+}) {
+  const [stage, setStage] = useState<"offer" | "approved" | "discarded">("offer");
+  const [pending, start] = useTransition();
+  const { summary, name } = proposal;
+  const asOf = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", timeZone: "Europe/Stockholm" }).format(
+    new Date(summary.as_of),
+  );
+
+  function decide(next: "approved" | "discarded") {
+    start(async () => {
+      await (next === "approved" ? approveSummaryAction(summary.id) : discardSummaryAction(summary.id));
+      setStage(next);
+      onSettled(`The person ${next} the summary of ${name}.`);
+    });
+  }
+
+  return (
+    <Card
+      title={`A summary of ${name}`}
+      state={stage === "approved" ? "done" : stage === "discarded" ? "no" : "needs"}
+      small="Check it against the emails before you approve it — the AI can be wrong about people. Its suggestions for the contact are on their page."
+      error={null}
+    >
+      <span className="text-[11.5px] font-medium text-ink-faint">
+        As of {asOf} · written by the AI, {stage === "approved" ? "approved by you" : "not approved yet"}
+      </span>
+      {stage !== "discarded" && (
+        <div className="rounded-[12px] bg-paper px-[13px] py-[11px]">
+          <Parts summary={summary} gmailEmail={proposal.gmailEmail} />
+        </div>
+      )}
+      {stage === "offer" && (
+        <Buttons>
+          <Primary onClick={() => decide("approved")} disabled={pending}>
+            {pending ? "Saving…" : "Approve"}
+          </Primary>
+          <Quiet onClick={() => decide("discarded")} disabled={pending}>
+            Discard
+          </Quiet>
+          <Link href={`/contacts/${summary.contact_id}`} className="text-[12.5px] font-semibold text-info-ink">
+            Edit it on their page
+          </Link>
+        </Buttons>
+      )}
+      {stage === "approved" && (
+        <Link href={`/contacts/${summary.contact_id}`} className="self-start text-[12.5px] font-semibold text-info-ink">
+          Open {name}
+        </Link>
+      )}
+      {stage === "discarded" && <p className="text-[12.5px] text-ink-soft">Discarded. Nothing was saved to them.</p>}
+    </Card>
+  );
+}
+
+// ── Promises ───────────────────────────────────────────────────────────────
+
+/**
+ * The Promises queue's own rows (app/assistant/promises/promise-card.tsx):
+ * each with the words of the message it came from, the date you can change,
+ * and the queue's own Accept and "Not a promise". A decided row is replaced
+ * by what happened, since nothing reloads this card.
+ */
+function PromisesCard({ promises, onSettled }: { promises: PendingPromise[]; onSettled: Settle }) {
+  const [decided, setDecided] = useState<Record<string, string>>({});
+  const left = promises.filter((promise) => !decided[promise.id]).length;
+
+  function decide(promise: PendingPromise, decision: "accepted" | "dismissed", dueOn: string) {
+    const words =
+      decision === "accepted" ? `Next touch with ${promise.name} on ${dayMonth(dueOn)}.` : "Not a promise. Dismissed.";
+    setDecided((all) => ({ ...all, [promise.id]: words }));
+    onSettled(
+      decision === "accepted"
+        ? `The person accepted the promise with ${promise.name}; a next touch is set for ${dueOn}.`
+        : `The person dismissed the promise with ${promise.name}.`,
+    );
+  }
+
+  return (
+    <Card
+      title={promises.length === 1 ? "A promise to decide" : `${promises.length} promises to decide`}
+      state={left === 0 ? "done" : "needs"}
+      small="Read the message before you accept — the line above it is the AI's, and a “not” turns a promise into its opposite."
+      error={null}
+    >
+      <ul className="-mx-4 flex flex-col border-y border-line-soft">
+        {promises.map((promise) =>
+          decided[promise.id] ? (
+            <li
+              key={promise.id}
+              className="flex items-center gap-2 border-t border-line-soft px-[22px] py-3 text-[12.5px] first:border-t-0"
+            >
+              <strong className="font-semibold">{promise.name}</strong>
+              <span className="text-ink-soft">{decided[promise.id]}</span>
+            </li>
+          ) : (
+            <PromiseCard
+              key={promise.id}
+              promise={promise}
+              onDecided={(decision, dueOn) => decide(promise, decision, dueOn)}
+            />
+          ),
+        )}
+      </ul>
+    </Card>
+  );
+}
+
+// ── Seen once ──────────────────────────────────────────────────────────────
+
+/**
+ * People from the Seen once queue, each with the queue's own two buttons —
+ * addAsContacts and dismissPeople, the same Server Actions, which only act on
+ * addresses really in your queue (migration 0007) — and both for everyone
+ * still on the card. Names and subjects are shown as data: they are from mail
+ * headers, written by whoever sent the mail.
+ */
+function SeenOnceCard({ people, onSettled }: { people: SeenOncePerson[]; onSettled: Settle }) {
+  const [decided, setDecided] = useState<Record<string, "added" | "dismissed">>({});
+  const [pending, start] = useTransition();
+  const left = people.filter((person) => !decided[person.email]);
+
+  function act(which: SeenOncePerson[], decision: "added" | "dismissed") {
+    start(async () => {
+      const form = new FormData();
+      for (const person of which) form.append("email", person.email);
+      await (decision === "added" ? addAsContacts(null, form) : dismissPeople(null, form));
+      setDecided((all) => ({ ...all, ...Object.fromEntries(which.map((person) => [person.email, decision])) }));
+      const who = which.length === 1 ? which[0].email : `${which.length} people from Seen once`;
+      onSettled(decision === "added" ? `The person added ${who} as contacts.` : `The person dismissed ${who}.`);
+    });
+  }
+
+  return (
+    <Card
+      title={people.length === 1 ? "Someone from Seen once" : `${people.length} people from Seen once`}
+      state={left.length === 0 ? "done" : "needs"}
+      small="Dismiss forgets the mail they sent and skips them from now on. Changed your mind? Undo it on the Dismissed page."
+      error={null}
+    >
+      <ul className="flex max-h-[380px] flex-col overflow-y-auto rounded-[12px] bg-paper">
+        {people.map((person) => {
+          const done = decided[person.email];
+          return (
+            <li
+              key={person.email}
+              className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-white px-[13px] py-2.5 first:border-t-0"
+            >
+              <div className="flex min-w-0 flex-1 basis-48 flex-col gap-0.5">
+                <span className="truncate text-[13px] font-semibold">{person.name ?? person.email}</span>
+                <span className="truncate text-[11.5px] text-ink-soft">
+                  {person.name ? `${person.email} · ` : ""}
+                  {person.fromThem} from them, {person.fromYou} from you
+                  {person.subject ? ` · “${person.subject}”` : ""}
+                </span>
+              </div>
+              {done ? (
+                <span className={`text-[12px] font-semibold ${done === "added" ? "text-affirm" : "text-ink-soft"}`}>
+                  {done === "added" ? "Added as a contact" : "Dismissed"}
+                </span>
+              ) : (
+                <span className="flex shrink-0 gap-1.5">
+                  <Secondary onClick={() => act([person], "added")} disabled={pending}>
+                    Add
+                  </Secondary>
+                  <Quiet onClick={() => act([person], "dismissed")} disabled={pending}>
+                    Dismiss
+                  </Quiet>
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {left.length > 1 && (
+        <Buttons>
+          <Primary onClick={() => act(left, "added")} disabled={pending}>
+            {pending ? "Working…" : `Add all ${left.length}`}
+          </Primary>
+          <Quiet onClick={() => act(left, "dismissed")} disabled={pending}>
+            Dismiss all {left.length}
+          </Quiet>
+        </Buttons>
+      )}
+      {Object.values(decided).includes("dismissed") && (
+        <Link href="/seen-once/dismissed" className="self-start text-[12.5px] font-semibold text-info-ink">
+          The Dismissed page
+        </Link>
+      )}
+    </Card>
+  );
+}
+
+// ── A sync ─────────────────────────────────────────────────────────────────
+
+/**
+ * The header's own Sync now button (app/sync-button.tsx), so the sync runs
+ * the same way — one step after another, paced to Gmail's quota — with the
+ * card told when it has finished.
+ */
+function SyncCard({ lastSyncedAt, onSettled }: { lastSyncedAt: string | null; onSettled: Settle }) {
+  const [done, setDone] = useState(false);
+
+  return (
+    <Card
+      title="Sync Gmail now"
+      state={done ? "done" : "needs"}
+      small="It reads who wrote to whom and when, and the subject line — never the words of a message. Keep this tab open until it finishes."
+      error={null}
+    >
+      <p className="text-[12.5px] leading-[1.5] text-ink-body">
+        {done
+          ? "Synced. The cards above are up to date."
+          : lastSyncedAt
+            ? `Last synced ${timeAgo(lastSyncedAt)}.`
+            : "Gmail has not been synced yet."}
+      </p>
+      {!done && (
+        <div className="self-start">
+          <SyncButton
+            onCard
+            onDone={() => {
+              setDone(true);
+              onSettled("The person synced Gmail; the page is up to date.");
+            }}
+          />
+        </div>
+      )}
     </Card>
   );
 }

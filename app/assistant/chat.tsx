@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { undoAssistantAction } from "@/app/assistant/actions";
 import { NeedsYouCard } from "@/app/assistant/needs-you";
 import type { ConverseEvent, Said } from "@/lib/assistant/converse";
@@ -54,12 +54,19 @@ export function AssistantChat() {
   const [history, setHistory] = useState<Said[]>([]);
   const [spentUsd, setSpentUsd] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [draft, setDraft] = useState("");
+  // Whether the box has words in it, for the Ask button. The words themselves
+  // live in the box, not in React state: see the input below.
+  const [hasText, setHasText] = useState(false);
   const [looking, setLooking] = useState<string | null>(null);
   const box = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   const full = spentUsd >= CONVERSATION_CEILING_USD;
+
+  // Words typed before the page finished loading are already in the box.
+  useEffect(() => {
+    setHasText(Boolean(box.current?.value.trim()));
+  }, []);
 
   async function ask(question: string) {
     const text = question.trim();
@@ -68,7 +75,8 @@ export function AssistantChat() {
     const sent: Said[] = [...history, { role: "user", text }];
     setEntries((list) => [...list, { kind: "you", text }]);
     setHistory(sent);
-    setDraft("");
+    if (box.current) box.current.value = "";
+    setHasText(false);
     setBusy(true);
 
     // What the Assistant said this turn, for the history sent next time —
@@ -208,7 +216,7 @@ export function AssistantChat() {
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          void ask(draft);
+          void ask(box.current?.value ?? "");
         }}
         className="flex flex-col gap-[11px] rounded-[18px] bg-white px-[18px] pt-[15px] pb-3.5 shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]"
       >
@@ -228,12 +236,16 @@ export function AssistantChat() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          {/* Uncontrolled on purpose (found 2026-09-23): the page arrives as
+              HTML before its JavaScript, and you can type into it then. A box
+              whose value React owned was reset to React's empty state the
+              moment React took over, and the words were gone. This one keeps
+              what is in it; Ask reads it when pressed. */}
           <input
             ref={box}
             id="assistant-ask"
             type="text"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
+            onInput={(event) => setHasText(Boolean(event.currentTarget.value.trim()))}
             disabled={busy || full}
             maxLength={4000}
             placeholder={full ? "This conversation has reached $0.50." : "“Answer Johan and put a check-in in my calendar”"}
@@ -241,7 +253,7 @@ export function AssistantChat() {
           />
           <button
             type="submit"
-            disabled={busy || full || !draft.trim()}
+            disabled={busy || full || !hasText}
             className="flex h-11 shrink-0 items-center gap-2 rounded-[12px] bg-ink-deep px-5 text-[13px] font-semibold text-white transition hover:bg-ink/85 disabled:cursor-default disabled:opacity-50"
           >
             {/* "Ask", not "Send": this app has a rule against send buttons,

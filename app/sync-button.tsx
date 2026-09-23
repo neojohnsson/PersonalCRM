@@ -22,7 +22,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  *
  * Styled as design/ContactList.dc.html's dark pill button ("Add contact").
  */
-export function SyncButton() {
+export function SyncButton({ onDone, onCard = false }: { onDone?: () => void; onCard?: boolean } = {}) {
   const [isSyncing, startSync] = useTransition();
   const [failed, setFailed] = useState(false);
 
@@ -32,7 +32,12 @@ export function SyncButton() {
       try {
         for (let step = 0; step < MAX_STEPS; step++) {
           const result = await syncStep();
-          if (result.done) break;
+          if (result.done) {
+            // The Assistant's sync card (slice 11b) is told; the header's
+            // button needs nothing, as each step already refreshed the page.
+            onDone?.();
+            break;
+          }
           await sleep(result.waitMs);
         }
       } catch {
@@ -50,8 +55,13 @@ export function SyncButton() {
         onClick={sync}
         disabled={isSyncing}
         // White, like the design's sort pill: the dark pill beside it is
-        // "Add contact", the page's main action.
-        className="flex items-center gap-[7px] rounded-full bg-white px-4 py-[9px] text-[12.5px] font-semibold text-ink tabular-nums shadow-[0_1px_2px_rgba(20,20,25,.04)] transition hover:bg-paper-tint disabled:opacity-70"
+        // "Add contact", the page's main action. On an Assistant card, which
+        // is white itself, it is the card's dark main button instead.
+        className={`flex items-center gap-[7px] rounded-full px-4 py-[9px] text-[12.5px] font-semibold tabular-nums transition disabled:opacity-70 ${
+          onCard
+            ? "bg-ink-deep text-white hover:bg-ink/85"
+            : "bg-white text-ink shadow-[0_1px_2px_rgba(20,20,25,.04)] hover:bg-paper-tint"
+        }`}
       >
         <svg
           aria-hidden="true"

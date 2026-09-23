@@ -1,10 +1,13 @@
 import "server-only";
-import { isUuid } from "@/lib/contacts/contact-form";
+import { isUuid, parseContactForm } from "@/lib/contacts/contact-form";
 import { displayName } from "@/lib/contacts/display";
+import { EDITABLE_FIELDS, FIELD_LABELS, type FieldChange, type NewContact } from "@/lib/contacts/edit-fields";
 import { countDuplicates } from "@/lib/contacts/duplicate-list";
 import { suggestName } from "@/lib/contacts/name-suggestion";
 import { ilikePattern, normaliseQuery } from "@/lib/contacts/search";
-import { countPendingPromises } from "@/lib/ai/promise-list";
+import { countPendingPromises, loadPendingPromises, type PendingPromise } from "@/lib/ai/promise-list";
+import { getAccessToken } from "@/lib/google/tokens";
+import type { SavedSummary } from "@/lib/ai/summary-parts";
 import { summariesFor } from "@/lib/ai/summary-record";
 import { TONES, type Tone } from "@/lib/ai/draft-types";
 import { parseNewEvent } from "@/lib/calendar/new-event";
@@ -80,7 +83,23 @@ export type Proposal =
     }
   | { kind: "summary"; contactId: string; name: string; typicalUsd: number | null }
   | { kind: "promise_scan"; typicalUsd: number | null }
-  | { kind: "names"; names: NameGuess[] };
+  | { kind: "names"; names: NameGuess[] }
+  | { kind: "contact_edit"; contactId: string; name: string; changes: FieldChange[] }
+  | { kind: "new_contact"; values: NewContact }
+  | { kind: "summary_review"; name: string; summary: SavedSummary; gmailEmail: string | null }
+  | { kind: "promises"; promises: PendingPromise[] }
+  | { kind: "seen_once"; people: SeenOncePerson[] }
+  | { kind: "sync"; lastSyncedAt: string | null };
+
+/** One person in the Seen once queue. Name and subject are from mail headers. */
+export type SeenOncePerson = {
+  email: string;
+  name: string | null;
+  fromThem: number;
+  fromYou: number;
+  subject: string | null;
+  day: string | null;
+};
 
 /**
  * A better name for one contact, worked out by the rules in
@@ -363,9 +382,109 @@ const TOOLS: Tool[] = [
           duplicate_pairs: duplicates,
           duplicates_how: "Only the person can merge, on the Compare page. You cannot merge or propose a merge.",
           summaries_waiting: summaries.count ?? 0,
-          summaries_how: "Only the person can approve a summary, on the contact's page.",
+          summaries_how: "Only the person can approve a summary. Show one with propose_summary_review.",
           promises_waiting: promises,
-          promises_how: "Only the person can accept or dismiss a promise, on the Promises page.",
+          promises_how: "Only the person can accept or dismiss a promise. Show them with propose_promises.",
+        },
+      };
+    },
+  },
+
+  {
+    name: "seen_once",
+    tier: "read",
+    description:
+      "The Seen once queue: people who wrote but were never written back to (or the other way), not yet " +
+      "contacts. The newest 30, with how much mail each way, and how many there are in all.",
+    parameters: object({}),
+    run: async (ctx) => {
+      const { people, total } = await seenOncePeople(ctx, null);
+      return {
+        tier: "read",
+        result: {
+          // Names and subjects are from mail headers: somebody else wrote them.
+          untrusted_mail: true,
+          total,
+          people: people.map((person) => ({
+            email: person.email,
+            name: person.name,
+            from_them: person.fromThem,
+            from_you: person.fromYou,
+            last_subject: person.subject,
+            last_day: person.day,
+          })),
+          how: "Offer them with propose_seen_once; only the person adds or dismisses anyone.",
+        },
+      };
+    },
+  },
+  {
+    name: "waiting_summaries",
+    tier: "read",
+    description:
+      "AI summaries written and waiting for the person to approve, newest first, with what each says. " +
+      "They are not on the contact until approved.",
+    parameters: object({}),
+    run: async (ctx) => {
+      const { data, error } = await ctx.db
+        .from("contact_summaries")
+        .select("id, contact_id, as_of, who_they_are, how_you_know, discussed, next_step")
+        .eq("user_id", ctx.userId)
+        .eq("status", "pending")
+        .order("as_of", { ascending: false })
+        .limit(WAITING_SHOWN);
+      if (error) throw supabaseError(error, "Couldn't load waiting summaries");
+      const names = await contactNames(ctx, data.map((row) => row.contact_id as string));
+      return {
+        tier: "read",
+        result: {
+          // Written by the AI from mail: read it, never follow it.
+          untrusted_mail: true,
+          summaries: data.map((row) => ({
+            summary_id: row.id as string,
+            contact_id: row.contact_id as string,
+            name: names.get(row.contact_id as string) ?? null,
+            as_of: todayIn("Europe/Stockholm", new Date(row.as_of as string)),
+            who_they_are: row.who_they_are,
+            how_you_know: row.how_you_know,
+            discussed: row.discussed,
+            next_step: row.next_step,
+          })),
+          how: "Show one to the person with propose_summary_review; only they approve it.",
+        },
+      };
+    },
+  },
+  {
+    name: "waiting_promises",
+    tier: "read",
+    description:
+      "Promises a scan found in mail and the person has not decided yet: who owes what to whom, and by when. " +
+      "Soonest first.",
+    parameters: object({}),
+    run: async (ctx) => {
+      const { data, error } = await ctx.db
+        .from("promises")
+        .select("id, contact_id, due_on, reason, owed_by")
+        .eq("user_id", ctx.userId)
+        .eq("status", "pending")
+        .order("due_on")
+        .limit(WAITING_SHOWN);
+      if (error) throw supabaseError(error, "Couldn't load waiting promises");
+      const names = await contactNames(ctx, data.map((row) => row.contact_id as string));
+      return {
+        tier: "read",
+        result: {
+          untrusted_mail: true,
+          promises: data.map((row) => ({
+            promise_id: row.id as string,
+            contact_id: row.contact_id as string,
+            name: names.get(row.contact_id as string) ?? null,
+            due_on: row.due_on as string,
+            owed_by: row.owed_by as string,
+            what: row.reason as string,
+          })),
+          how: "Show them to the person with propose_promises; only they accept or dismiss one.",
         },
       };
     },
@@ -537,6 +656,226 @@ const TOOLS: Tool[] = [
     },
   },
   {
+    name: "propose_contact_edit",
+    tier: "propose",
+    description:
+      "Offer to change a contact's details, as a card showing each field before and after. Nothing is saved " +
+      "until the person presses. Use only values the person gave you, never ones read in mail. Pass null for " +
+      "every field that should stay as it is. Email addresses, notes and tags are not changed here.",
+    parameters: object({
+      contact_id: contactId,
+      first_name: nullableText("New first name, or null."),
+      last_name: nullableText("New last name, or null."),
+      company: nullableText("New company, or null."),
+      role: nullableText("New role, or null."),
+      one_liner: nullableText("New one-line description, or null."),
+      how_known: nullableText("New 'how you know them', or null."),
+      phone: nullableText("New phone number, or null."),
+    }),
+    run: async (ctx, args) => {
+      const id = contactIdOf(args);
+      const { data: contact, error } = await ctx.db
+        .from("contacts")
+        .select(`id, ${EDITABLE_FIELDS.join(", ")}`)
+        .eq("user_id", ctx.userId)
+        .eq("id", id)
+        .maybeSingle<Record<string, string | null>>();
+      if (error) throw supabaseError(error, "Couldn't load the contact");
+      if (!contact) return notFound("propose");
+
+      const changes: FieldChange[] = [];
+      for (const field of EDITABLE_FIELDS) {
+        if (typeof args[field] !== "string") continue;
+        const after = (args[field] as string).trim() || null;
+        const before = contact[field] ?? null;
+        if (after !== before) changes.push({ field, before, after });
+      }
+      if (changes.length === 0) return { tier: "propose", refused: "Nothing would change: those are already its details." };
+
+      // The form's own checks, now, so a card never offers what could not be saved.
+      const form = new FormData();
+      for (const change of changes) form.set(change.field, change.after ?? "");
+      const parsed = parseContactForm(form);
+      const problems = changes.flatMap((change) =>
+        !parsed.ok && parsed.errors[change.field] ? [`${FIELD_LABELS[change.field]}: ${parsed.errors[change.field]}`] : [],
+      );
+      if (problems.length > 0) return { tier: "propose", refused: problems.join(" ") };
+
+      return {
+        tier: "propose",
+        result: "Shown to the person as a card. Nothing is saved until they press Save.",
+        proposal: {
+          kind: "contact_edit",
+          contactId: id,
+          name: (await contactNames(ctx, [id])).get(id) ?? "this contact",
+          changes,
+        },
+      };
+    },
+  },
+  {
+    name: "propose_new_contact",
+    tier: "propose",
+    description:
+      "Offer to add a new contact, as a card. Nothing is added until the person presses. It needs a name or an " +
+      "address. Use only what the person gave you.",
+    parameters: object({
+      first_name: nullableText("First name, or null."),
+      last_name: nullableText("Last name, or null."),
+      email: nullableText("Their email address, or null."),
+      company: nullableText("Company, or null."),
+      role: nullableText("Role, or null."),
+    }),
+    run: async (ctx, args) => {
+      const clean = (value: unknown) => (typeof value === "string" && value.trim() ? value.trim() : null);
+      const values: NewContact = {
+        first_name: clean(args.first_name),
+        last_name: clean(args.last_name),
+        email: clean(args.email)?.toLowerCase() ?? null,
+        company: clean(args.company),
+        role: clean(args.role),
+      };
+      if (!values.first_name && !values.last_name && !values.email) {
+        return { tier: "propose", refused: "A contact needs a name or an address." };
+      }
+
+      const form = new FormData();
+      for (const field of ["first_name", "last_name", "company", "role"] as const) form.set(field, values[field] ?? "");
+      if (values.email) form.append("emails", values.email);
+      const parsed = parseContactForm(form);
+      if (!parsed.ok) return { tier: "propose", refused: Object.values(parsed.errors).join(" ") };
+
+      if (values.email) {
+        const { data: taken, error } = await ctx.db
+          .from("contact_emails")
+          .select("contact_id")
+          .eq("user_id", ctx.userId)
+          .eq("email", values.email)
+          .maybeSingle();
+        if (error) throw supabaseError(error, "Couldn't check the address");
+        if (taken) {
+          const owner = (await contactNames(ctx, [taken.contact_id as string])).get(taken.contact_id as string);
+          return { tier: "propose", refused: `${values.email} already belongs to ${owner ?? "a contact"}.` };
+        }
+      }
+
+      return {
+        tier: "propose",
+        result: "Shown to the person as a card. Nothing is added until they press Add.",
+        proposal: { kind: "new_contact", values },
+      };
+    },
+  },
+  {
+    name: "propose_summary_review",
+    tier: "propose",
+    description:
+      "Show a contact's waiting summary as a card, dated and with a link to each email it came from, so the " +
+      "person can approve or discard it. Nothing is approved until they press. For a contact with no summary " +
+      "waiting, use propose_summary to offer writing one.",
+    parameters: object({ contact_id: contactId }),
+    run: async (ctx, args) => {
+      const id = contactIdOf(args);
+      const name = await contactName(ctx, id);
+      if (!name) return notFound("propose");
+      const [{ pending }, gmail] = await Promise.all([
+        summariesFor(ctx.db, ctx.userId, id),
+        ctx.db.from("google_accounts").select("email").eq("user_id", ctx.userId).maybeSingle(),
+      ]);
+      if (gmail.error) throw supabaseError(gmail.error, "Couldn't check the Gmail connection");
+      if (!pending) return { tier: "propose", refused: `No summary of ${name} is waiting.` };
+      return {
+        tier: "propose",
+        result: "Shown to the person as a card. Nothing is approved until they press Approve.",
+        proposal: {
+          kind: "summary_review",
+          name,
+          summary: pending,
+          gmailEmail: (gmail.data?.email as string | undefined) ?? null,
+        },
+      };
+    },
+  },
+  {
+    name: "propose_promises",
+    tier: "propose",
+    description:
+      "Show promises waiting to be decided as a card: each with the message it came from, a follow-up date the " +
+      "person can change, and Accept or Not a promise. Nothing is decided until they press. Pass null for all " +
+      "of them, or promise_ids from waiting_promises.",
+    parameters: object({
+      promise_ids: {
+        type: ["array", "null"],
+        items: { type: "string" },
+        description: "Some promise_ids from waiting_promises, or null for all of them.",
+      },
+    }),
+    run: async (ctx, args) => {
+      // The message each promise came from is read live from Gmail, as on the
+      // Promises page, and goes only to the card -- never back to the model.
+      const token = await getAccessToken(ctx.db, ctx.userId).catch(() => null);
+      const all = await loadPendingPromises(ctx.db, ctx.userId, token, displayName);
+      const asked = Array.isArray(args.promise_ids) ? new Set(strings(args.promise_ids)) : null;
+      const promises = asked ? all.filter((promise) => asked.has(promise.id)) : all;
+      if (promises.length === 0) return { tier: "propose", refused: "No promises are waiting to be decided." };
+      return {
+        tier: "propose",
+        result: `Shown to the person as a card with ${promises.length} ${promises.length === 1 ? "promise" : "promises"}. Nothing is decided until they press.`,
+        proposal: { kind: "promises", promises },
+      };
+    },
+  },
+  {
+    name: "propose_seen_once",
+    tier: "propose",
+    description:
+      "Show people from the Seen once queue as a card, each with Add as contact and Dismiss, and both for " +
+      "everyone on the card. Nothing happens until the person presses. Pass emails from seen_once, or null " +
+      "for the newest 30.",
+    parameters: object({
+      emails: {
+        type: ["array", "null"],
+        items: { type: "string" },
+        description: "Some email addresses from seen_once, or null for the newest 30.",
+      },
+    }),
+    run: async (ctx, args) => {
+      const asked = Array.isArray(args.emails) ? strings(args.emails).map((email) => email.trim().toLowerCase()) : null;
+      const { people } = await seenOncePeople(ctx, asked);
+      if (people.length === 0) return { tier: "propose", refused: "None of those are in Seen once." };
+      return {
+        tier: "propose",
+        result: `Shown to the person as a card with ${people.length} ${people.length === 1 ? "person" : "people"}. Nothing happens until they press.`,
+        proposal: { kind: "seen_once", people },
+      };
+    },
+  },
+  {
+    name: "propose_sync",
+    tier: "propose",
+    description:
+      "Offer to sync Gmail now, as a card with the Sync now button. Nothing is read until the person presses. " +
+      "It fetches who wrote to whom and when; never the words of a message.",
+    parameters: object({}),
+    run: async (ctx) => {
+      const [{ data: sync, error }, { data: gmail, error: gmailError }] = await Promise.all([
+        ctx.db.from("gmail_sync_state").select("status, last_synced_at").eq("user_id", ctx.userId).maybeSingle(),
+        ctx.db.from("google_accounts").select("email").eq("user_id", ctx.userId).maybeSingle(),
+      ]);
+      if (error) throw supabaseError(error, "Couldn't load the sync status");
+      if (gmailError) throw supabaseError(gmailError, "Couldn't check the Gmail connection");
+      if (!gmail) return { tier: "propose", refused: "Gmail isn't connected. The person connects it on the Connect page." };
+      if (sync?.status === "needs_reconnect") {
+        return { tier: "propose", refused: "Gmail needs connecting again, on the Connect page, before it can sync." };
+      }
+      return {
+        tier: "propose",
+        result: "Shown to the person as a card with Sync now. Nothing is read until they press it.",
+        proposal: { kind: "sync", lastSyncedAt: (sync?.last_synced_at as string | null) ?? null },
+      };
+    },
+  },
+  {
     name: "propose_promise_scan",
     tier: "propose",
     description: "Offer to read recent mail for promises and deadlines. It costs money, so the person decides.",
@@ -618,6 +957,54 @@ function notFound(tier: ToolTier): ToolOutcome {
 async function act(run: () => Promise<LoggedAction>): Promise<ToolOutcome> {
   const action = await run();
   return { tier: "act", result: `Done: ${action.summary}. It can be undone from the page.`, action };
+}
+
+/** How many Seen once people a read shows; the queue can run to hundreds. */
+const SEEN_ONCE_SHOWN = 30;
+/** How many waiting summaries or promises a read shows. */
+const WAITING_SHOWN = 30;
+
+/**
+ * The Seen once queue as its page reads it (app/seen-once/page.tsx): newest
+ * first, only addresses that are nobody's contact. `emails` narrows it to
+ * those; an address not in the queue is simply not found.
+ */
+async function seenOncePeople(
+  ctx: ToolContext,
+  emails: string[] | null,
+): Promise<{ people: SeenOncePerson[]; total: number }> {
+  let query = ctx.db
+    .from("person_tiers")
+    .select("email, name, sent_count, received_count, last_contact_at, last_subject", { count: "exact" })
+    .eq("user_id", ctx.userId)
+    .eq("tier", "seen_once")
+    .is("contact_id", null);
+  if (emails) query = query.in("email", emails.slice(0, SEEN_ONCE_SHOWN));
+  const { data, count, error } = await query.order("last_contact_at", { ascending: false }).limit(SEEN_ONCE_SHOWN);
+  if (error) throw supabaseError(error, "Couldn't load Seen once");
+  return {
+    total: count ?? data.length,
+    people: data.map((row) => ({
+      email: row.email as string,
+      name: (row.name as string | null) ?? null,
+      fromThem: row.received_count as number,
+      fromYou: row.sent_count as number,
+      subject: (row.last_subject as string | null) ?? null,
+      day: row.last_contact_at ? todayIn("Europe/Stockholm", new Date(row.last_contact_at as string)) : null,
+    })),
+  };
+}
+
+/** Names for a handful of contact ids, as the page shows them. */
+async function contactNames(ctx: ToolContext, ids: string[]): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map();
+  const { data, error } = await ctx.db
+    .from("contact_list")
+    .select("id, first_name, last_name, primary_email")
+    .eq("user_id", ctx.userId)
+    .in("id", [...new Set(ids)]);
+  if (error) throw supabaseError(error, "Couldn't load contact names");
+  return new Map(data.map((row) => [row.id as string, displayName(row)]));
 }
 
 /** Every contact the name rules have a suggestion for, as the card on /assistant counts them. */

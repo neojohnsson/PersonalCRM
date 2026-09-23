@@ -335,8 +335,8 @@ function ApprovedSummary({
   );
 }
 
-/** The four parts, each with links to the emails it came from. */
-function Parts({ summary, gmailEmail }: { summary: SavedSummary; gmailEmail: string | null }) {
+/** The four parts, each with links to the emails it came from. Also drawn by the Assistant's summary card (app/assistant/needs-you.tsx). */
+export function Parts({ summary, gmailEmail }: { summary: SavedSummary; gmailEmail: string | null }) {
   const numbers = sourceNumbers(summary.sources);
 
   return (

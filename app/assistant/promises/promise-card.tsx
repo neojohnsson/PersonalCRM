@@ -24,14 +24,26 @@ import { avatarColors, dayMonth, initials } from "@/lib/format";
  *     one judgement at a time, and accepting the wrong one puts a date in your
  *     calendar about somebody who owes you nothing.
  *   - Accept carries a date box, because the date is yours to change.
+ *
+ * `onDecided` is for the Assistant's chat (slice 11b), which draws these rows
+ * too: there a decided row cannot vanish by the page reloading, because the
+ * chat is not reloaded, so it is told instead. The Promises page passes
+ * nothing, and the refresh after each action redraws its list as before.
  */
-export function PromiseCard({ promise }: { promise: PendingPromise }) {
-  const [state, accept] = useActionState<DecideState, FormData>(
-    acceptPromise.bind(null, promise.id),
-    null,
-  );
+export function PromiseCard({
+  promise,
+  onDecided,
+}: {
+  promise: PendingPromise;
+  onDecided?: (decision: "accepted" | "dismissed", dueOn: string) => void;
+}) {
   const [dueOn, setDueOn] = useState(promise.dueOn);
-
+  const [state, accept] = useActionState<DecideState, FormData>(async (previous, formData) => {
+    const result = await acceptPromise(promise.id, previous, formData);
+    // null is success: the action answers only when something went wrong.
+    if (result === null) onDecided?.("accepted", String(formData.get("due_on") ?? dueOn));
+    return result;
+  }, null);
   const theirs = promise.owedBy === "them";
 
   return (
@@ -97,7 +109,12 @@ export function PromiseCard({ promise }: { promise: PendingPromise }) {
           <AcceptButton />
         </form>
 
-        <form action={dismissPromise.bind(null, promise.id)}>
+        <form
+          action={async () => {
+            await dismissPromise(promise.id);
+            onDecided?.("dismissed", dueOn);
+          }}
+        >
           <DismissButton />
         </form>
 

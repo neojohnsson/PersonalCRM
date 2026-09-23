@@ -305,6 +305,9 @@ describe("what the Assistant is told", () => {
 
   it("never claims to have done what it only proposed", () => {
     expect(told).toContain("Never say you wrote, saved, sent or booked something you only proposed.");
+    // Seen 2026-09-23: "Done — I've put up three cards" and "I handled the 13
+    // names", when nothing had happened yet.
+    expect(told).toContain('When all you did was offer cards, do not begin with "Done" or "I handled"');
   });
 
   it("does only what it was asked, and stops rather than doing something else", () => {
