@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { undoAssistantAction } from "@/app/assistant/actions";
+import { Composer } from "@/app/assistant/composer";
 import { NeedsYouCard } from "@/app/assistant/needs-you";
 import type { ConverseEvent, Said } from "@/lib/assistant/converse";
 import type { Proposal } from "@/lib/assistant/tools";
@@ -42,31 +43,15 @@ type Entry =
   | { kind: "needs"; proposals: { key: string; proposal: Proposal }[] }
   | { kind: "stopped"; reason: string };
 
-const STARTERS = [
-  "Who needs me this week?",
-  "Draft the replies I owe",
-  "Who have I forgotten about?",
-  "What's on this week?",
-];
-
 export function AssistantChat() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [history, setHistory] = useState<Said[]>([]);
   const [spentUsd, setSpentUsd] = useState(0);
   const [busy, setBusy] = useState(false);
-  // Whether the box has words in it, for the Ask button. The words themselves
-  // live in the box, not in React state: see the input below.
-  const [hasText, setHasText] = useState(false);
   const [looking, setLooking] = useState<string | null>(null);
-  const box = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   const full = spentUsd >= CONVERSATION_CEILING_USD;
-
-  // Words typed before the page finished loading are already in the box.
-  useEffect(() => {
-    setHasText(Boolean(box.current?.value.trim()));
-  }, []);
 
   async function ask(question: string) {
     const text = question.trim();
@@ -75,8 +60,6 @@ export function AssistantChat() {
     const sent: Said[] = [...history, { role: "user", text }];
     setEntries((list) => [...list, { kind: "you", text }]);
     setHistory(sent);
-    if (box.current) box.current.value = "";
-    setHasText(false);
     setBusy(true);
 
     // What the Assistant said this turn, for the history sent next time —
@@ -118,7 +101,6 @@ export function AssistantChat() {
       // It did something on its own: redraw the page around the chat, so the
       // strip shows it with Undo. A refresh keeps this component's state.
       if (answer.some((said) => said.startsWith("(Done:"))) router.refresh();
-      box.current?.focus();
     }
   }
 
@@ -213,84 +195,42 @@ export function AssistantChat() {
         </section>
       )}
 
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          void ask(box.current?.value ?? "");
-        }}
-        className="flex flex-col gap-[11px] rounded-[18px] bg-white px-[18px] pt-[15px] pb-3.5 shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]"
-      >
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* The design's own words above the box, until you choose others. */}
-          <label htmlFor="assistant-ask" className="text-[12px] font-semibold text-ink-body">
-            {entries.length === 0 ? "Ask for anything, or say what to do" : "Say something back"}
-          </label>
-          <span className="rounded-full bg-chip px-[9px] py-[3px] text-[11.5px] font-semibold text-ink-soft">
-            This conversation isn&rsquo;t saved
-          </span>
-          {spentUsd > 0 && (
-            <span className="ml-auto text-[11.5px] font-medium text-ink-soft">
-              This conversation: ${spentUsd.toFixed(2)} of ${CONVERSATION_CEILING_USD.toFixed(2)}
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          {/* Uncontrolled on purpose (found 2026-09-23): the page arrives as
-              HTML before its JavaScript, and you can type into it then. A box
-              whose value React owned was reset to React's empty state the
-              moment React took over, and the words were gone. This one keeps
-              what is in it; Ask reads it when pressed. */}
-          <input
-            ref={box}
-            id="assistant-ask"
-            type="text"
-            onInput={(event) => setHasText(Boolean(event.currentTarget.value.trim()))}
-            disabled={busy || full}
-            maxLength={4000}
-            placeholder={full ? "This conversation has reached $0.50." : "“Answer Johan and put a check-in in my calendar”"}
-            className="min-w-0 flex-1 rounded-[12px] border border-line bg-paper px-3.5 py-3 text-[13.5px] text-ink outline-none placeholder:text-ink-faint focus:border-ink-faint focus:ring-2 focus:ring-ink/10 disabled:opacity-60"
-          />
-          <button
-            type="submit"
-            disabled={busy || full || !hasText}
-            className="flex h-11 shrink-0 items-center gap-2 rounded-[12px] bg-ink-deep px-5 text-[13px] font-semibold text-white transition hover:bg-ink/85 disabled:cursor-default disabled:opacity-50"
-          >
-            {/* "Ask", not "Send": this app has a rule against send buttons,
-                and nothing here sends anything to anybody. */}
-            Ask
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
-              <path d="M5 12h13M12.5 6l6 6-6 6" />
-            </svg>
-          </button>
-        </div>
-
+      {/* The bar (./composer.tsx), shaped like ChatGPT's at the user's
+          request. What the design said around the box stays, in one quiet
+          line under it: that nothing is kept, what it has cost, and what it
+          may do without asking. */}
+      <div className="flex flex-col gap-2">
+        <Composer
+          onAsk={(text) => void ask(text)}
+          busy={busy}
+          full={full}
+          placeholder={
+            full
+              ? "This conversation has reached $0.50."
+              : entries.length === 0
+                ? // Short, as ChatGPT's is: the design's longer line was cut
+                  // off in a phone-width bar.
+                  "Ask anything"
+                : "Say something back"
+          }
+        />
         {full ? (
-          <p className="text-[11.5px] leading-[1.5] font-medium text-accent">
+          <p className="px-4 text-[11.5px] leading-[1.5] font-medium text-accent">
             This conversation has used its $0.50. Reload the page to start a new one — everything
             it did stays done, and stays undoable from the contact pages.
           </p>
         ) : (
-          entries.length === 0 && (
-            <div className="flex flex-wrap items-center gap-[7px]">
-              {STARTERS.map((starter) => (
-                <button
-                  key={starter}
-                  type="button"
-                  onClick={() => void ask(starter)}
-                  disabled={busy}
-                  className="rounded-full border border-line bg-paper px-[13px] py-[7px] text-[12px] font-semibold transition-colors hover:bg-chip disabled:opacity-60"
-                >
-                  {starter}
-                </button>
-              ))}
-              <span className="text-[11.5px] font-medium text-ink-soft sm:ml-auto">
-                Notes and dates it changes on its own. Mail and calendar always ask.
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 text-[11.5px] font-medium text-ink-soft">
+            <span>This conversation isn&rsquo;t saved.</span>
+            <span>Notes and dates it changes on its own. Mail and calendar always ask.</span>
+            {spentUsd > 0 && (
+              <span className="sm:ml-auto">
+                This conversation: ${spentUsd.toFixed(2)} of ${CONVERSATION_CEILING_USD.toFixed(2)}
               </span>
-            </div>
-          )
+            )}
+          </p>
         )}
-      </form>
+      </div>
     </div>
   );
 }
