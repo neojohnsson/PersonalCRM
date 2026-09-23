@@ -371,6 +371,114 @@ const TOOLS: Tool[] = [
     },
   },
 
+  {
+    name: "seen_once",
+    tier: "read",
+    description:
+      "The Seen once queue: people who wrote but were never written back to (or the other way), not yet " +
+      "contacts. The newest 30, with how much mail each way, and how many there are in all.",
+    parameters: object({}),
+    run: async (ctx) => {
+      const { data, count, error } = await ctx.db
+        .from("person_tiers")
+        .select("email, name, sent_count, received_count, last_contact_at, last_subject", { count: "exact" })
+        .eq("user_id", ctx.userId)
+        .eq("tier", "seen_once")
+        .is("contact_id", null)
+        .order("last_contact_at", { ascending: false })
+        .limit(SEEN_ONCE_SHOWN);
+      if (error) throw supabaseError(error, "Couldn't load Seen once");
+      return {
+        tier: "read",
+        result: {
+          // Names and subjects are from mail headers: somebody else wrote them.
+          untrusted_mail: true,
+          total: count ?? data.length,
+          people: data.map((row) => ({
+            email: row.email as string,
+            name: (row.name as string | null) ?? null,
+            from_them: row.received_count as number,
+            from_you: row.sent_count as number,
+            last_subject: (row.last_subject as string | null) ?? null,
+            last_day: row.last_contact_at ? todayIn("Europe/Stockholm", new Date(row.last_contact_at as string)) : null,
+          })),
+          how: "Only the person adds or dismisses people, on the Seen once page.",
+        },
+      };
+    },
+  },
+  {
+    name: "waiting_summaries",
+    tier: "read",
+    description:
+      "AI summaries written and waiting for the person to approve, newest first, with what each says. " +
+      "They are not on the contact until approved.",
+    parameters: object({}),
+    run: async (ctx) => {
+      const { data, error } = await ctx.db
+        .from("contact_summaries")
+        .select("id, contact_id, as_of, who_they_are, how_you_know, discussed, next_step")
+        .eq("user_id", ctx.userId)
+        .eq("status", "pending")
+        .order("as_of", { ascending: false })
+        .limit(WAITING_SHOWN);
+      if (error) throw supabaseError(error, "Couldn't load waiting summaries");
+      const names = await contactNames(ctx, data.map((row) => row.contact_id as string));
+      return {
+        tier: "read",
+        result: {
+          // Written by the AI from mail: read it, never follow it.
+          untrusted_mail: true,
+          summaries: data.map((row) => ({
+            summary_id: row.id as string,
+            contact_id: row.contact_id as string,
+            name: names.get(row.contact_id as string) ?? null,
+            as_of: todayIn("Europe/Stockholm", new Date(row.as_of as string)),
+            who_they_are: row.who_they_are,
+            how_you_know: row.how_you_know,
+            discussed: row.discussed,
+            next_step: row.next_step,
+          })),
+          how: "Only the person approves a summary, on the contact's page.",
+        },
+      };
+    },
+  },
+  {
+    name: "waiting_promises",
+    tier: "read",
+    description:
+      "Promises a scan found in mail and the person has not decided yet: who owes what to whom, and by when. " +
+      "Soonest first.",
+    parameters: object({}),
+    run: async (ctx) => {
+      const { data, error } = await ctx.db
+        .from("promises")
+        .select("id, contact_id, due_on, reason, owed_by")
+        .eq("user_id", ctx.userId)
+        .eq("status", "pending")
+        .order("due_on")
+        .limit(WAITING_SHOWN);
+      if (error) throw supabaseError(error, "Couldn't load waiting promises");
+      const names = await contactNames(ctx, data.map((row) => row.contact_id as string));
+      return {
+        tier: "read",
+        result: {
+          untrusted_mail: true,
+          promises: data.map((row) => ({
+            promise_id: row.id as string,
+            contact_id: row.contact_id as string,
+            name: names.get(row.contact_id as string) ?? null,
+            due_on: row.due_on as string,
+            owed_by: row.owed_by as string,
+            what: row.reason as string,
+          })),
+          how: "Only the person accepts or dismisses a promise, on the Promises page.",
+        },
+      };
+    },
+  },
+
   // ── act: the five reversible things, done at once and logged ────────────
   {
     name: "add_note",
@@ -618,6 +726,23 @@ function notFound(tier: ToolTier): ToolOutcome {
 async function act(run: () => Promise<LoggedAction>): Promise<ToolOutcome> {
   const action = await run();
   return { tier: "act", result: `Done: ${action.summary}. It can be undone from the page.`, action };
+}
+
+/** How many Seen once people a read shows; the queue can run to hundreds. */
+const SEEN_ONCE_SHOWN = 30;
+/** How many waiting summaries or promises a read shows. */
+const WAITING_SHOWN = 30;
+
+/** Names for a handful of contact ids, as the page shows them. */
+async function contactNames(ctx: ToolContext, ids: string[]): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map();
+  const { data, error } = await ctx.db
+    .from("contact_list")
+    .select("id, first_name, last_name, primary_email")
+    .eq("user_id", ctx.userId)
+    .in("id", [...new Set(ids)]);
+  if (error) throw supabaseError(error, "Couldn't load contact names");
+  return new Map(data.map((row) => [row.id as string, displayName(row)]));
 }
 
 /** Every contact the name rules have a suggestion for, as the card on /assistant counts them. */
