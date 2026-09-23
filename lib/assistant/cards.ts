@@ -67,7 +67,7 @@ export function thingsToDecide(counts: DecideCounts): DecideRow[] {
       key: "promises",
       title: counts.promises === 1 ? "A promise found, not decided" : `${counts.promises} promises found, none decided`,
       detail: "Things you or they said would happen.",
-      href: "/promises",
+      href: "/assistant/promises",
       action: "Decide",
     });
   }

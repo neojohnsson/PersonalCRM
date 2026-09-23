@@ -64,15 +64,41 @@ describe("the pages you can navigate to", () => {
     }
   });
 
-  it("do not include Your week or Promises, which left the rail in 9b", () => {
-    // They still work at their addresses; Home links to them (Part 7).
+  it("do not include Your week or Promises, which the Assistant replaced in slice 11", () => {
     const hrefs = PAGES.map((page) => page.href);
     expect(hrefs).not.toContain("/brief");
     expect(hrefs).not.toContain("/promises");
-    expect(readFileSync("app/page.tsx", "utf8")).toContain('href="/brief"');
-    expect(readFileSync("app/brief/page.tsx", "utf8")).toContain('href="/promises"');
+    // Gone, not hidden: no page at either address...
+    expect(existsSync("app/brief/page.tsx")).toBe(false);
+    expect(existsSync("app/promises/page.tsx")).toBe(false);
+    // ...and nothing anywhere links to one. The promise queue lives on under
+    // the Assistant, at /assistant/promises.
+    const linking = sourceFiles("app").filter((file) => /["'`]\/(brief|promises)["'`/?#]/.test(readFileSync(file, "utf8")));
+    expect(linking).toEqual([]);
+    expect(existsSync("app/assistant/promises/page.tsx")).toBe(true);
+  });
+
+  it("keep the promise queue behind the Assistant, page and actions alike", () => {
+    const page = readFileSync("app/assistant/promises/page.tsx", "utf8");
+    expect(page).toContain('if (!(await hasAssistant(supabase, user.id))) redirect("/")');
+    // Accept, dismiss and scan each check for themselves: a POST does not
+    // come through the page.
+    const actions = readFileSync("app/assistant/promises/actions.ts", "utf8");
+    const exported = actions.match(/^export async function \w+/gm) ?? [];
+    const gated = actions.match(/if \(!\(await hasAssistant\(supabase, user\.id\)\)\) notFound\(\);/g) ?? [];
+    expect(exported).toHaveLength(3);
+    expect(gated).toHaveLength(exported.length);
   });
 });
+
+/** Every source file under a folder. */
+function sourceFiles(dir: string): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) return sourceFiles(path);
+    return /\.(ts|tsx)$/.test(name) ? [path] : [];
+  });
+}
 
 describe("the sidebar and the bottom bar", () => {
   it("are both built from the same list, and so is the header's switcher", () => {
@@ -256,7 +282,7 @@ describe("nothing that looks interactive and isn't", () => {
     // mm/dd/yyyy to somebody in Växjö.
     for (const file of [
       join("app", "contacts", "[id]", "next-touch-card.tsx"),
-      join("app", "promises", "promise-card.tsx"),
+      join("app", "assistant", "promises", "promise-card.tsx"),
     ]) {
       const source = readFileSync(file, "utf8");
       expect(source).toContain('type="date"');

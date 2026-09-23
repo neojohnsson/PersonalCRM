@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { notFound } from "next/navigation";
 import { AiCapReached } from "@/lib/ai/spend";
 import { scanForPromises } from "@/lib/ai/promise-scan";
+import { hasAssistant } from "@/lib/assistant/entitlement";
 import { requireUser } from "@/lib/auth";
 import { isUuid } from "@/lib/contacts/contact-form";
 import { isIsoDate } from "@/lib/relationship/dates";
@@ -19,11 +20,16 @@ import { createClient } from "@/lib/supabase/server";
  *
  * Each action checks the user itself and runs as them, so RLS and the composite
  * foreign keys of migration 0019 decide what they may touch.
+ *
+ * Since slice 11 promises are part of the Assistant (docs/slice-11-plan.md
+ * §8): you ask it to look, its card runs the scan, and what it finds waits
+ * on /assistant/promises. So each action also checks the Assistant is yours,
+ * as the page does — a POST does not come through the page.
  */
 
 const UNIQUE_VIOLATION = "23505";
 
-/** Drop reasons in words, for the line under the scan button. */
+/** Drop reasons in words, for the line the scan card shows when it found nothing. */
 const REFUSED = {
   no_such_message: "about a message that wasn't there",
   not_quoted: "not quoted from the message",
@@ -62,6 +68,7 @@ export async function acceptPromise(
   if (asked && !isIsoDate(asked)) return { error: "That isn't a date." };
 
   const supabase = await createClient();
+  if (!(await hasAssistant(supabase, user.id))) notFound();
   const { data: promise, error } = await supabase
     .from("promises")
     .select("id, contact_id, due_on, reason, owed_by")
@@ -142,6 +149,7 @@ export async function dismissPromise(promiseId: string): Promise<void> {
   if (!isUuid(promiseId)) notFound();
 
   const supabase = await createClient();
+  if (!(await hasAssistant(supabase, user.id))) notFound();
   const { error } = await supabase
     .from("promises")
     .update({ status: "dismissed", decided_at: new Date().toISOString() })
@@ -155,10 +163,11 @@ export async function dismissPromise(promiseId: string): Promise<void> {
 
 export type ScanState = { message: string; tone: "ok" | "problem" } | null;
 
-/** "Look for promises": read the contacts worth reading, and write what's found. */
+/** The scan card's "Read my mail": read the contacts worth reading, and write what's found. */
 export async function runScan(): Promise<ScanState> {
   const user = await requireUser();
   const supabase = await createClient();
+  if (!(await hasAssistant(supabase, user.id))) notFound();
 
   try {
     const result = await scanForPromises(supabase, user.id);

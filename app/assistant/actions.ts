@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 import { notFound } from "next/navigation";
 import { generateSummaryAction } from "@/app/contacts/[id]/summary-actions";
-import { runScan, type ScanState } from "@/app/promises/actions";
+import { runScan, type ScanState } from "@/app/assistant/promises/actions";
 import { DraftContactNotFound, generateDraft } from "@/lib/ai/draft";
 import { explainDraftFailure } from "@/lib/ai/draft-errors";
 import { TONES, type Tone } from "@/lib/ai/draft-types";

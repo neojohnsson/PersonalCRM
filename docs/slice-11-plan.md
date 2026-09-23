@@ -138,6 +138,11 @@ the footer links on Home, and their tests. **`lib/relationship/brief.ts` and
 `lib/ai/promise*.ts` stay** — the cards are built on them, and a promise scan is one of the
 things you asked the Assistant to run. The `promises` table stays for the same reason.
 
+**Decided 2026-09-23: the promise queue moves under the Assistant**, to `/assistant/promises`,
+behind the same entitlement check as the page and on each of its actions. It keeps the tested
+accept/dismiss rows and loses the scan button: you scan by asking, and the scan card says what
+it costs first. "Things to decide" and the scan card link there.
+
 ---
 
 ## Done when — a test proves it

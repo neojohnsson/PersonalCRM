@@ -363,7 +363,7 @@ function ScanCard({ proposal, onSettled }: { proposal: Extract<Proposal, { kind:
       {stage.at === "read" && (
         <>
           <p className="text-[12.5px] leading-[1.5] text-ink-body">{stage.message}</p>
-          <Link href="/promises" className="self-start text-[12.5px] font-semibold text-info-ink">
+          <Link href="/assistant/promises" className="self-start text-[12.5px] font-semibold text-info-ink">
             Decide on them
           </Link>
           <Cost usd={stage.costUsd} what="Reading" />

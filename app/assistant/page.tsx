@@ -32,6 +32,13 @@ import { createClient } from "@/lib/supabase/server";
 export const metadata = { title: `Assistant · ${APP_NAME}` };
 
 /**
+ * The scan card's "Read my mail" runs as a Server Action posted to this page,
+ * so this page's time budget is the scan's. SCAN_BATCH (lib/ai/promise-scan.ts)
+ * is sized to fit inside it; it moved here with the scan from /promises.
+ */
+export const maxDuration = 60;
+
+/**
  * The Assistant (slice 11; docs/slice-11-plan.md), built from its approved
  * design — https://claude.ai/artifact/5ZpxKE8QYemKm7ceo9Twgg, "Assistant —
  * resting".
