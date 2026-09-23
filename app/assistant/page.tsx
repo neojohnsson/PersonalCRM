@@ -234,7 +234,7 @@ function WhoNeedsYou({ entries }: { entries: BriefEntry<ContactRow>[] }) {
   const needYou = entries.length - waiting;
 
   return (
-    <section className={`${CARD} flex min-w-0 flex-1 flex-col overflow-hidden`}>
+    <section className={`${CARD} flex min-w-0 flex-col overflow-hidden lg:flex-1`}>
       {/* "4 need you", not the design's "4 waiting": a row below can say
           "Waiting on them", and two meanings of waiting side by side was the
           first thing that read wrong on real data (2026-09-23). */}
@@ -326,7 +326,7 @@ function ThisWeek({
   const shown = meetings.slice(0, MEETING_ROWS);
 
   return (
-    <section className={`${CARD} flex min-w-0 flex-1 flex-col overflow-hidden`}>
+    <section className={`${CARD} flex min-w-0 flex-col overflow-hidden lg:flex-1`}>
       <CardHeading dot="bg-info-ink" title="Today and this week" count={null} />
 
       {!connected ? (
@@ -428,7 +428,7 @@ function MeetingBadge({ startedAt, isToday }: { startedAt: string; isToday: bool
 
 function ThingsToDecide({ rows }: { rows: DecideRow[] }) {
   return (
-    <section className={`${CARD} flex min-w-0 flex-1 flex-col overflow-hidden`}>
+    <section className={`${CARD} flex min-w-0 flex-col overflow-hidden lg:flex-1`}>
       <CardHeading dot="bg-decide" title="Things to decide" count={rows.length > 0 ? String(rows.length) : null} />
 
       {rows.length === 0 ? (
@@ -501,7 +501,10 @@ function SpendStrip({
       </div>
       <span aria-hidden="true" className="hidden h-5 w-px shrink-0 bg-chip sm:block" />
       {latest ? (
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-[9px] gap-y-1">
+        // Its own line on a phone: squeezed beside the spend it went one word per
+        // line. The phone design puts this behind a header button instead; the
+        // strip stays, stacked, so the Undo is one tap away on every width.
+        <div className="flex min-w-0 basis-full flex-wrap items-center gap-x-[9px] gap-y-1 sm:basis-0 sm:flex-1">
           <DoneMark undone={latest.undoneAt !== null} />
           <span
             className={`min-w-0 text-[12.5px] ${latest.undoneAt ? "text-ink-faint line-through" : "text-ink-body"}`}
@@ -516,7 +519,7 @@ function SpendStrip({
           )}
         </div>
       ) : (
-        <span className="min-w-0 flex-1 text-[12.5px] text-ink-soft">
+        <span className="min-w-0 basis-full text-[12.5px] text-ink-soft sm:basis-0 sm:flex-1">
           Nothing done yet. What the Assistant does on its own will show here, with Undo.
         </span>
       )}

@@ -147,20 +147,22 @@ it costs first. "Things to decide" and the scan card link there.
 
 ## Done when — a test proves it
 
-- [ ] The Assistant's tool list is exactly the ones in §2's first two rows, and a test fails
+- [x] The Assistant's tool list is exactly the ones in §2's first two rows, and a test fails
       if a tool that sends, deletes, merges, invites or changes settings ever appears
-- [ ] A "needs your press" tool writes nothing — it only returns a proposal — proved by
+- [x] A "needs your press" tool writes nothing — it only returns a proposal — proved by
       running it against a real database and finding no draft and no event
-- [ ] Each "on its own" action is logged with its before-value and undone exactly
-- [ ] A message that says "delete this contact" gets a note at worst, never a deletion
-- [ ] The conversation is in no table anywhere after it ends
-- [ ] The Assistant's spend has its own cap, cannot use the summaries' budget, and a
+- [x] Each "on its own" action is logged with its before-value and undone exactly
+- [x] A message that says "delete this contact" gets a note at worst, never a deletion
+- [x] The conversation is in no table anywhere after it ends
+- [x] The Assistant's spend has its own cap, cannot use the summaries' budget, and a
       conversation stops at its ceiling
-- [ ] `/assistant` redirects Home when the flag is off, and the sidebar has no entry
-- [ ] Two users: neither sees the other's activity, and the Assistant cannot act on the
+- [x] `/assistant` redirects Home when the flag is off, and the sidebar has no entry
+- [x] Two users: neither sees the other's activity, and the Assistant cannot act on the
       other's contacts
-- [ ] Your week and Promises are gone, and nothing links to them
-- [ ] The page matches the approved design at 1440px and 390px
+- [x] Your week and Promises are gone, and nothing links to them
+- [x] The page matches the approved design at 1440px and 390px — checked by eye in the
+      browser (2026-09-23), not by a test; the 390px pass found the cards squeezed to one
+      height and the strip one word per line, both fixed
 
 ## Decided, 2026-09-23
 
