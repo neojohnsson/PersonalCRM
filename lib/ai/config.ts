@@ -53,3 +53,32 @@ export function monthlyCapUsd(env: Env = process.env): number {
   const cap = raw ? Number(raw) : NaN;
   return Number.isFinite(cap) && cap >= 0 ? cap : DEFAULT_MONTHLY_CAP_USD;
 }
+
+/**
+ * The Assistant's own monthly budget (slice 11; migration 0025): about $10,
+ * separate from the cap summaries and drafts share, so one long conversation
+ * cannot use up tomorrow's summary. ASSISTANT_MONTHLY_CAP_USD overrides it.
+ */
+export const DEFAULT_ASSISTANT_CAP_USD = 10;
+
+export function assistantMonthlyCapUsd(env: Env = process.env): number {
+  const raw = env.ASSISTANT_MONTHLY_CAP_USD?.trim();
+  const cap = raw ? Number(raw) : NaN;
+  return Number.isFinite(cap) && cap >= 0 ? cap : DEFAULT_ASSISTANT_CAP_USD;
+}
+
+/**
+ * The Assistant's model (slice 11): gpt-5.4-mini unless LLM_MODEL_ASSISTANT
+ * says otherwise. Chosen for calling the right tool over price, because a
+ * wrong tool call here writes to a contact. A model with no price in
+ * lib/ai/models.ts is refused, as everywhere: its cost could not be counted.
+ */
+export const DEFAULT_ASSISTANT_MODEL = "gpt-5.4-mini";
+
+export function assistantModel(env: Env = process.env): string {
+  const model = env.LLM_MODEL_ASSISTANT?.trim() || DEFAULT_ASSISTANT_MODEL;
+  if (!isKnownModel(model)) {
+    throw new AiNotConfigured(`LLM_MODEL_ASSISTANT is "${model}", which has no price in lib/ai/models.ts.`);
+  }
+  return model;
+}

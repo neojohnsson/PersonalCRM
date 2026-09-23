@@ -7,9 +7,10 @@ import { startOfMonthInStockholm } from "@/lib/ai/spend";
 
 describe("costOf", () => {
   it("prices input, cached input and output separately, per million tokens", () => {
-    // gpt-5.6-luna: $0.20 input, $0.02 cached, $1.20 output.
+    // gpt-5.6-luna, checked 2026-09-23: $0.25 input (the cache-write price,
+    // counted for every uncached token), $0.02 cached, $0.75 output.
     const cost = costOf("gpt-5.6-luna", { inputTokens: 10_000, cachedInputTokens: 2_000, outputTokens: 1_000 });
-    expect(cost).toBeCloseTo(8_000 * 0.2e-6 + 2_000 * 0.02e-6 + 1_000 * 1.2e-6, 12);
+    expect(cost).toBeCloseTo(8_000 * 0.25e-6 + 2_000 * 0.02e-6 + 1_000 * 0.75e-6, 12);
   });
 
   it("never counts more cached tokens than input tokens", () => {
@@ -31,7 +32,7 @@ describe("costOf", () => {
 
 describe("maxCostOf and estimateTokens", () => {
   it("assumes full-price input and output at its limit", () => {
-    expect(maxCostOf("gpt-5.6-luna", 13_000, 2_000)).toBeCloseTo(13_000 * 0.2e-6 + 2_000 * 1.2e-6, 12);
+    expect(maxCostOf("gpt-5.6-luna", 13_000, 2_000)).toBeCloseTo(13_000 * 0.25e-6 + 2_000 * 0.75e-6, 12);
   });
 
   it("guesses high: one token per three characters", () => {

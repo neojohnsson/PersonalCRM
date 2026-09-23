@@ -86,6 +86,12 @@ const HOLDINGS: Omit<Holding, "count">[] = [
     what: "That you were in a meeting with a contact, and when. Nothing else is stored — no title, no description, no other guests. A title is read while the calendar page draws your week and is never written down; a description is never asked for at all.",
   },
   {
+    table: "assistant_actions",
+    group: "people",
+    label: "What the Assistant did",
+    what: "Each thing the Assistant did on its own — a note, tags, a next touch, a finished conversation, reminders on or off — and what was there before, so it can be undone. Never message text; the conversation itself is not kept.",
+  },
+  {
     table: "seen_once_dismissals",
     group: "people",
     label: "Dismissed addresses",
@@ -107,13 +113,19 @@ const HOLDINGS: Omit<Holding, "count">[] = [
     table: "google_calendar",
     group: "you",
     label: "Your calendar connection",
-    what: "The Google account whose calendar is connected, the permissions you granted, and a refresh token — encrypted. Read-only: nothing here can create or change an event.",
+    what: "The Google account whose calendar is connected, the permissions you granted, and a refresh token — encrypted. Used to read your week, and to create an event only when you press Create event — never with guests, never changing or deleting one.",
   },
   {
     table: "profiles",
     group: "you",
     label: "Your profile",
     what: "Your name and how you like drafts written: tone, length, and whether to sign off.",
+  },
+  {
+    table: "entitlements",
+    group: "you",
+    label: "Your plan",
+    what: "Whether the Assistant is part of your account. Only the app's operator can change it.",
   },
   {
     table: "gmail_sync_state",

@@ -4,7 +4,12 @@ import { refresh } from "next/cache";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { isUuid } from "@/lib/contacts/contact-form";
-import { supabaseError } from "@/lib/supabase/errors";
+import {
+  ContactNotFound,
+  reopenThreadRow,
+  setNeverChaseRow,
+  settleThreadRow,
+} from "@/lib/relationship/settle";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -20,9 +25,12 @@ import { createClient } from "@/lib/supabase/server";
  *
  * Nothing here is destructive. A settle is one row that you can undo, and
  * never_chase is a switch — no mail, contact or summary is changed by either.
+ *
+ * The writes themselves are in lib/relationship/settle.ts since slice 11, so
+ * the Assistant does them the same way the buttons do. What stays here is
+ * what only a button needs: checking the user from the request, and deciding
+ * when the page catches up.
  */
-
-const FOREIGN_KEY_VIOLATION = "23503";
 
 /**
  * Whether the action refreshes the page it was called from.
@@ -46,21 +54,13 @@ export async function settleThread(
   const user = await requireUser();
   if (!isUuid(contactId) || !threadId.trim()) notFound();
 
-  const supabase = await createClient();
-  const { error } = await supabase.from("settled_threads").upsert(
-    {
-      user_id: user.id,
-      contact_id: contactId,
-      thread_id: threadId,
-      // Said again, meant again: the moment moves, so a message you have since
-      // read and settled doesn't re-open the thread behind you.
-      settled_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id,contact_id,thread_id" },
-  );
-  // Not their contact, or it's gone: the same answer either way.
-  if (error?.code === FOREIGN_KEY_VIOLATION) notFound();
-  if (error) throw supabaseError(error, "Couldn't settle the thread");
+  try {
+    await settleThreadRow(await createClient(), user.id, contactId, threadId);
+  } catch (error) {
+    // Not their contact, or it's gone: the same answer either way.
+    if (error instanceof ContactNotFound) notFound();
+    throw error;
+  }
 
   if (revalidate) refresh();
 }
@@ -74,14 +74,7 @@ export async function reopenThread(
   const user = await requireUser();
   if (!isUuid(contactId) || !threadId.trim()) notFound();
 
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("settled_threads")
-    .delete()
-    .eq("user_id", user.id)
-    .eq("contact_id", contactId)
-    .eq("thread_id", threadId);
-  if (error) throw supabaseError(error, "Couldn't reopen the thread");
+  await reopenThreadRow(await createClient(), user.id, contactId, threadId);
 
   if (revalidate) refresh();
 }
@@ -95,13 +88,12 @@ export async function setNeverChase(
   const user = await requireUser();
   if (!isUuid(contactId)) notFound();
 
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("contacts")
-    .update({ never_chase: neverChase })
-    .eq("user_id", user.id)
-    .eq("id", contactId);
-  if (error) throw supabaseError(error, "Couldn't change how this contact is handled");
+  try {
+    await setNeverChaseRow(await createClient(), user.id, contactId, neverChase);
+  } catch (error) {
+    if (error instanceof ContactNotFound) notFound();
+    throw error;
+  }
 
   if (revalidate) refresh();
 }

@@ -43,7 +43,7 @@ async function signInAs(email: string): Promise<SupabaseClient> {
   return client;
 }
 
-/** A contact, an address, mail, a summary, a touch and a sync state. */
+/** A contact, an address, mail, a summary, a touch, a sync state, and the Assistant: its plan and one thing it did. */
 async function fillUp(db: SupabaseClient, userId: string): Promise<string> {
   const { data: contact, error } = await db
     .from("contacts")
@@ -87,6 +87,16 @@ async function fillUp(db: SupabaseClient, userId: string): Promise<string> {
     }),
     db.from("gmail_sync_state").insert({ user_id: userId, status: "ready" }),
     db.from("profiles").insert({ user_id: userId, display_name: "Alice" }),
+    db.from("assistant_actions").insert({
+      user_id: userId,
+      contact_id: contact.id,
+      kind: "note",
+      summary: "Added a note to Karin",
+      before: { notes: null },
+      after: { notes: "Wants the thesis dates." },
+    }),
+    // Only the operator can grant the Assistant (migration 0025), so as the operator.
+    admin.from("entitlements").insert({ user_id: userId, assistant: true }),
   ]);
   for (const result of inserts) if (result.error) throw result.error;
 
@@ -136,8 +146,9 @@ describe("deleting", () => {
     const { error } = await aliceClient.rpc("delete_all_contacts", { p_user_id: alice.id });
     expect(error).toBeNull();
 
-    // Gone: the contact and everything hanging off it, and the stored mail.
-    expect(await tablesHolding(alice.id)).toEqual(["profiles"]);
+    // Gone: the contact and everything hanging off it — what the Assistant
+    // did included — and the stored mail. The plan belongs to the account.
+    expect(await tablesHolding(alice.id)).toEqual(["profiles", "entitlements"]);
 
     // Still signed in, and the profile is untouched.
     const { data: profile } = await aliceClient

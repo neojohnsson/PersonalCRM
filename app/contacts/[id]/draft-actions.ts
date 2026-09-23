@@ -2,24 +2,17 @@
 
 import { refresh } from "next/cache";
 import { notFound } from "next/navigation";
-import { AiNotConfigured } from "@/lib/ai/config";
-import { DraftContactNotFound, DraftsNotAllowed, generateDraft } from "@/lib/ai/draft";
+import { DraftContactNotFound, generateDraft } from "@/lib/ai/draft";
+import { explainDraftFailure } from "@/lib/ai/draft-errors";
 import {
   DraftNotFound,
-  DraftsNotAllowedHere,
-  NewerDraftExists,
   discardDraft,
   restoreDraft,
   saveDraftToGmail,
 } from "@/lib/ai/draft-save";
 import { TONES, type Tone } from "@/lib/ai/draft-types";
-import { OpenAiError, OpenAiNoAnswer } from "@/lib/ai/openai";
-import { NoThreadToReplyTo } from "@/lib/ai/reply";
-import { AiCapReached } from "@/lib/ai/spend";
 import { requireUser } from "@/lib/auth";
 import { isUuid } from "@/lib/contacts/contact-form";
-import { GmailApiError } from "@/lib/google/gmail";
-import { GmailReconnectRequired } from "@/lib/google/tokens";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -47,7 +40,7 @@ export async function generateDraftAction(
     await generateDraft(await createClient(), user.id, contactId, { tone: tone ?? undefined });
   } catch (error) {
     if (error instanceof DraftContactNotFound) notFound();
-    const reason = explain(error);
+    const reason = explainDraftFailure(error);
     if (reason === null) throw error;
     return { error: reason };
   }
@@ -68,7 +61,7 @@ export async function saveDraftAction(draftId: string, previous: DraftState, for
   try {
     await saveDraftToGmail(await createClient(), user.id, draftId, body);
   } catch (error) {
-    const reason = explain(error);
+    const reason = explainDraftFailure(error);
     if (reason === null) throw error;
     return { error: reason };
   }
@@ -103,30 +96,11 @@ export async function restoreDraftAction(draftId: string, body: string): Promise
   try {
     await restoreDraft(await createClient(), user.id, draftId, body);
   } catch (error) {
-    const reason = explain(error);
+    const reason = explainDraftFailure(error);
     if (reason === null) throw error;
     return { error: reason };
   }
 
   refresh();
   return { error: null };
-}
-
-/** The failures a person can act on, in plain words. None of them include email text. */
-function explain(error: unknown): string | null {
-  if (error instanceof AiCapReached) {
-    return `This month's AI budget is used up ($${error.spentUsd.toFixed(2)} of $${error.capUsd.toFixed(2)}). It resets on the 1st.`;
-  }
-  if (error instanceof DraftsNotAllowed || error instanceof DraftsNotAllowedHere) {
-    return "Gmail isn't connected with permission to create drafts. Reconnect Gmail, then try again.";
-  }
-  if (error instanceof NoThreadToReplyTo) return "There's no mail with this contact to reply to yet.";
-  if (error instanceof DraftNotFound) return "That draft isn't waiting any more — it was saved or discarded elsewhere.";
-  if (error instanceof NewerDraftExists) return error.message;
-  if (error instanceof AiNotConfigured) return "The AI isn't set up on this server: an OpenAI key is missing.";
-  if (error instanceof GmailReconnectRequired) return "Gmail access has expired. Reconnect Gmail, then try again.";
-  if (error instanceof OpenAiNoAnswer) return "The AI gave no usable answer, so nothing was saved. Try again.";
-  if (error instanceof OpenAiError) return `OpenAI couldn't be reached (HTTP ${error.status}). Nothing was saved.`;
-  if (error instanceof GmailApiError) return `Gmail couldn't be reached (HTTP ${error.status}). Nothing was saved.`;
-  return null;
 }

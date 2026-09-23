@@ -57,8 +57,8 @@ export const PROMISE_MAX_OUTPUT_TOKENS = 1_200;
  *
  * Reading one takes five to twelve seconds, nearly all of it waiting for the
  * model, against a 60 second budget for the whole request (maxDuration in
- * app/promises/page.tsx). Five fits even when every contact is slow. What is
- * left over is read by pressing again, and the button says how many that is.
+ * app/assistant/page.tsx, whose scan card runs it). Five fits even when every
+ * contact is slow. What is left over is read by asking again.
  *
  * The alternative — read everything and hope — fails in the worst possible
  * way: the request is killed part way through, the spending is already

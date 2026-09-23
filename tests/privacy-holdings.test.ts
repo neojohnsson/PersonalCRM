@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { headline, isEmpty, loadHoldings } from "@/lib/privacy/holdings";
@@ -15,6 +17,18 @@ const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 const SECRET_KEY = process.env.SUPABASE_SECRET_KEY!;
 
 const PASSWORD = "test-password-that-is-long-enough";
+
+/** Every table any migration creates and no later one drops. */
+function tablesInMigrations(): string[] {
+  const dir = join("supabase", "migrations");
+  const tables = new Set<string>();
+  for (const file of readdirSync(dir).filter((name) => name.endsWith(".sql")).sort()) {
+    const sql = readFileSync(join(dir, file), "utf8");
+    for (const [, name] of sql.matchAll(/^create table (?:public\.)?(\w+)/gim)) tables.add(name);
+    for (const [, name] of sql.matchAll(/^drop table (?:if exists )?(?:public\.)?(\w+)/gim)) tables.delete(name);
+  }
+  return [...tables].sort();
+}
 
 const admin = createClient(SUPABASE_URL, SECRET_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -95,25 +109,11 @@ describe("what the app holds", () => {
     const holdings = await loadHoldings(aliceClient, alice.id);
 
     // If a migration adds a table and nobody adds it here, the page quietly
-    // stops telling the whole truth. This is the check against that.
-    expect(holdings.map((holding) => holding.table).sort()).toEqual([
-      "ai_usage",
-      "calendar_meetings",
-      "contact_drafts",
-      "contact_emails",
-      "contact_summaries",
-      "contacts",
-      "duplicate_dismissals",
-      "gmail_messages",
-      "gmail_sync_state",
-      "google_accounts",
-      "google_calendar",
-      "next_touches",
-      "profiles",
-      "promises",
-      "seen_once_dismissals",
-      "settled_threads",
-    ]);
+    // stops telling the whole truth. The list is read from the migrations
+    // themselves, not written out by hand: a hand-written list is exactly the
+    // thing somebody forgets to update (slice 11 added two tables, and the
+    // old hand-written list here still passed).
+    expect(holdings.map((holding) => holding.table).sort()).toEqual(tablesInMigrations());
   });
 
   it("counts what is really there, and nothing of anybody else's", async () => {

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { PAGES } from "@/lib/nav";
+import { PAGES, visiblePages } from "@/lib/nav";
 
 /**
  * Slice 9b, Part 1: the app had no navigation at all on a phone. The sidebar
@@ -64,21 +64,50 @@ describe("the pages you can navigate to", () => {
     }
   });
 
-  it("do not include Your week or Promises, which left the rail in 9b", () => {
-    // They still work at their addresses; Home links to them (Part 7).
+  it("do not include Your week or Promises, which the Assistant replaced in slice 11", () => {
     const hrefs = PAGES.map((page) => page.href);
     expect(hrefs).not.toContain("/brief");
     expect(hrefs).not.toContain("/promises");
-    expect(readFileSync("app/page.tsx", "utf8")).toContain('href="/brief"');
-    expect(readFileSync("app/brief/page.tsx", "utf8")).toContain('href="/promises"');
+    // Gone, not hidden: no page at either address...
+    expect(existsSync("app/brief/page.tsx")).toBe(false);
+    expect(existsSync("app/promises/page.tsx")).toBe(false);
+    // ...and nothing anywhere links to one. The promise queue lives on under
+    // the Assistant, at /assistant/promises.
+    const linking = sourceFiles("app").filter((file) => /["'`]\/(brief|promises)["'`/?#]/.test(readFileSync(file, "utf8")));
+    expect(linking).toEqual([]);
+    expect(existsSync("app/assistant/promises/page.tsx")).toBe(true);
+  });
+
+  it("keep the promise queue behind the Assistant, page and actions alike", () => {
+    const page = readFileSync("app/assistant/promises/page.tsx", "utf8");
+    expect(page).toContain('if (!(await hasAssistant(supabase, user.id))) redirect("/")');
+    // Accept, dismiss and scan each check for themselves: a POST does not
+    // come through the page.
+    const actions = readFileSync("app/assistant/promises/actions.ts", "utf8");
+    const exported = actions.match(/^export async function \w+/gm) ?? [];
+    const gated = actions.match(/if \(!\(await hasAssistant\(supabase, user\.id\)\)\) notFound\(\);/g) ?? [];
+    expect(exported).toHaveLength(3);
+    expect(gated).toHaveLength(exported.length);
   });
 });
+
+/** Every source file under a folder. */
+function sourceFiles(dir: string): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) return sourceFiles(path);
+    return /\.(ts|tsx)$/.test(name) ? [path] : [];
+  });
+}
 
 describe("the sidebar and the bottom bar", () => {
   it("are both built from the same list, and so is the header's switcher", () => {
     // The rail maps it, the bottom bar maps it, the switcher maps it. If one
     // grows a hard-coded entry, they drift and a page goes missing from one.
-    expect(SHELL.match(/PAGES\.map\(/g)).toHaveLength(3);
+    // Since slice 11 it is the list filtered for this person -- still one list,
+    // worked out once in the shell and handed to all three.
+    expect(SHELL.match(/pages\.map\(/g)).toHaveLength(3);
+    expect(SHELL.match(/visiblePages\(/g)).toHaveLength(1);
     for (const page of PAGES) {
       if (page.href === "/") continue;
       expect(SHELL.includes(`href="${page.href}"`), `${page.href} is hard-coded`).toBe(false);
@@ -253,7 +282,7 @@ describe("nothing that looks interactive and isn't", () => {
     // mm/dd/yyyy to somebody in Växjö.
     for (const file of [
       join("app", "contacts", "[id]", "next-touch-card.tsx"),
-      join("app", "promises", "promise-card.tsx"),
+      join("app", "assistant", "promises", "promise-card.tsx"),
     ]) {
       const source = readFileSync(file, "utf8");
       expect(source).toContain('type="date"');
@@ -273,5 +302,53 @@ describe("nothing that looks interactive and isn't", () => {
     expect(source).toContain("Leave without saving?");
     // A failed save moves to the first thing that is wrong.
     expect(source).toContain("scrollIntoView");
+  });
+});
+
+/**
+ * Slice 11: the Assistant is premium. It is in the navigation only for an
+ * account that includes it, and in the same place in all three.
+ */
+describe("the Assistant in the navigation", () => {
+  it("is second, and only for an account that includes it", () => {
+    expect(visiblePages(true).map((page) => page.key)).toEqual([
+      "home",
+      "assistant",
+      "calendar",
+      "contacts",
+      "seen-once",
+    ]);
+    expect(visiblePages(false).map((page) => page.key)).toEqual(["home", "calendar", "contacts", "seen-once"]);
+  });
+
+  it("is the only premium page, so nothing else can vanish for a free account", () => {
+    expect(PAGES.filter((page) => page.premium).map((page) => page.key)).toEqual(["assistant"]);
+  });
+});
+
+describe("the Assistant page", () => {
+  it("sends anyone without the Assistant back Home before loading anything", () => {
+    const source = readFileSync(join("app", "assistant", "page.tsx"), "utf8");
+    const check = source.indexOf("hasAssistant(supabase, user.id)");
+    const firstLoad = source.indexOf("Promise.all(");
+    expect(check).toBeGreaterThan(-1);
+    expect(source).toContain('redirect("/")');
+    // The check comes first: nobody without it causes a single query about
+    // their contacts to run on this page.
+    expect(check).toBeLessThan(firstLoad);
+  });
+
+  it("puts the chat last, under the cards that work without it", () => {
+    const source = readFileSync(join("app", "assistant", "page.tsx"), "utf8");
+    expect(source.indexOf("<AssistantChat")).toBeGreaterThan(source.indexOf("<ThingsToDecide"));
+  });
+
+  it("never has a send button, even in the chat", () => {
+    // The app's rule against send buttons covers words too: the chat's
+    // button says Ask.
+    const chat = readFileSync(join("app", "assistant", "chat.tsx"), "utf8");
+    // The button's word on a line of its own, as JSX lays it out.
+    expect(chat).toMatch(/^\s*Ask\s*$/m);
+    expect(chat).not.toMatch(/^\s*Send\s*$/m);
   });
 });

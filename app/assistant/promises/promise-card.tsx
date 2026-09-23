@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { acceptPromise, dismissPromise, type DecideState } from "@/app/promises/actions";
+import { acceptPromise, dismissPromise, type DecideState } from "@/app/assistant/promises/actions";
 import type { PendingPromise } from "@/lib/ai/promise-list";
 import { avatarColors, dayMonth, initials } from "@/lib/format";
 

@@ -298,6 +298,27 @@ Reverses slice 8's read-only calendar at the user's request: `calendar.events` o
 **Slice 11 — the Assistant** _(decided 2026-09-22)_
 A workspace at `/assistant`: cards built from what the app already computes, a chat box underneath, and an AI that does the safe reversible things on its own and asks for a draft, an event or an expensive read. Replaces Your week and Promises in the sidebar and then deletes both pages. Behind one boolean, because it is what a **premium** plan would charge for. Amends the "every AI output waits for approval" rule deliberately, and says so. `docs/assistant-plan.md`, Slice B.
 
+**Slice 11b — the Assistant everywhere** _(asked for 2026-09-23; after slice 11 merges)_
+"I want it to be able to do anything I want on the website." Slice 11 gives it the five
+reversible things, and cards for drafts, events, summaries, promise scans and better names.
+What the site can do and the Assistant cannot yet, as of 2026-09-23 — each one a decision,
+not a checkbox, because each touches a different rule:
+
+- **Through a card you press** (fits the rules as they are): edit a contact's details
+  (company, role, phone); add a contact; approve or edit a waiting summary; accept or dismiss
+  a promise; add Seen once people as contacts, or dismiss them; snooze or finish a next touch;
+  start a Gmail sync.
+- **Needs your call first**: a merge card. AGENTS.md says "suggest only; a human approves" —
+  a press is approval, but slice 11 promised the Assistant never merges, and a wrong merge is
+  nearly impossible to undo (§3.7).
+- **Never, whatever is asked**: sending mail, inviting guests, deleting contacts or the
+  account, the privacy page's export and deletes, profile settings, connecting or
+  disconnecting Gmail and Calendar. These are the hard rules and the settings a model should
+  not be able to talk itself into.
+
+Plan it the way slice 11 was: one tool at a time, each with its tier, its test, and the page
+action it presses through.
+
 **Slice 12 — web research** _(added 2026-09-17; was slice 8, then 9)_
 §3.11 as written: a "research this person" button, one contact at a time, public web search only, every fact with its source link, dated, pending until approved. Never LinkedIn, never data brokers. Behind a **per-user setting**, so a paid plan can switch it on later without rebuilding it. Can also feed drafts and summaries — still one click, still sources.
 
