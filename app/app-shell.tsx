@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { APP_NAME } from "@/lib/app-config";
 import { initials } from "@/lib/format";
-import { PAGES, type ActivePage, type PageKey } from "@/lib/nav";
+import { visiblePages, type ActivePage, type PageKey } from "@/lib/nav";
+import { hasAssistant } from "@/lib/assistant/entitlement";
+import { requireUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { ToastProvider } from "@/app/toasts";
 
 /**
@@ -17,8 +20,11 @@ import { ToastProvider } from "@/app/toasts";
  *   - Your week and Promises left the rail in slice 9b (docs/slice-9b-plan.md,
  *     Part 7). Both pages still work: Home links to Your week, and Your week
  *     links to Promises. They are deleted when the Assistant's cards replace
- *     what they do, so a four-entry rail is what the bottom bar and the
- *     header's page switcher are built from, plus Profile at the foot.
+ *     what they do.
+ *   - The Assistant (slice 11) sits second, and only for an account that
+ *     includes it (`entitlements`, migration 0025). Everybody else gets the
+ *     four; the rail, the bottom bar and the switcher all read the same
+ *     filtered list, so none of them can show it when the others don't.
  *   - The header's search and notification icons are left out — nothing
  *     behind them yet. The right side holds what the design has no place
  *     for: the connected Gmail address and Sign out.
@@ -37,11 +43,22 @@ import { ToastProvider } from "@/app/toasts";
  * The list of pages lives there, as data, so the rail, the bottom bar and a
  * test can all read the same truth; only the drawing is here.
  */
+/** The pages one person sees: the four, plus the Assistant when it is theirs. */
+type VisiblePages = ReturnType<typeof visiblePages>;
+
 const ICONS: Record<PageKey, React.ReactNode> = {
   home: (
     <>
       <path d="M3 10.5 12 3l9 7.5" />
       <path d="M5.5 9.4V20h13V9.4" />
+    </>
+  ),
+  // The approved Assistant design's own mark: a four-pointed spark and a
+  // small one beside it (https://claude.ai/artifact/5ZpxKE8QYemKm7ceo9Twgg).
+  assistant: (
+    <>
+      <path d="M12 3.2l1.7 4.6 4.6 1.7-4.6 1.7L12 15.8l-1.7-4.6L5.7 9.5l4.6-1.7z" />
+      <path d="M18.2 15.2l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" />
     </>
   ),
   // design/Calendar.dc.html's own sidebar icon, from the screen it belongs to:
@@ -68,7 +85,7 @@ const ICONS: Record<PageKey, React.ReactNode> = {
   ),
 };
 
-export function AppShell({
+export async function AppShell({
   userEmail,
   headerRight,
   active = "contacts",
@@ -83,6 +100,12 @@ export function AppShell({
   seenOnceCount?: number;
   children: React.ReactNode;
 }) {
+  // Which pages this person has: the Assistant only when their account
+  // includes it (slice 11). Every page renders the shell, so the check is
+  // cached for the request and costs one tiny read.
+  const user = await requireUser();
+  const pages = visiblePages(await hasAssistant(await createClient(), user.id));
+
   return (
     <ToastProvider>
       <div className="flex flex-1 bg-paper text-ink">
@@ -97,7 +120,7 @@ export function AppShell({
           </div>
 
           <nav aria-label="Main" className="flex flex-col items-center gap-[3px]">
-            {PAGES.map((page) => (
+            {pages.map((page) => (
               <NavItem
                 key={page.key}
                 href={page.href}
@@ -143,14 +166,14 @@ export function AppShell({
         <div className="flex min-w-0 flex-1 flex-col pb-[74px] sm:pb-0">
           <header className="relative flex h-[60px] shrink-0 items-center gap-3 px-4 sm:px-[26px]">
             <span className="text-[15px] font-semibold tracking-tight sm:hidden">{APP_NAME}</span>
-            <PageSwitcher active={active} />
+            <PageSwitcher active={active} pages={pages} />
             <div className="ml-auto flex items-center gap-2">{headerRight}</div>
           </header>
 
           {children}
         </div>
 
-        <BottomBar active={active} seenOnceCount={seenOnceCount} userEmail={userEmail} />
+        <BottomBar active={active} pages={pages} seenOnceCount={seenOnceCount} userEmail={userEmail} />
       </div>
     </ToastProvider>
   );
@@ -177,13 +200,13 @@ export function AppShell({
  *   - Hidden below md. Centred absolutely, it would sit under Sign out on a
  *     narrow window, and on a phone the bottom bar is the switcher.
  */
-function PageSwitcher({ active }: { active: ActivePage }) {
+function PageSwitcher({ active, pages }: { active: ActivePage; pages: VisiblePages }) {
   return (
     <nav
       aria-label="Switch page"
       className="absolute left-1/2 hidden -translate-x-1/2 gap-0.5 rounded-full bg-white p-1 shadow-[0_1px_2px_rgba(20,20,25,.05),0_4px_12px_rgba(20,20,25,.06)] md:flex"
     >
-      {PAGES.map((page) => {
+      {pages.map((page) => {
         const current = active === page.key;
         return (
           <Link
@@ -220,10 +243,12 @@ function PageSwitcher({ active }: { active: ActivePage }) {
  */
 function BottomBar({
   active,
+  pages,
   seenOnceCount,
   userEmail,
 }: {
   active: ActivePage;
+  pages: VisiblePages;
   seenOnceCount: number;
   userEmail: string | undefined;
 }) {
@@ -235,7 +260,7 @@ function BottomBar({
       // scans comments too, and a class candidate in one broke the build.
       className="fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-1px_2px_rgba(20,20,25,.04)] sm:hidden"
     >
-      {PAGES.map((page) => (
+      {pages.map((page) => (
         <BottomItem
           key={page.key}
           href={page.href}

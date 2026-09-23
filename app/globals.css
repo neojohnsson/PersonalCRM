@@ -108,6 +108,11 @@ html {
   --color-danger: #b42318;
   --color-danger-dark: #912018;
 
+  /* The Assistant's "Things to decide" dot, from its approved design
+     (https://claude.ai/artifact/5ZpxKE8QYemKm7ceo9Twgg) -- the same brown as
+     Main.dc.html's #faf0e4 / #8a5a1e avatar pair. Slice 11. */
+  --color-decide: #8a5a1e;
+
   /* The left sidebar. */
   --color-rail-active: #303237;
   --color-rail-icon: #75777e;

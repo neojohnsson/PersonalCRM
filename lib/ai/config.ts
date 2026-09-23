@@ -53,3 +53,16 @@ export function monthlyCapUsd(env: Env = process.env): number {
   const cap = raw ? Number(raw) : NaN;
   return Number.isFinite(cap) && cap >= 0 ? cap : DEFAULT_MONTHLY_CAP_USD;
 }
+
+/**
+ * The Assistant's own monthly budget (slice 11; migration 0025): about $10,
+ * separate from the cap summaries and drafts share, so one long conversation
+ * cannot use up tomorrow's summary. ASSISTANT_MONTHLY_CAP_USD overrides it.
+ */
+export const DEFAULT_ASSISTANT_CAP_USD = 10;
+
+export function assistantMonthlyCapUsd(env: Env = process.env): number {
+  const raw = env.ASSISTANT_MONTHLY_CAP_USD?.trim();
+  const cap = raw ? Number(raw) : NaN;
+  return Number.isFinite(cap) && cap >= 0 ? cap : DEFAULT_ASSISTANT_CAP_USD;
+}

@@ -29,7 +29,7 @@ export class AiCapReached extends Error {
 
 export type SpendRequest = {
   contactId: string | null;
-  purpose: "summary" | "draft" | "promises";
+  purpose: "summary" | "draft" | "promises" | "assistant";
   model: string;
   /** From maxCostOf: the most this request could cost. */
   estimateUsd: number;
@@ -78,13 +78,37 @@ export async function withSpendCap<T>(
   }
 }
 
-/** This month's spend, as the cap counts it — for showing on the page. */
+/**
+ * This month's spend on summaries, drafts and promise scans, as their cap
+ * counts it — for showing on the page.
+ *
+ * Since migration 0025 the Assistant has its own budget line and the database
+ * counts the two apart. This counts them apart too: showing "$1.40 of $2" on
+ * a contact page when $1.20 of it was the Assistant's would be a number the
+ * cap does not agree with.
+ */
 export async function spentThisMonth(db: SupabaseClient, userId: string, now = new Date()): Promise<number> {
-  const { data, error } = await db
+  return spentOnLine(db, userId, now, false);
+}
+
+/** The same for the Assistant's own line. */
+export async function assistantSpentThisMonth(
+  db: SupabaseClient,
+  userId: string,
+  now = new Date(),
+): Promise<number> {
+  return spentOnLine(db, userId, now, true);
+}
+
+async function spentOnLine(db: SupabaseClient, userId: string, now: Date, assistant: boolean): Promise<number> {
+  let query = db
     .from("ai_usage")
     .select("status, reserved_usd, cost_usd")
     .eq("user_id", userId)
     .gte("created_at", startOfMonthInStockholm(now).toISOString());
+  query = assistant ? query.eq("purpose", "assistant") : query.neq("purpose", "assistant");
+
+  const { data, error } = await query;
   if (error) throw supabaseError(error, "Couldn't load AI spending");
 
   return data.reduce(

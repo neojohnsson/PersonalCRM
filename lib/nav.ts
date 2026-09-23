@@ -17,15 +17,25 @@
  *
  * Profile is not here: it sits apart at the foot of the rail, as in
  * design/Profile.dc.html, and the bottom bar adds it at the end itself.
+ *
+ * `premium` pages are shown only to somebody entitled to them (slice 11):
+ * the Assistant, switched on per account in `entitlements`. Everybody else
+ * gets the four, and /assistant sends them Home.
  */
 export const PAGES = [
-  { key: "home", href: "/", label: "Home", title: "Who needs you today" },
-  { key: "calendar", href: "/calendar", label: "Calendar", title: "Calendar" },
-  { key: "contacts", href: "/contacts", label: "Contacts", title: "Contacts" },
-  { key: "seen-once", href: "/seen-once", label: "Seen once", title: "Seen once" },
+  { key: "home", href: "/", label: "Home", title: "Who needs you today", premium: false },
+  { key: "assistant", href: "/assistant", label: "Assistant", title: "Assistant", premium: true },
+  { key: "calendar", href: "/calendar", label: "Calendar", title: "Calendar", premium: false },
+  { key: "contacts", href: "/contacts", label: "Contacts", title: "Contacts", premium: false },
+  { key: "seen-once", href: "/seen-once", label: "Seen once", title: "Seen once", premium: false },
 ] as const;
 
 export type PageKey = (typeof PAGES)[number]["key"];
+
+/** The pages this person may see, in rail order. One list for every navigation. */
+export function visiblePages(assistant: boolean) {
+  return PAGES.filter((page) => !page.premium || assistant);
+}
 
 /** Which navigation entry is the current page. */
 export type ActivePage = PageKey | "profile";

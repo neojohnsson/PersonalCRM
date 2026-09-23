@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { PAGES } from "@/lib/nav";
+import { PAGES, visiblePages } from "@/lib/nav";
 
 /**
  * Slice 9b, Part 1: the app had no navigation at all on a phone. The sidebar
@@ -78,7 +78,10 @@ describe("the sidebar and the bottom bar", () => {
   it("are both built from the same list, and so is the header's switcher", () => {
     // The rail maps it, the bottom bar maps it, the switcher maps it. If one
     // grows a hard-coded entry, they drift and a page goes missing from one.
-    expect(SHELL.match(/PAGES\.map\(/g)).toHaveLength(3);
+    // Since slice 11 it is the list filtered for this person -- still one list,
+    // worked out once in the shell and handed to all three.
+    expect(SHELL.match(/pages\.map\(/g)).toHaveLength(3);
+    expect(SHELL.match(/visiblePages\(/g)).toHaveLength(1);
     for (const page of PAGES) {
       if (page.href === "/") continue;
       expect(SHELL.includes(`href="${page.href}"`), `${page.href} is hard-coded`).toBe(false);
@@ -273,5 +276,47 @@ describe("nothing that looks interactive and isn't", () => {
     expect(source).toContain("Leave without saving?");
     // A failed save moves to the first thing that is wrong.
     expect(source).toContain("scrollIntoView");
+  });
+});
+
+/**
+ * Slice 11: the Assistant is premium. It is in the navigation only for an
+ * account that includes it, and in the same place in all three.
+ */
+describe("the Assistant in the navigation", () => {
+  it("is second, and only for an account that includes it", () => {
+    expect(visiblePages(true).map((page) => page.key)).toEqual([
+      "home",
+      "assistant",
+      "calendar",
+      "contacts",
+      "seen-once",
+    ]);
+    expect(visiblePages(false).map((page) => page.key)).toEqual(["home", "calendar", "contacts", "seen-once"]);
+  });
+
+  it("is the only premium page, so nothing else can vanish for a free account", () => {
+    expect(PAGES.filter((page) => page.premium).map((page) => page.key)).toEqual(["assistant"]);
+  });
+});
+
+describe("the Assistant page", () => {
+  it("sends anyone without the Assistant back Home before loading anything", () => {
+    const source = readFileSync(join("app", "assistant", "page.tsx"), "utf8");
+    const check = source.indexOf("hasAssistant(supabase, user.id)");
+    const firstLoad = source.indexOf("Promise.all(");
+    expect(check).toBeGreaterThan(-1);
+    expect(source).toContain('redirect("/")');
+    // The check comes first: nobody without it causes a single query about
+    // their contacts to run on this page.
+    expect(check).toBeLessThan(firstLoad);
+  });
+
+  it("has no chat box until there is a conversation behind it", () => {
+    // A box that does nothing when you type is the kind of control slice 9b
+    // spent a whole part removing.
+    const source = readFileSync(join("app", "assistant", "page.tsx"), "utf8");
+    expect(source.includes("<input")).toBe(false);
+    expect(source.includes("<textarea")).toBe(false);
   });
 });
