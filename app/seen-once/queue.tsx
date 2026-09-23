@@ -206,7 +206,7 @@ function Checkbox({
   label: string;
 }) {
   return (
-    <span className="relative flex size-[17px] shrink-0">
+    <span className="relative flex size-11 shrink-0 items-center justify-center">
       <input
         type="checkbox"
         name={name}
@@ -214,7 +214,7 @@ function Checkbox({
         checked={checked}
         onChange={onChange}
         aria-label={label}
-        className="peer size-[17px] cursor-pointer appearance-none rounded-[5px] border-[1.5px] border-line-strong bg-white transition-colors checked:border-ink-deep checked:bg-ink-deep focus-visible:ring-2 focus-visible:ring-ink/20 focus-visible:outline-none"
+        className="peer size-5 cursor-pointer appearance-none rounded-[5px] border-[1.5px] border-line-strong bg-white transition-colors checked:border-ink-deep checked:bg-ink-deep focus-visible:ring-2 focus-visible:ring-ink/20 focus-visible:outline-none"
       />
       <svg
         aria-hidden="true"
@@ -224,7 +224,7 @@ function Checkbox({
         strokeWidth={3}
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="pointer-events-none absolute inset-0 m-auto hidden size-[11px] text-white peer-checked:block"
+        className="pointer-events-none absolute inset-0 m-auto hidden size-3 text-white peer-checked:block"
       >
         <path d="m5 12.5 4.5 4.5L19 7" />
       </svg>

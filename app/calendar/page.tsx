@@ -493,6 +493,7 @@ function WeekGrid({
                   return (
                     <div
                       key={event.id}
+                      title={contact ? displayName(contact) : event.title}
                       className={`absolute inset-x-px flex flex-col gap-px overflow-hidden rounded-[7px] px-1 py-1 sm:inset-x-[3px] sm:rounded-[9px] sm:px-1.5 ${
                         contact ? "bg-info-tint" : "bg-chip/60"
                       }`}
@@ -507,12 +508,15 @@ function WeekGrid({
                         minHeight: "24px",
                       }}
                     >
+                      <span className="truncate text-[11px] leading-[1.3] font-bold text-info-ink sm:hidden">
+                        {contact ? initials(displayName(contact), contact.primary_email ?? displayName(contact)) : "Event"}
+                      </span>
                       <span
                         className={`truncate text-[11.5px] leading-[1.3] font-semibold tracking-[-0.01em] ${
-                          contact ? "text-info-ink" : "text-ink-body"
+                          contact ? "text-info-ink sm:block" : "text-ink-body sm:block"
                         }`}
                       >
-                        {contact ? displayName(contact) : event.title}
+                        <span className="hidden sm:inline">{contact ? displayName(contact) : event.title}</span>
                       </span>
                       <span className={`truncate text-[10.5px] leading-[1.3] ${contact ? "text-info" : "text-ink-faint"}`}>
                         {event.when}

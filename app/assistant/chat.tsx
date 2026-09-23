@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { undoAssistantAction } from "@/app/assistant/actions";
 import { Composer } from "@/app/assistant/composer";
 import { NeedsYouCard } from "@/app/assistant/needs-you";
@@ -49,9 +49,22 @@ export function AssistantChat() {
   const [spentUsd, setSpentUsd] = useState(0);
   const [busy, setBusy] = useState(false);
   const [looking, setLooking] = useState<string | null>(null);
+  const conversation = useRef<HTMLElement>(null);
+  const request = useRef<AbortController | null>(null);
   const router = useRouter();
 
   const full = spentUsd >= CONVERSATION_CEILING_USD;
+
+  useEffect(() => {
+    const element = conversation.current;
+    if (!element) return;
+
+    // Follow streamed replies while the reader is already at the bottom. If
+    // they scroll up, leave the history where they put it.
+    const distanceFromBottom = element.scrollHeight - element.scrollTop - element.clientHeight;
+    if (distanceFromBottom > 120) return;
+    element.scrollTo({ top: element.scrollHeight, behavior: busy ? "auto" : "smooth" });
+  }, [busy, entries.length, looking]);
 
   async function ask(question: string) {
     const text = question.trim();
@@ -61,6 +74,8 @@ export function AssistantChat() {
     setEntries((list) => [...list, { kind: "you", text }]);
     setHistory(sent);
     setBusy(true);
+    const controller = new AbortController();
+    request.current = controller;
 
     // What the Assistant said this turn, for the history sent next time —
     // including what it did, so it remembers that without any tool traffic.
@@ -72,6 +87,7 @@ export function AssistantChat() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: sent }),
+        signal: controller.signal,
       });
       if (!response.ok || !response.body) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
@@ -92,9 +108,12 @@ export function AssistantChat() {
           if (line.trim()) handle(JSON.parse(line) as ConverseEvent, answer, startedAt);
         }
       }
-    } catch {
-      add({ kind: "stopped", reason: "The connection dropped. Anything already done above stays done." });
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        add({ kind: "stopped", reason: "The connection dropped. Anything already done above stays done." });
+      }
     } finally {
+      if (request.current === controller) request.current = null;
       setLooking(null);
       setBusy(false);
       if (answer.length > 0) setHistory((list) => [...list, { role: "assistant", text: answer.join("\n") }]);
@@ -102,6 +121,10 @@ export function AssistantChat() {
       // strip shows it with Undo. A refresh keeps this component's state.
       if (answer.some((said) => said.startsWith("(Done:"))) router.refresh();
     }
+  }
+
+  function stop() {
+    request.current?.abort();
   }
 
   function handle(event: ConverseEvent, answer: string[], startedAt: number) {
@@ -180,8 +203,9 @@ export function AssistantChat() {
     <div className="flex flex-col gap-4">
       {entries.length > 0 && (
         <section
+          ref={conversation}
           aria-label="Conversation"
-          className="flex flex-col gap-[13px] rounded-[18px] bg-white px-5 py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]"
+          className="flex max-h-[min(60dvh,620px)] flex-col gap-[13px] overflow-y-auto overscroll-contain rounded-[18px] bg-white px-5 py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]"
         >
           {entries.map((entry, index) => (
             <EntryView key={index} entry={entry} onUndone={markUndone} onSettled={settle} />
@@ -199,9 +223,10 @@ export function AssistantChat() {
           request. What the design said around the box stays, in one quiet
           line under it: that nothing is kept, what it has cost, and what it
           may do without asking. */}
-      <div className="flex flex-col gap-2">
+      <div className="sticky bottom-[74px] z-10 -mx-1 flex flex-col gap-2 bg-paper/95 px-1 pt-1 pb-1 backdrop-blur-sm sm:bottom-0">
         <Composer
           onAsk={(text) => void ask(text)}
+          onStop={stop}
           busy={busy}
           full={full}
           placeholder={

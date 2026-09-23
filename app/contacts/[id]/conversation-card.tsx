@@ -52,6 +52,7 @@ export function ConversationCard({
     lines: Record<string, string>;
     error: string | null;
   } | null>(null);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     let current = true;
@@ -70,7 +71,7 @@ export function ConversationCard({
     return () => {
       current = false;
     };
-  }, [threadId]);
+  }, [retry, threadId]);
 
   // A thread that isn't this one is last page's answer, so it counts for nothing.
   const answer = read?.threadId === threadId ? read : null;
@@ -151,9 +152,21 @@ export function ConversationCard({
       {/* Slice 8b's lesson: a read that failed and said nothing cost a day of
           debugging. If Gmail can't be read, the card says so in one line. */}
       {problem && (
-        <p role="status" className="mt-3 text-[11.5px] leading-[1.5] font-medium text-accent">
-          {problem}
-        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <p role="alert" className="text-[11.5px] leading-[1.5] font-medium text-accent">
+            {problem}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setRead(null);
+              setRetry((value) => value + 1);
+            }}
+            className="rounded-full border border-line-strong bg-white px-2.5 py-1 text-[11.5px] font-semibold text-ink-body transition-colors hover:bg-paper"
+          >
+            Try again
+          </button>
+        </div>
       )}
 
       {/* Said once, at the bottom, because it is the same promise the privacy

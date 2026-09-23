@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useTransition } from "react";
 import { MAX_QUERY_LENGTH, normaliseQuery, searchHref } from "@/lib/contacts/search";
 
 /** How long typing has to pause before the list is searched. */
@@ -20,6 +20,7 @@ export function SearchBox({ query }: { query: string }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [pending, startTransition] = useTransition();
   /** The last query this box sent, to tell our own navigations from others. */
   const sent = useRef(query);
 
@@ -34,18 +35,48 @@ export function SearchBox({ query }: { query: string }) {
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
+  useEffect(() => {
+    function focusFromTyping(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      if (
+        !input.current ||
+        input.current.disabled ||
+        event.key.length !== 1 ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        target?.isContentEditable ||
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      input.current.focus({ preventScroll: true });
+      input.current.value += event.key;
+      input.current.dispatchEvent(new Event("input", { bubbles: true }));
+      event.preventDefault();
+    }
+
+    document.addEventListener("keydown", focusFromTyping);
+    return () => document.removeEventListener("keydown", focusFromTyping);
+  }, []);
+
   function search() {
     clearTimeout(timer.current);
     const typed = input.current?.value ?? "";
     // A trailing space or a changed case of whitespace finds the same people.
     if (normaliseQuery(typed) === sent.current) return;
     sent.current = normaliseQuery(typed);
-    router.replace(searchHref(window.location.search, typed), { scroll: false });
+    startTransition(() => {
+      router.replace(searchHref(window.location.search, typed), { scroll: false });
+    });
   }
 
   return (
     <form
       role="search"
+      aria-busy={pending}
       action="/contacts"
       onSubmit={(event) => {
         event.preventDefault();
@@ -57,6 +88,7 @@ export function SearchBox({ query }: { query: string }) {
         <circle cx="10.5" cy="10.5" r="6.5" />
         <path d="m15.4 15.4 4.1 4.1" />
       </svg>
+      {pending && <span className="sr-only" role="status">Searching…</span>}
       <label htmlFor="contact-search" className="sr-only">
         Search contacts
       </label>

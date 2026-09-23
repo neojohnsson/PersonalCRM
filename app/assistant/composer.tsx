@@ -8,7 +8,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
  * rounded bar with "+" on the left, the words in the middle, then dictation
  * and a round blue Ask button on the right.
  *
- *   +           opens the starter questions, which were a row of chips
+ *   Examples    opens the starter questions, which were a row of chips
  *   microphone  the browser's own speech recognition, shown only where the
  *               browser has it. In Chrome that means your voice is sent to
  *               Google to be turned into text, and the button says so
@@ -32,13 +32,14 @@ export const STARTERS = [
 
 type Props = {
   onAsk: (text: string) => void;
+  onStop: () => void;
   busy: boolean;
   full: boolean;
   placeholder: string;
 };
 
-export function Composer({ onAsk, busy, full, placeholder }: Props) {
-  const box = useRef<HTMLInputElement>(null);
+export function Composer({ onAsk, onStop, busy, full, placeholder }: Props) {
+  const box = useRef<HTMLTextAreaElement>(null);
   const [hasText, setHasText] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menu = useRef<HTMLDivElement>(null);
@@ -49,10 +50,33 @@ export function Composer({ onAsk, busy, full, placeholder }: Props) {
     setHasText(Boolean(box.current?.value.trim()));
   }, []);
 
-  // Back to the box once a turn is over, ready for the next thing to say.
   useEffect(() => {
-    if (!busy) box.current?.focus({ preventScroll: true });
-  }, [busy]);
+    function focusFromTyping(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      if (
+        !box.current ||
+        busy ||
+        full ||
+        event.key.length !== 1 ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        target?.isContentEditable ||
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      box.current.focus({ preventScroll: true });
+      box.current.value += event.key;
+      box.current.dispatchEvent(new Event("input", { bubbles: true }));
+      event.preventDefault();
+    }
+
+    document.addEventListener("keydown", focusFromTyping);
+    return () => document.removeEventListener("keydown", focusFromTyping);
+  }, [busy, full]);
 
   // The starters menu closes on a click anywhere else, or on Escape.
   useEffect(() => {
@@ -74,10 +98,19 @@ export function Composer({ onAsk, busy, full, placeholder }: Props) {
     const words = text.trim();
     if (!words || busy || full) return;
     dictation.stop();
-    if (box.current) box.current.value = "";
+    if (box.current) {
+      box.current.value = "";
+      box.current.style.height = "auto";
+    }
     setHasText(false);
     setMenuOpen(false);
     onAsk(words);
+  }
+
+  function resize() {
+    if (!box.current) return;
+    box.current.style.height = "auto";
+    box.current.style.height = `${Math.min(box.current.scrollHeight, 128)}px`;
   }
 
   return (
@@ -91,15 +124,16 @@ export function Composer({ onAsk, busy, full, placeholder }: Props) {
       <div ref={menu} className="relative shrink-0">
         <button
           type="button"
-          aria-label="Things to ask"
+          aria-label="Example questions"
           aria-expanded={menuOpen}
           aria-haspopup="menu"
           disabled={busy || full}
           onClick={() => setMenuOpen((open) => !open)}
-          className="flex size-10 items-center justify-center rounded-full text-ink-body transition hover:bg-paper disabled:opacity-50"
+          className="flex h-10 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold text-ink-body transition hover:bg-paper disabled:opacity-50"
         >
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" className="size-5">
-            <path d="M12 5v14M5 12h14" />
+          <span>Examples</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
+            <path d="m7 9 5 5 5-5" />
           </svg>
         </button>
         {menuOpen && (
@@ -107,6 +141,9 @@ export function Composer({ onAsk, busy, full, placeholder }: Props) {
             role="menu"
             className="absolute bottom-12 left-0 z-20 flex w-64 flex-col rounded-[14px] border border-line bg-white p-1.5 shadow-[0_8px_24px_rgba(20,20,25,.12)]"
           >
+            <span className="px-3 pb-1.5 pt-2 text-[10.5px] font-bold tracking-[0.07em] text-ink-ghost uppercase">
+              Try asking
+            </span>
             {STARTERS.map((starter) => (
               <button
                 key={starter}
@@ -125,15 +162,24 @@ export function Composer({ onAsk, busy, full, placeholder }: Props) {
       <label htmlFor="assistant-ask" className="sr-only">
         Ask the Assistant
       </label>
-      <input
+      <textarea
         ref={box}
         id="assistant-ask"
-        type="text"
-        onInput={(event) => setHasText(Boolean(event.currentTarget.value.trim()))}
+        rows={1}
+        onInput={(event) => {
+          setHasText(Boolean(event.currentTarget.value.trim()));
+          resize();
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            send(event.currentTarget.value);
+          }
+        }}
         disabled={busy || full}
         maxLength={4000}
         placeholder={placeholder}
-        className="h-full min-w-0 flex-1 bg-transparent px-1 text-[14px] text-ink outline-none placeholder:text-ink-faint disabled:opacity-60"
+        className="max-h-32 min-h-10 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1 py-2.5 text-[14px] leading-normal text-ink outline-none placeholder:text-ink-faint disabled:opacity-60"
       />
 
       {dictation.supported && (
@@ -155,20 +201,32 @@ export function Composer({ onAsk, busy, full, placeholder }: Props) {
         </button>
       )}
 
-      <button
-        type="submit"
-        disabled={busy || full || !hasText}
-        className="flex size-10 shrink-0 items-center justify-center rounded-full bg-info text-white transition hover:bg-info-ink disabled:cursor-default disabled:bg-chip-track disabled:text-ink-faint"
-      >
-        {/* "Ask", not "Send": this app has a rule against send buttons,
-            and nothing here sends anything to anybody. */}
-        <span className="sr-only">
-          Ask
-        </span>
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" className="size-[18px]">
-          <path d="M12 19V5M6 11l6-6 6 6" />
-        </svg>
-      </button>
+      {busy ? (
+        <button
+          type="button"
+          onClick={onStop}
+          aria-label="Stop generating"
+          title="Stop generating"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ink-deep text-white transition hover:bg-ink"
+        >
+          <span aria-hidden="true" className="size-3 rounded-[3px] bg-white" />
+        </button>
+      ) : (
+        <button
+          type="submit"
+          disabled={full || !hasText}
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-info text-white transition hover:bg-info-ink disabled:cursor-default disabled:bg-chip-track disabled:text-ink-faint"
+        >
+          {/* "Ask", not "Send": this app has a rule against send buttons,
+              and nothing here sends anything to anybody. */}
+          <span className="sr-only">
+            Ask
+          </span>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" className="size-[18px]">
+            <path d="M12 19V5M6 11l6-6 6 6" />
+          </svg>
+        </button>
+      )}
     </form>
   );
 }
@@ -193,7 +251,7 @@ type Recognition = {
  * there, so you can read and change it before pressing Ask — nothing is asked
  * by voice alone.
  */
-function useDictation(box: React.RefObject<HTMLInputElement | null>, setHasText: (has: boolean) => void) {
+function useDictation(box: React.RefObject<HTMLTextAreaElement | null>, setHasText: (has: boolean) => void) {
   // A fact about the browser: false on the server, read once in the browser.
   const supported = useSyncExternalStore(noSubscription, () => engine() !== null, () => false);
   const [listening, setListening] = useState(false);
