@@ -118,7 +118,12 @@ records that — so no migration. The pages read it:
       one RLS-protected row, so Bob asking for Alice's gets nothing to call Google with
 - [x] Not one screen or document still says the calendar is read-only — a test lists the
       sentences that stopped being true and fails if any screen still carries one
-- [ ] The new event appears on `/calendar` after the next read — needs the re-consent
+- [x] A real event, created from `/calendar` on 2026-09-23 after the re-consent: "Contact Hub
+      test", in Google Calendar with no guest list at all, no description, and you as organiser
+
+Deleting from the app was asked about on 2026-09-23 and left out: delete stays in Google
+Calendar, one click away from the toast. If it comes back, the shape is written down in the
+conversation — only events this app created, always confirmed.
 
 ## Not in this slice
 
