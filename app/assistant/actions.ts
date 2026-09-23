@@ -7,7 +7,7 @@ import { runScan, type ScanState } from "@/app/promises/actions";
 import { DraftContactNotFound, generateDraft } from "@/lib/ai/draft";
 import { explainDraftFailure } from "@/lib/ai/draft-errors";
 import { TONES, type Tone } from "@/lib/ai/draft-types";
-import { ActionRefused, undoAction } from "@/lib/assistant/act";
+import { ActionRefused, AlreadyUndone, undoAction } from "@/lib/assistant/act";
 import { hasAssistant } from "@/lib/assistant/entitlement";
 import { costSinceUsd } from "@/lib/assistant/price";
 import { requireUser } from "@/lib/auth";
@@ -32,6 +32,11 @@ export async function undoAssistantAction(actionId: string): Promise<{ error: st
   try {
     await undoAction(supabase, user.id, actionId);
   } catch (failure) {
+    // Undone twice is still undone: the second press has nothing to say.
+    if (failure instanceof AlreadyUndone) {
+      refresh();
+      return null;
+    }
     if (failure instanceof ActionRefused) return { error: failure.message };
     if (failure instanceof ContactNotFound) return { error: "That contact isn't there any more." };
     throw failure;

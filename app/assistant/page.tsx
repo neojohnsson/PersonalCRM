@@ -4,17 +4,20 @@ import { AppShell } from "@/app/app-shell";
 import { CARD } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
 import { AssistantChat } from "./chat";
+import { DoneMark } from "./done-mark";
+import { UndoButton } from "./undo-button";
 import { assistantMonthlyCapUsd } from "@/lib/ai/config";
 import { countPendingPromises } from "@/lib/ai/promise-list";
 import { assistantSpentThisMonth } from "@/lib/ai/spend";
 import { APP_NAME } from "@/lib/app-config";
+import { recentActions, type ActivityRow } from "@/lib/assistant/activity";
 import { thingsToDecide, type DecideRow } from "@/lib/assistant/cards";
 import { hasAssistant } from "@/lib/assistant/entitlement";
 import { requireUser } from "@/lib/auth";
 import { countDuplicates } from "@/lib/contacts/duplicate-list";
 import { displayName } from "@/lib/contacts/display";
 import { suggestName } from "@/lib/contacts/name-suggestion";
-import { avatarColors, dayMonth, initials, weekdayDayMonth } from "@/lib/format";
+import { avatarColors, dayMonth, initials, timeAgo, weekdayDayMonth } from "@/lib/format";
 import { calendarConnection } from "@/lib/google/calendar-tokens";
 import { pickBrief, thisWeek, type BriefEntry } from "@/lib/relationship/brief";
 import { todayIn } from "@/lib/relationship/dates";
@@ -45,8 +48,9 @@ export const metadata = { title: `Assistant · ${APP_NAME}` };
  *     read live while the Calendar page draws the week, and never stored;
  *     reading Google here too would add a Gmail-sized wait to a page whose
  *     point is to be quick.
- *   - The strip shows no Undo yet: there is nothing the Assistant has done
- *     until the conversation exists (commit 7 wires it).
+ *   - The strip shows the latest thing the Assistant did in its own words
+ *     ("Added a note to Karin Lindqvist"), not the design's combined
+ *     sentence: each action is its own row, with its own Undo.
  *   - Real people from your contacts, not the design's fictional cast.
  */
 
@@ -75,7 +79,7 @@ export default async function AssistantPage() {
   const today = todayIn("Europe/Stockholm", now);
   const week = thisWeek(now);
 
-  const [contacts, relationships, touchesResult, duplicates, summariesResult, promises, calendar, spent] =
+  const [contacts, relationships, touchesResult, duplicates, summariesResult, promises, calendar, spent, latest] =
     await Promise.all([
       readAll<ContactRow>(
         (from, to) =>
@@ -106,6 +110,7 @@ export default async function AssistantPage() {
       countPendingPromises(supabase, user.id),
       calendarConnection(supabase, user.id),
       assistantSpentThisMonth(supabase, user.id, now),
+      recentActions(supabase, user.id, 1),
     ]);
   if (touchesResult.error) throw supabaseError(touchesResult.error, "Couldn't load next touches");
   if (summariesResult.error) throw supabaseError(summariesResult.error, "Couldn't count summaries");
@@ -205,7 +210,7 @@ export default async function AssistantPage() {
           <ThingsToDecide rows={decide} />
         </div>
 
-        <SpendStrip spent={spent} cap={cap} />
+        <SpendStrip spent={spent} cap={cap} latest={latest[0] ?? null} now={now} />
 
         {/* Last, on purpose: the cards above work with the AI switched off. */}
         <AssistantChat />
@@ -461,7 +466,17 @@ function ThingsToDecide({ rows }: { rows: DecideRow[] }) {
  * The activity half — "added a note to Karin · Undo" — arrives with the
  * conversation, when there is something to show.
  */
-function SpendStrip({ spent, cap }: { spent: number; cap: number }) {
+function SpendStrip({
+  spent,
+  cap,
+  latest,
+  now,
+}: {
+  spent: number;
+  cap: number;
+  latest: ActivityRow | null;
+  now: Date;
+}) {
   const share = cap > 0 ? Math.min(1, spent / cap) : 1;
 
   return (
@@ -478,9 +493,31 @@ function SpendStrip({ spent, cap }: { spent: number; cap: number }) {
         </span>
       </div>
       <span aria-hidden="true" className="hidden h-5 w-px shrink-0 bg-chip sm:block" />
-      <span className="text-[12.5px] text-ink-soft">
-        Nothing done yet. What the Assistant does on its own will show here, with Undo.
-      </span>
+      {latest ? (
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-[9px] gap-y-1">
+          <DoneMark undone={latest.undoneAt !== null} />
+          <span
+            className={`min-w-0 text-[12.5px] ${latest.undoneAt ? "text-ink-faint line-through" : "text-ink-body"}`}
+          >
+            {latest.summary}
+          </span>
+          <span className="shrink-0 text-[12px] text-ink-soft">{timeAgo(latest.createdAt, now)}</span>
+          {latest.undoneAt ? (
+            <span className="shrink-0 text-[12px] font-semibold text-ink-soft">Undone</span>
+          ) : (
+            <UndoButton actionId={latest.id} label={latest.summary} />
+          )}
+        </div>
+      ) : (
+        <span className="min-w-0 flex-1 text-[12.5px] text-ink-soft">
+          Nothing done yet. What the Assistant does on its own will show here, with Undo.
+        </span>
+      )}
+      {latest && (
+        <Link href="/assistant/activity" className="shrink-0 text-[12.5px] font-semibold">
+          Everything it did
+        </Link>
+      )}
     </div>
   );
 }

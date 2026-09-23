@@ -72,6 +72,18 @@ export class ActionRefused extends Error {
   }
 }
 
+/**
+ * Undo pressed for something already undone — from the strip, then from the
+ * chat's green box, say. The thing is as you wanted it, so the page treats
+ * this as done rather than as a problem.
+ */
+export class AlreadyUndone extends ActionRefused {
+  constructor() {
+    super("That was already undone.");
+    this.name = "AlreadyUndone";
+  }
+}
+
 export type ActContext = {
   db: SupabaseClient;
   userId: string;
@@ -243,7 +255,7 @@ export async function undoAction(db: SupabaseClient, userId: string, actionId: s
   if (error) throw supabaseError(error, "Couldn't read what the Assistant did");
   if (!data) throw new ActionRefused("That action isn't there any more.");
   const action = toAction(data);
-  if (action.undoneAt) throw new ActionRefused("That was already undone.");
+  if (action.undoneAt) throw new AlreadyUndone();
 
   const ctx: ActContext = { db, userId, today: "", mailSeen: [] };
   if (!(await stillAsLeft(ctx, action))) {

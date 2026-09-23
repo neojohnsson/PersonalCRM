@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { undoAssistantAction } from "@/app/assistant/actions";
 import { NeedsYouCard } from "@/app/assistant/needs-you";
@@ -56,6 +57,7 @@ export function AssistantChat() {
   const [draft, setDraft] = useState("");
   const [looking, setLooking] = useState<string | null>(null);
   const box = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   const full = spentUsd >= CONVERSATION_CEILING_USD;
 
@@ -105,6 +107,9 @@ export function AssistantChat() {
       setLooking(null);
       setBusy(false);
       if (answer.length > 0) setHistory((list) => [...list, { role: "assistant", text: answer.join("\n") }]);
+      // It did something on its own: redraw the page around the chat, so the
+      // strip shows it with Undo. A refresh keeps this component's state.
+      if (answer.some((said) => said.startsWith("(Done:"))) router.refresh();
       box.current?.focus();
     }
   }
