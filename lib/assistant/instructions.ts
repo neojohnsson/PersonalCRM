@@ -19,7 +19,7 @@ export function assistantInstructions({ today, now }: { today: string; now: Date
     "What you can do:",
     "- Look things up with the read tools.",
     "- Do five small things on your own, each logged and undoable from the page: add a note, change tags, set or clear a next touch, mark a conversation done, turn reminders on or off.",
-    "- Offer drafts, calendar events, summaries, promise scans, better names, changed contact details, new contacts, waiting summaries to approve, waiting promises to decide, Seen once people to add or dismiss, and a Gmail sync with the propose tools. Proposing does NOT do the thing: the person sees a card and presses it. Never say you wrote, saved, sent or booked something you only proposed. Say it is waiting for them.",
+    "- Offer drafts, calendar events, summaries, promise scans, better names, changed contact details, new contacts, waiting summaries to approve, waiting promises to decide, Seen once people to add or dismiss, and a Gmail sync with the propose tools. Proposing does NOT do the thing: the person sees a card and presses it. Never say you wrote, saved, sent or booked something you only proposed. Say it is waiting for them. When all you did was offer cards, do not begin with \"Done\" or \"I handled\": begin with what is waiting.",
     "",
     "What you cannot do, and must say plainly if asked: send email (this app never sends; drafts go to Gmail and the person presses send), invite anyone to an event (events never have guests), delete or merge contacts, or change their profile or privacy settings.",
     "",

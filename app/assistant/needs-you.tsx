@@ -571,7 +571,7 @@ function EditCard({
       <Inset>
         {proposal.changes.map((change) => (
           <div key={change.field} className="flex flex-wrap items-baseline gap-x-2 text-[13px]">
-            <span className="w-[130px] shrink-0 text-[12px] font-semibold text-ink-soft">
+            <span className="w-full shrink-0 text-[12px] font-semibold text-ink-soft sm:w-[130px]">
               {FIELD_LABELS[change.field]}
             </span>
             <span className={stage === "saved" ? "text-ink-faint line-through" : "text-ink-body"}>
@@ -659,7 +659,7 @@ function NewContactCard({ values, onSettled }: { values: NewContact; onSettled: 
           .filter(([, value]) => value)
           .map(([label, value]) => (
             <div key={label} className="flex flex-wrap items-baseline gap-x-2 text-[13px]">
-              <span className="w-[130px] shrink-0 text-[12px] font-semibold text-ink-soft">{label}</span>
+              <span className="w-full shrink-0 text-[12px] font-semibold text-ink-soft sm:w-[130px]">{label}</span>
               <span className="min-w-0 font-medium break-words">{value}</span>
             </div>
           ))}
@@ -924,6 +924,7 @@ function SyncCard({ lastSyncedAt, onSettled }: { lastSyncedAt: string | null; on
       {!done && (
         <div className="self-start">
           <SyncButton
+            onCard
             onDone={() => {
               setDone(true);
               onSettled("The person synced Gmail; the page is up to date.");

@@ -64,15 +64,18 @@ list test grows to name every one of these, so a tool that reaches them fails.
 
 ## Done when — a test proves it
 
-- [ ] Each new card's tool writes nothing when proposed, against a real database
-- [ ] Each card presses through the page's own action (a test names the import)
-- [ ] The edit card cannot change a field it did not show, and Undo puts back exactly the old
+- [x] Each new card's tool writes nothing when proposed, against a real database
+- [x] Each card presses through the page's own action (a test names the import)
+- [x] The edit card cannot change a field it did not show, and Undo puts back exactly the old
       values
-- [ ] Two users: no read tool shows the other's Seen once, summaries or promises, and no card
+- [x] Two users: no read tool shows the other's Seen once, summaries or promises, and no card
       offers them
-- [ ] The tool list test fails for any tool that sends, deletes, merges, exports, or touches
+- [x] The tool list test fails for any tool that sends, deletes, merges, exports, or touches
       settings or connections
-- [ ] Checked in the browser against the real model, at 1440px and 390px
+- [x] Checked in the browser against the real model, at 1440px and 390px — by eye
+      (2026-09-23), not by a test. It found the label column squeezing values at 390px and a
+      white Sync now on a white card; both fixed. Promises and Seen once were empty on the
+      real account, so those two cards are proven by tests only
 
 ## Commit order
 
