@@ -2,7 +2,11 @@ import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth";
-import { googleCalendarCallbackUrl } from "@/lib/google/redirect";
+import {
+    CALENDAR_RETURN_COOKIE,
+    calendarReturnPage,
+    googleCalendarCallbackUrl,
+} from "@/lib/google/redirect";
 import { REQUESTED_CALENDAR_SCOPES } from "@/lib/google/scopes";
 
 /**
@@ -37,6 +41,18 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.redirect(url, 303);
     response.cookies.set("google_calendar_oauth_state", state, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/api/auth/google/calendar",
+        maxAge: 60 * 10,
+    });
+
+    // Where to come back to: the Calendar page or the Connect page, whichever
+    // the button was on. Checked against a list of two here AND again in the
+    // callback, because a cookie can be edited just as a form can.
+    const form = await request.formData().catch(() => null);
+    response.cookies.set(CALENDAR_RETURN_COOKIE, calendarReturnPage(form?.get("return_to")), {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",

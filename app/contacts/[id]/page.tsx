@@ -26,7 +26,8 @@ import { loadRelationship, type Relationship } from "@/lib/relationship/load";
 import { wholeDaysBetween } from "@/lib/relationship/whose-turn";
 import { standingOf } from "@/lib/relationship/standing";
 import { openNextTouch, openNextTouches } from "@/lib/relationship/next-touch";
-import { canDraft } from "@/lib/google/scopes";
+import { canDraft, canWriteCalendar } from "@/lib/google/scopes";
+import { calendarConnection } from "@/lib/google/calendar-tokens";
 import { loadProfile } from "@/lib/profile/store";
 import { checkReferral } from "@/lib/relationship/referral";
 import type { ReferredStatus } from "./summary-card";
@@ -38,6 +39,7 @@ import { ConversationCard } from "./conversation-card";
 import { NameSuggestionRow } from "./name-suggestion-row";
 import { HeaderDraftButton } from "./header-draft-button";
 import { DraftCard } from "./draft-card";
+import { CreateEvent } from "@/app/calendar/create-event";
 import { NextTouchCard } from "./next-touch-card";
 import { SummaryCard, type AiBudget } from "./summary-card";
 
@@ -124,10 +126,13 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
     spentThisMonth(supabase, user.id),
   ]);
 
-  const [draft, savedDraft, profile] = await Promise.all([
+  const [draft, savedDraft, profile, calendar] = await Promise.all([
     pendingDraft(supabase, user.id, contact.id),
     lastSavedDraft(supabase, user.id, contact.id),
     loadProfile(supabase, user.id),
+    // Slice 10: whether "Book time with them" is offered at all. A calendar
+    // connected before slice 10 has only the read permission.
+    calendarConnection(supabase, user.id),
   ]);
   const gmailScopes = (gmailResult.data?.scopes as string[] | undefined) ?? [];
   const budget: AiBudget = { spentUsd, capUsd: monthlyCapUsd(), ready: aiIsReady() };
@@ -424,6 +429,19 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
               touch={nextTouch}
               today={todayIn()}
               prefill={touchPrefill}
+            />
+
+            {/* Slice 10: "book time with Karin", where the rest of this
+                person's future already is. Not in the header, which Part 2 of
+                slice 9b just cut down to three controls -- and a next touch
+                and a meeting are the same question asked two ways. A next
+                touch is a day inside this app; this one is in your calendar,
+                with no guests. */}
+            <CreateEvent
+              today={todayIn()}
+              canCreate={canWriteCalendar(calendar?.scopes ?? [])}
+              suggestedTitle={hasName ? `Time with ${name}` : "Time with a contact"}
+              label={hasName ? `Book time with ${contact.first_name?.trim() || name}` : "Book time"}
             />
 
             <section className={`${CARD} flex flex-1 flex-col gap-[11px] px-5 py-[17px]`}>

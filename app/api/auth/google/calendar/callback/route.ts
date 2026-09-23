@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { encrypt } from "@/lib/crypto";
-import { googleCalendarCallbackUrl } from "@/lib/google/redirect";
+import {
+    CALENDAR_RETURN_COOKIE,
+    calendarReturnPage,
+    googleCalendarCallbackUrl,
+} from "@/lib/google/redirect";
 import { canReadCalendar, parseGrantedScopes } from "@/lib/google/scopes";
 import { readCalendar } from "@/lib/calendar/read";
 import { createClient } from "@/lib/supabase/server";
@@ -16,6 +20,12 @@ import { createClient } from "@/lib/supabase/server";
  *
  * Errors come back to /connect with a reason in the query string, as the Gmail
  * flow does, so one page explains both connections.
+ *
+ * Success goes back to the page you started from (2026-09-23): the Calendar
+ * page's own Connect button used to land you on /connect, a page you had not
+ * been on. The page comes from a cookie the consent route set, and is checked
+ * against a list of two -- lib/google/redirect.ts says why it must not be
+ * anything else.
  */
 
 type GoogleTokens = {
@@ -108,10 +118,15 @@ export async function GET(request: NextRequest) {
         // Say why, in the logs. Swallowing this silently on 2026-09-21 meant
         // the reason had to be guessed at from an empty table.
         console.error("Calendar read after connecting failed:", failure);
-        return clearState(NextResponse.redirect(new URL("/connect?calendar=unread", request.url)));
+        return clearState(NextResponse.redirect(new URL(`${returnTo(request)}?calendar=unread`, request.url)));
     }
 
-    return clearState(NextResponse.redirect(new URL("/connect?calendar=connected", request.url)));
+    return clearState(NextResponse.redirect(new URL(`${returnTo(request)}?calendar=connected`, request.url)));
+}
+
+/** The page the consent started on, or the Connect page -- never anything else. */
+function returnTo(request: NextRequest): string {
+    return calendarReturnPage(request.cookies.get(CALENDAR_RETURN_COOKIE)?.value);
 }
 
 function back(request: NextRequest, reason: string) {
@@ -121,6 +136,10 @@ function back(request: NextRequest, reason: string) {
 function clearState(response: NextResponse) {
     response.cookies.delete({
         name: "google_calendar_oauth_state",
+        path: "/api/auth/google/calendar",
+    });
+    response.cookies.delete({
+        name: CALENDAR_RETURN_COOKIE,
         path: "/api/auth/google/calendar",
     });
     return response;

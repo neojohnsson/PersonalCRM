@@ -72,8 +72,8 @@ export default async function PrivacyPage() {
             <CardHeading title="What leaves this app" caption="And what those services keep" />
             <Away
               who="Google"
-              what="Your mail is read to find who wrote to whom and when; to show the first line of each message while you look at a contact; and to read a message when a summary, a draft or a promise needs one. Drafts are written back into your Gmail. Nothing is ever sent."
-              keeps="Google already has your mail. This app adds drafts, which sit in your Gmail until you send or delete them."
+              what="Your mail is read to find who wrote to whom and when; to show the first line of each message while you look at a contact; and to read a message when a summary, a draft or a promise needs one. Drafts are written back into your Gmail, and an event you fill in here is created in your calendar with no guests. Nothing is ever sent, and nothing already in your calendar is changed or deleted."
+              keeps="Google already has your mail. This app adds drafts, which sit in your Gmail until you send or delete them, and any event you create here, which sits in your calendar until you move or delete it."
             />
             <Away
               who="OpenAI"

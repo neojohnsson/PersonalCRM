@@ -4,6 +4,9 @@ import { CalendarPanel } from "@/app/connect/calendar-panel";
 import { CARD, EmptyCard } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
 import { buildWeek, clock, mondayOf, weekLabel } from "@/lib/calendar/week";
+import { canWriteCalendar } from "@/lib/google/scopes";
+import { CreateEvent } from "./create-event";
+import { CALENDAR_NOTES } from "@/app/connect/calendar-notes";
 import { APP_NAME } from "@/lib/app-config";
 import { requireUser } from "@/lib/auth";
 import { displayName } from "@/lib/contacts/display";
@@ -80,7 +83,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
     );
   }
 
-  const { monday: asked } = await searchParams;
+  const { monday: asked, calendar: calendarNote } = await searchParams;
   const monday = typeof asked === "string" && isIsoDate(asked) ? mondayOf(asked) : mondayOf(todayIn("Europe/Stockholm", now));
 
   const [contacts, addresses, relationships, touchesResult, meetingsResult] = await Promise.all([
@@ -169,18 +172,37 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
 
   return (
     <Frame userEmail={user.email}>
+      {/* Back from Google's screen. Fixed messages only: anyone can make a
+          link to /calendar?calendar=anything. */}
+      {typeof calendarNote === "string" && CALENDAR_NOTES[calendarNote] && (
+        <p
+          role="status"
+          className="max-w-3xl rounded-[14px] bg-info-tint px-[18px] py-3 text-[13px] leading-[1.5] font-medium text-info-ink"
+        >
+          {CALENDAR_NOTES[calendarNote]}
+        </p>
+      )}
+
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="flex flex-col gap-2">
           <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.035em]">Calendar</h1>
           <div className="flex items-center gap-[9px]">
             <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-affirm" />
+            {/* Slice 10: this said "read-only · nothing is ever created or
+                changed" until today, which stopped being true the moment the
+                app could create one. It now says what the connection actually
+                allows, which depends on what Google granted. */}
             <p className="text-[12.5px] font-medium text-ink-quiet">
-              {connection.email} &middot; read-only &middot; nothing is ever created or changed
+              {connection.email} &middot;{" "}
+              {canWriteCalendar(connection.scopes)
+                ? "events you create here go on this calendar, never with guests"
+                : "read-only \u2014 connect again to create events"}
             </p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-x-[18px] gap-y-3 pb-0.5">
+          <CreateEvent today={today} canCreate={canWriteCalendar(connection.scopes)} />
           <Legend />
           <div className="flex items-center gap-1.5">
             <WeekStep monday={addDays(monday, -7)} label="Previous week" arrow="‹" />
@@ -260,11 +282,15 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
             readThrough={connection.syncedThrough}
           />
 
-          {/* The design's own note, word for word. */}
+          {/* The design's note, with its last clause corrected in slice 10:
+              it said "no event is ever created or changed", and events can be
+              created now. Nothing is changed or deleted, which is still true
+              and still worth saying. */}
           <p className="px-1 text-[11.5px] leading-[1.55] font-medium text-ink-faint">
             A meeting with a contact counts toward warmth, like an exchange does. Only the time,
-            title and guest addresses are read &mdash; never the description &mdash; and no event
-            is ever created or changed.
+            title and guest addresses are read &mdash; never the description. An event you create
+            here is added with no guests; nothing already in your calendar is ever changed or
+            deleted.
           </p>
         </div>
       </div>
@@ -294,13 +320,18 @@ function NotConnected() {
           calendar connected, a meeting counts towards how warm a contact is, and this page shows
           your week with the people you already know in it.
         </p>
+        {/* Slice 10 correction, found 2026-09-23: this still said nothing is
+            ever created, because the app never asks permission to. Both halves
+            stopped being true when the app learned to create an event. */}
         <p className="mt-3">
           Only the start, the end, the title and the guest addresses are read &mdash; never the
           description. Only meetings with someone already in your contacts are stored, as the date
-          and which contact it was. Nothing in your calendar is ever created or changed, because
-          the app never asks Google for permission to.
+          and which contact it was. The app can put an event in your calendar when you fill one in
+          and press Create &mdash; never with guests, and it never changes or deletes one.
         </p>
         <form action="/api/auth/google/calendar" method="post" className="mt-5">
+          {/* Come back here afterwards, not to the Connect page. */}
+          <input type="hidden" name="return_to" value="/calendar" />
           <button
             type="submit"
             className="rounded-full bg-ink-deep px-[26px] py-3 text-[13.5px] font-semibold text-white transition hover:bg-ink/85"

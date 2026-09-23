@@ -34,3 +34,27 @@ export const GOOGLE_CALENDAR_CALLBACK_PATH = "/api/auth/google/calendar/callback
 export function googleCalendarCallbackUrl(request: { url: string }): string {
   return new URL(GOOGLE_CALENDAR_CALLBACK_PATH, request.url).toString();
 }
+
+/**
+ * Where the calendar's consent sends you back to (2026-09-23).
+ *
+ * 8a only had the Connect page, so the callback always went there. 8b added a
+ * "Connect your calendar" button to the Calendar page, and pressing it landed
+ * you on /connect?calendar=connected — a page you had not been on, about Gmail
+ * as much as the calendar. Now the button says where it lives, and you go back
+ * to it.
+ *
+ * An ALLOWLIST, not a path taken from the form. A return address that came from
+ * the request would be an open redirect: anyone could craft a form that sends a
+ * signed-in person through Google's real consent screen and on to a site of
+ * their choosing. Two literal pages, and anything else is the Connect page.
+ */
+export const CALENDAR_RETURN_PAGES = ["/calendar", "/connect"] as const;
+export type CalendarReturnPage = (typeof CALENDAR_RETURN_PAGES)[number];
+
+export function calendarReturnPage(value: unknown): CalendarReturnPage {
+  return CALENDAR_RETURN_PAGES.find((page) => page === value) ?? "/connect";
+}
+
+/** The cookie that carries it across Google's screen, beside the state cookie. */
+export const CALENDAR_RETURN_COOKIE = "google_calendar_return_to";
