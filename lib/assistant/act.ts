@@ -154,11 +154,19 @@ export async function changeTags(
 }
 
 /** A next touch set for a day, or the open one moved to it. */
+/**
+ * `waiting`: true when it is their move and the touch is to check in, false
+ * when it is yours, null to keep what the open touch already is. Found
+ * 2026-09-23: without this, moving a "waiting on them" touch passed no kind,
+ * setNextTouch took that as "clear it", and the touch quietly became your move
+ * -- Linda Jönsson's did.
+ */
 export async function setTouch(
   ctx: ActContext,
   contactId: string,
   dueOn: string,
   reason: string | null,
+  waiting: boolean | null = null,
 ): Promise<LoggedAction> {
   if (!isIsoDate(dueOn)) throw new ActionRefused("A next touch needs a date like 2026-09-29.");
   if (dueOn < ctx.today) throw new ActionRefused("That day has already passed.");
@@ -170,7 +178,8 @@ export async function setTouch(
 
   const contact = await loadContact(ctx, contactId);
   const before = touchState(await openNextTouch(ctx.db, ctx.userId, contactId));
-  const after = touchState(await setNextTouch(ctx.db, ctx.userId, contactId, { dueOn, reason: why }));
+  const kind = waiting === true ? "waiting_on_them" : waiting === false ? null : (before?.kind ?? null);
+  const after = touchState(await setNextTouch(ctx.db, ctx.userId, contactId, { dueOn, reason: why, kind }));
 
   return record(
     ctx,

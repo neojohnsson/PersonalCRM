@@ -515,14 +515,28 @@ const TOOLS: Tool[] = [
     name: "set_next_touch",
     tier: "act",
     description:
-      "Plan the next time to get in touch with a contact: a day, and why. Moves the open one if there is one.",
+      "Plan the next time to get in touch with a contact: a day, and why. Moves the open one if there is one. " +
+      "Say whose move it is: waiting_on_them true when the person is waiting for the contact and the day is to " +
+      "check in, false when the person owes them something, null to keep what the open one already is.",
     parameters: object({
       contact_id: contactId,
       due_on: text("The day, as YYYY-MM-DD. Today or later."),
       reason: nullableText("Why, in a few words, or null."),
+      waiting_on_them: {
+        type: ["boolean", "null"],
+        description: "true: their move, a day to check in. false: the person's move. null: keep as it is.",
+      },
     }),
     run: (ctx, args) =>
-      act(() => setTouch(ctx, contactIdOf(args), str(args.due_on), args.reason == null ? null : str(args.reason))),
+      act(() =>
+        setTouch(
+          ctx,
+          contactIdOf(args),
+          str(args.due_on),
+          args.reason == null ? null : str(args.reason),
+          typeof args.waiting_on_them === "boolean" ? args.waiting_on_them : null,
+        ),
+      ),
   },
   {
     name: "clear_next_touch",
