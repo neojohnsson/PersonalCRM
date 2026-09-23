@@ -149,15 +149,16 @@ things you asked the Assistant to run. The `promises` table stays for the same r
 - [ ] Your week and Promises are gone, and nothing links to them
 - [ ] The page matches the approved design at 1440px and 390px
 
-## Still open — say which you want
+## Decided, 2026-09-23
 
-1. **The model.** `gpt-5.4-mini` is my pick for tool-calling reliability. A cheaper one
-   (`gpt-5-mini`, a third the price) would stretch the $10, and would get tools wrong more
-   often.
-2. **The per-conversation ceiling.** $0.50 is roughly 20–40 steps of this model. Lower is
-   safer; higher is fewer "stopped here" moments.
-3. **What the empty chat says** before you have asked anything — the design has four starter
-   buttons; the words above the box are still open.
+- **`AGENTS.md` amended** with the exception in §2, word for word — the rules file and the
+  code say the same thing.
+- **Model: `gpt-5.4-mini`**, for tool-calling reliability over price.
+- **Per-conversation ceiling: $0.50.**
+- **The activity list is kept** in `assistant_actions`, with Undo, deleted with the contact and
+  the account.
+- Still open, and small: the words above the empty chat box. The design's own —
+  "Ask for anything, or say what to do" — until you say otherwise.
 
 ## Commit order
 

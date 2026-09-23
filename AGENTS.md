@@ -35,6 +35,12 @@ Architecture: `docs/architecture.md`. Decisions and their reasons: `docs/decisio
   never behind a `NEXT_PUBLIC_` prefix.
 - Every AI output lands in a pending state a human approves. Nothing
   AI-generated writes straight to a contact record or a Gmail draft.
+  **One narrow exception** (amended 2026-09-23, `docs/slice-11-plan.md` §2):
+  the Assistant may do five reversible things on its own — a note, tags, a
+  next touch, marking a conversation done, reminders on or off — because each
+  is one row or one column, is logged with what it was before, and can be
+  undone from the page. Nothing AI-generated writes a Gmail draft or a
+  calendar event without a press.
 - Every AI output about a person is dated, editable, and links to its source.
 
 ## Design
