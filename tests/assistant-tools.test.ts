@@ -279,6 +279,36 @@ describe("what it does on its own", () => {
     expect(gone).toEqual([]);
   });
 
+  it("keeps whose move a touch is when it only moves the day, and says so when asked", async () => {
+    const open = async () =>
+      (await admin.from("next_touches").select("kind, due_on").eq("contact_id", alice.karinId).eq("status", "open").single()).data!;
+
+    // Found 2026-09-23: Linda Jönsson's "waiting on them" touch, moved by the
+    // Assistant, came out as her move.
+    await call(alice, "set_next_touch", { contact_id: alice.karinId, due_on: "2026-10-01", reason: "Wait for Karin", waiting_on_them: true });
+    expect(await open()).toEqual({ kind: "waiting_on_them", due_on: "2026-10-01" });
+
+    const moved = await call(alice, "set_next_touch", { contact_id: alice.karinId, due_on: "2026-10-03", reason: "Wait for Karin", waiting_on_them: null });
+    expect(await open()).toEqual({ kind: "waiting_on_them", due_on: "2026-10-03" });
+
+    await call(alice, "set_next_touch", { contact_id: alice.karinId, due_on: "2026-10-05", reason: "Answer Karin", waiting_on_them: false });
+    expect(await open()).toEqual({ kind: null, due_on: "2026-10-05" });
+
+    // Undo of the middle one refuses: the touch has changed since. Undo of
+    // the last one puts the kind back as well as the day.
+    if (!("action" in moved)) throw new Error("refused");
+    const { data: last } = await admin
+      .from("assistant_actions")
+      .select("id")
+      .eq("user_id", alice.user.id)
+      .eq("kind", "next_touch")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    await undoAction(alice.db, alice.user.id, last!.id);
+    expect(await open()).toEqual({ kind: "waiting_on_them", due_on: "2026-10-03" });
+  });
+
   it("moves a next touch, and Undo moves it back; clears one, and Undo reopens it", async () => {
     await call(alice, "set_next_touch", { contact_id: alice.karinId, due_on: "2026-10-01", reason: "first" });
     const moved = await call(alice, "set_next_touch", { contact_id: alice.karinId, due_on: "2026-10-08", reason: "later" });

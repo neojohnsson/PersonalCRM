@@ -32,9 +32,6 @@ export const REASON_MAX: Record<BriefReason, number> = {
   about_to_cool: 2,
 };
 
-/** Their turn for this long counts as going quiet (as on the home page). */
-export const GOING_QUIET_DAYS = 14;
-
 /** Warm but untouched this long is about to go cold (plan.md §6.11). */
 export const COOLING_FROM_DAYS = 60;
 export const COOLING_TO_DAYS = 80;
@@ -174,8 +171,8 @@ export function pickBrief<T>(
       if (thisWeekTaken >= REASON_MAX.due_this_week) continue;
       thisWeekTaken += 1;
       const because = waiting
-        ? `Waiting on them${reasonTail(touch)}. Check again ${dayWord(touch.due_on)}.`
-        : `You planned to get back to them ${dayWord(touch.due_on)}${reasonTail(touch)}.`;
+        ? `Waiting on them${reasonTail(touch)}. Check again ${dayWord(touch.due_on, week.today)}.`
+        : `You planned to get back to them ${dayWord(touch.due_on, week.today)}${reasonTail(touch)}.`;
       // `late` is negative for a day still to come, so the soonest (-1, tomorrow)
       // sorts above the furthest (-3, Sunday).
       take(person, "due_this_week", because, late, waiting);
@@ -195,7 +192,10 @@ export function pickBrief<T>(
 
   // Going quiet.
   sorted
-    .filter((person) => person.relationship.turn.kind === "theirs" && daysOf(person.relationship) >= GOING_QUIET_DAYS)
+    // The conversation's own answer (lib/relationship/whose-turn.ts), not a
+    // second copy of the rule: this file once had its own 14 and counted day
+    // 14 as quiet while Home and Contacts did not (found 2026-09-23).
+    .filter((person) => person.relationship.turn.kind === "theirs" && person.relationship.turn.goingQuiet)
     .slice(0, REASON_MAX.going_quiet)
     .forEach((person) => {
       const silent = daysOf(person.relationship);
@@ -228,12 +228,23 @@ function daysOf(relationship: Relationship): number {
   return relationship.turn.kind === "none" ? 0 : relationship.turn.days;
 }
 
+/**
+ * ": Confirm the coffee time", for the end of a sentence that adds its own
+ * full stop -- so a reason's own stop is taken off first. A reason written
+ * "…the development manager." printed as "manager.." (found 2026-09-23).
+ */
 function reasonTail(touch: OpenTouch): string {
-  return touch.reason?.trim() ? `: ${touch.reason.trim()}` : "";
+  const reason = touch.reason?.trim().replace(/\.+$/, "").trim();
+  return reason ? `: ${reason}` : "";
 }
 
-/** "on Thursday". Inside one week the weekday is enough to place a day. */
-function dayWord(isoDate: string): string {
+/**
+ * "today", "tomorrow" or "on Thursday". Inside one week the weekday is enough
+ * to place a day -- but not for today, which "on Wednesday" said on a Wednesday.
+ */
+function dayWord(isoDate: string, today: string): string {
+  if (isoDate === today) return "today";
+  if (isoDate === addDays(today, 1)) return "tomorrow";
   return `on ${new Intl.DateTimeFormat("en-GB", { weekday: "long", timeZone: "UTC" }).format(
     new Date(`${isoDate}T00:00:00Z`),
   )}`;

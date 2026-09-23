@@ -59,6 +59,11 @@ export const maxDuration = 30;
  *     64px. The grid is a percentage of whatever height it is given and the
  *     columns simply share the width (changed 2026-09-21, at the user's
  *     request). On a phone the columns get narrow rather than sliding sideways.
+ *   - **On a phone, each column is about 45 pixels wide** (found in QA,
+ *     2026-09-23: at 390 the headers ran into each other and Sunday was cut
+ *     off). So below the small breakpoint the weekday sits above the date, the
+ *     hour gutter is narrower, and a due pill shows initials rather than a
+ *     name it could never fit. The week, and nothing sliding sideways, stay.
  */
 
 type ContactRow = {
@@ -387,22 +392,27 @@ function WeekGrid({
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex h-[52px] shrink-0 items-center">
-          <div className="w-[52px] shrink-0" />
+          <div className="w-8 shrink-0 sm:w-[52px]" />
           {week.days.map((day) => (
-            <div key={day.date} className="flex min-w-0 flex-1 items-center justify-center gap-[7px]">
+            <div
+              key={day.date}
+              className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 sm:flex-row sm:gap-[7px]"
+            >
               <span
-                className={`text-[10.5px] font-bold tracking-[0.06em] uppercase ${
+                className={`text-[9.5px] font-bold tracking-[0.04em] uppercase sm:text-[10.5px] sm:tracking-[0.06em] ${
                   day.isToday ? "text-ink" : "text-ink-ghost"
                 }`}
               >
                 {day.weekday}
               </span>
               {day.isToday ? (
-                <span className="flex size-[26px] items-center justify-center rounded-full bg-ink-deep text-[13px] font-bold text-white">
+                <span className="flex size-[22px] items-center justify-center rounded-full bg-ink-deep text-[12px] font-bold text-white sm:size-[26px] sm:text-[13px]">
                   {day.dayOfMonth}
                 </span>
               ) : (
-                <span className={`text-[15px] font-bold tracking-[-0.02em] ${day.isWeekend ? "text-ink-faint" : ""}`}>
+                <span
+                  className={`text-[13px] font-bold tracking-[-0.02em] sm:text-[15px] ${day.isWeekend ? "text-ink-faint" : ""}`}
+                >
                   {day.dayOfMonth}
                 </span>
               )}
@@ -412,31 +422,34 @@ function WeekGrid({
 
         {/* Due: this app's own next touches, not anything from Google. */}
         <div className="flex h-9 shrink-0 items-stretch border-y border-line">
-          <div className="flex w-[52px] shrink-0 items-center justify-end pr-2">
-            <span className="text-[9.5px] font-bold tracking-[0.05em] text-ink-ghost uppercase">Due</span>
+          <div className="flex w-8 shrink-0 items-center justify-end pr-1 sm:w-[52px] sm:pr-2">
+            <span className="text-[8.5px] font-bold tracking-[0.05em] text-ink-ghost uppercase sm:text-[9.5px]">Due</span>
           </div>
           {week.days.map((day) => {
             const due = touches.filter((touch) => touch.due_on === day.date);
             return (
               <div
                 key={day.date}
-                className={`flex min-w-0 flex-1 items-center gap-1 border-l border-chip px-1 ${
+                className={`flex min-w-0 flex-1 items-center gap-0.5 border-l border-chip px-0.5 sm:gap-1 sm:px-1 ${
                   day.isWeekend ? "bg-paper-tint" : ""
                 }`}
               >
                 {due.map((touch) => {
                   const contact = byId.get(touch.contact_id);
+                  const name = contact ? displayName(contact) : "A contact";
                   return (
                     <Link
                       key={touch.id}
                       href={`/contacts/${touch.contact_id}`}
-                      title={touch.reason ?? undefined}
-                      className="flex min-w-0 flex-1 items-center gap-1.5 rounded-[7px] bg-accent-tint px-2 py-1"
+                      title={touch.reason ? `${name}: ${touch.reason}` : name}
+                      aria-label={name}
+                      className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[7px] bg-accent-tint px-1 py-1 sm:justify-start sm:px-2"
                     >
-                      <span aria-hidden="true" className="size-[5px] shrink-0 rounded-full bg-accent" />
-                      <span className="truncate text-[11px] font-semibold text-accent-dark">
-                        {contact ? displayName(contact) : "A contact"}
+                      <span aria-hidden="true" className="hidden size-[5px] shrink-0 rounded-full bg-accent sm:block" />
+                      <span aria-hidden="true" className="text-[10.5px] font-bold text-accent-dark sm:hidden">
+                        {contact ? initials(name, contact.primary_email ?? name) : "?"}
                       </span>
+                      <span className="hidden truncate text-[11px] font-semibold text-accent-dark sm:inline">{name}</span>
                     </Link>
                   );
                 })}
@@ -451,16 +464,16 @@ function WeekGrid({
             <div
               key={hour}
               aria-hidden="true"
-              className="absolute right-0 left-[52px] h-px bg-chip"
+              className="absolute right-0 left-8 h-px bg-chip sm:left-[52px]"
               style={{ top: `${(index / (week.hours.length - 1)) * 100}%` }}
             />
           ))}
 
-          <div className="relative w-[52px] shrink-0">
+          <div className="relative w-8 shrink-0 sm:w-[52px]">
             {week.hours.map((hour, index) => (
               <span
                 key={hour}
-                className="absolute w-11 -translate-y-1/2 text-right text-[10.5px] font-semibold text-ink-ghost"
+                className="absolute w-6 -translate-y-1/2 text-right text-[9.5px] font-semibold text-ink-ghost sm:w-11 sm:text-[10.5px]"
                 style={{ top: `${(index / (week.hours.length - 1)) * 100}%` }}
               >
                 {String(hour).padStart(2, "0")}
@@ -480,7 +493,7 @@ function WeekGrid({
                   return (
                     <div
                       key={event.id}
-                      className={`absolute inset-x-[3px] flex flex-col gap-px overflow-hidden rounded-[9px] px-1.5 py-1 ${
+                      className={`absolute inset-x-px flex flex-col gap-px overflow-hidden rounded-[7px] px-1 py-1 sm:inset-x-[3px] sm:rounded-[9px] sm:px-1.5 ${
                         contact ? "bg-info-tint" : "bg-chip/60"
                       }`}
                       // A 15-minute meeting still has to be readable, so the
@@ -489,7 +502,9 @@ function WeekGrid({
                       style={{
                         top: `${event.topPercent}%`,
                         height: `${event.heightPercent}%`,
-                        minHeight: "20px",
+                        // 24, not 20: a 30-minute event showed as a clipped
+                        // sliver, its first line cut in half.
+                        minHeight: "24px",
                       }}
                     >
                       <span

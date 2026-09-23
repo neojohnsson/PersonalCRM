@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   BRIEF_SIZE,
@@ -9,14 +10,14 @@ import {
 } from "@/lib/relationship/brief";
 import { NO_MAIL, type Relationship } from "@/lib/relationship/load";
 import type { OpenTouch, Person } from "@/lib/relationship/today";
-import type { Turn } from "@/lib/relationship/whose-turn";
+import { GOING_QUIET_DAYS, type Turn } from "@/lib/relationship/whose-turn";
 import type { Band } from "@/lib/relationship/warmth";
 
 /** Who the weekly brief picks, and the line it gives each of them. */
 
 const latest = { at: new Date("2026-09-10T12:00:00Z"), threadId: "t", subject: "Hej" };
 const yours = (days: number): Turn => ({ kind: "yours", days, ...latest });
-const theirs = (days: number): Turn => ({ kind: "theirs", days, goingQuiet: days > 14, ...latest });
+const theirs = (days: number): Turn => ({ kind: "theirs", days, goingQuiet: days > GOING_QUIET_DAYS, ...latest });
 const closed = (days: number): Turn => ({ kind: "closed", days, ...latest });
 
 const warmth = (band: Band): Relationship["warmth"] => ({
@@ -94,7 +95,7 @@ describe("pickBrief", () => {
       ["soon", "due_this_week"],
     ]);
     expect(brief[0].because).toBe("You planned this for 4 days ago: Ask about the thesis.");
-    expect(brief[1].because).toBe("You planned to get back to them on Friday.");
+    expect(brief[1].because).toBe("You planned to get back to them tomorrow.");
   });
 
   it("adds two going quiet, and warns before someone goes cold", () => {
@@ -209,7 +210,7 @@ describe("a touch you are waiting on", () => {
     const [entry] = pickBrief(people, touches, WEEK);
 
     expect(entry.waitingOnThem).toBe(true);
-    expect(entry.because).toBe("Waiting on them: Wait for Peter's response. Check again on Friday.");
+    expect(entry.because).toBe("Waiting on them: Wait for Peter's response. Check again tomorrow.");
   });
 
   it("says something different again when the day has passed", () => {
@@ -229,6 +230,47 @@ describe("a touch you are waiting on", () => {
     const [entry] = pickBrief(people, touches, WEEK);
 
     expect(entry.waitingOnThem).toBe(false);
-    expect(entry.because).toBe("You planned to get back to them on Friday: Ask about the thesis.");
+    expect(entry.because).toBe("You planned to get back to them tomorrow: Ask about the thesis.");
+  });
+});
+
+/** Found in QA, 2026-09-23. */
+describe("the words, as a person reads them", () => {
+  it("says today and tomorrow, and the weekday after that", () => {
+    const people = [person("a", closed(40)), person("b", closed(40)), person("c", closed(40))];
+    const touches = [touch("a", "2026-09-17"), touch("b", "2026-09-18"), touch("c", "2026-09-19")];
+
+    const because = Object.fromEntries(pickBrief(people, touches, WEEK).map((entry) => [entry.contact.id, entry.because]));
+
+    expect(because.a).toBe("You planned to get back to them today.");
+    expect(because.b).toBe("You planned to get back to them tomorrow.");
+    expect(because.c).toBe("You planned to get back to them on Saturday.");
+  });
+
+  it("ends a sentence with one full stop, whatever the reason ends with", () => {
+    const people = [person("mats", closed(40)), person("peter", closed(40))];
+    const touches = [
+      touch("mats", "2026-09-19", "Check with the development manager."),
+      touch("peter", "2026-09-19", "Wait for the manager...", "waiting_on_them"),
+    ];
+
+    const because = Object.fromEntries(pickBrief(people, touches, WEEK).map((entry) => [entry.contact.id, entry.because]));
+
+    expect(because.mats).toBe("You planned to get back to them on Saturday: Check with the development manager.");
+    expect(because.peter).toBe("Waiting on them: Wait for the manager. Check again on Saturday.");
+  });
+});
+
+describe("going quiet", () => {
+  it("means what it means on Home and Contacts: day 14 is not quiet yet, day 15 is", () => {
+    const brief = pickBrief([person("fourteen", theirs(GOING_QUIET_DAYS)), person("fifteen", theirs(GOING_QUIET_DAYS + 1))], [], WEEK);
+
+    expect(reasons(brief)).toEqual([["fifteen", "going_quiet"]]);
+  });
+
+  it("has no rule of its own to drift from that one", () => {
+    const source = readFileSync("lib/relationship/brief.ts", "utf8");
+    expect(source).not.toMatch(/GOING_QUIET_DAYS\s*=/);
+    expect(source).toContain("turn.goingQuiet");
   });
 });

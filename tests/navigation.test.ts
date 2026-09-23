@@ -345,10 +345,15 @@ describe("the Assistant page", () => {
 
   it("never has a send button, even in the chat", () => {
     // The app's rule against send buttons covers words too: the chat's
-    // button says Ask.
-    const chat = readFileSync(join("app", "assistant", "chat.tsx"), "utf8");
+    // button says Ask. Since the bar became round (2026-09-23) the word is
+    // what a screen reader hears, as the button shows only an arrow.
+    const bar = readFileSync(join("app", "assistant", "composer.tsx"), "utf8");
     // The button's word on a line of its own, as JSX lays it out.
-    expect(chat).toMatch(/^\s*Ask\s*$/m);
-    expect(chat).not.toMatch(/^\s*Send\s*$/m);
+    expect(bar).toMatch(/^\s*Ask\s*$/m);
+    for (const file of ["composer.tsx", "chat.tsx", "needs-you.tsx"]) {
+      const source = readFileSync(join("app", "assistant", file), "utf8");
+      expect(source, file).not.toMatch(/^\s*Send\s*$/m);
+      expect(source, file).not.toMatch(/aria-label="Send/);
+    }
   });
 });

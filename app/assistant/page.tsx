@@ -235,10 +235,13 @@ function WhoNeedsYou({ entries }: { entries: BriefEntry<ContactRow>[] }) {
 
   return (
     <section className={`${CARD} flex min-w-0 flex-col overflow-hidden lg:flex-1`}>
-      {/* "4 need you", not the design's "4 waiting": a row below can say
+      {/* "3 this week", not the design's "4 waiting": a row below can say
           "Waiting on them", and two meanings of waiting side by side was the
-          first thing that read wrong on real data (2026-09-23). */}
-      <CardHeading dot="bg-accent" title="Who needs you" count={needYou > 0 ? `${needYou} need you` : null} />
+          first thing that read wrong on real data. Nor "3 need you", its
+          first replacement: beside Home's "Your turn: nobody is waiting on a
+          reply from you" it read as the two pages disagreeing, when this list
+          counts the days you planned too (QA, 2026-09-23). */}
+      <CardHeading dot="bg-accent" title="Who needs you" count={needYou > 0 ? `${needYou} this week` : null} />
 
       {shown.length === 0 ? (
         <p className="px-5 pb-5 text-[12.5px] leading-[1.5] text-ink-soft">
