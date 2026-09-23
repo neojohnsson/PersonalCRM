@@ -312,11 +312,17 @@ describe("the Assistant page", () => {
     expect(check).toBeLessThan(firstLoad);
   });
 
-  it("has no chat box until there is a conversation behind it", () => {
-    // A box that does nothing when you type is the kind of control slice 9b
-    // spent a whole part removing.
+  it("puts the chat last, under the cards that work without it", () => {
     const source = readFileSync(join("app", "assistant", "page.tsx"), "utf8");
-    expect(source.includes("<input")).toBe(false);
-    expect(source.includes("<textarea")).toBe(false);
+    expect(source.indexOf("<AssistantChat")).toBeGreaterThan(source.indexOf("<ThingsToDecide"));
+  });
+
+  it("never has a send button, even in the chat", () => {
+    // The app's rule against send buttons covers words too: the chat's
+    // button says Ask.
+    const chat = readFileSync(join("app", "assistant", "chat.tsx"), "utf8");
+    // The button's word on a line of its own, as JSX lays it out.
+    expect(chat).toMatch(/^\s*Ask\s*$/m);
+    expect(chat).not.toMatch(/^\s*Send\s*$/m);
   });
 });

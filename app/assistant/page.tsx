@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/app/app-shell";
 import { CARD } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
+import { AssistantChat } from "./chat";
 import { assistantMonthlyCapUsd } from "@/lib/ai/config";
 import { countPendingPromises } from "@/lib/ai/promise-list";
 import { assistantSpentThisMonth } from "@/lib/ai/spend";
@@ -32,15 +33,13 @@ export const metadata = { title: `Assistant · ${APP_NAME}` };
  * design — https://claude.ai/artifact/5ZpxKE8QYemKm7ceo9Twgg, "Assistant —
  * resting".
  *
- * This commit is the page without any AI: the three cards, from what the app
- * already computes, and the spending strip. "It must be useful with the AI
- * switched off" (AGENTS.md) — so this is the part that has to be good before
- * a single token is spent.
+ * The three cards come from what the app already computes, with no AI in
+ * them. "It must be useful with the AI switched off" (AGENTS.md). The chat
+ * under them is the Assistant itself.
  *
  * Differences from the design, on purpose, each for an honest reason:
- *   - No chat box yet. It arrives with the conversation itself (commit 5); a
- *     box that does nothing when you type in it is the kind of control slice
- *     9b spent a whole part removing.
+ *   - The chat (./chat.tsx) comes last, under the strip, as the design
+ *     has it: the page is worth opening before a single token is spent.
  *   - A meeting row shows the person and what is open with them, not the
  *     event's title ("Karin Lindqvist — Teams" in the design). Titles are only
  *     read live while the Calendar page draws the week, and never stored;
@@ -207,6 +206,9 @@ export default async function AssistantPage() {
         </div>
 
         <SpendStrip spent={spent} cap={cap} />
+
+        {/* Last, on purpose: the cards above work with the AI switched off. */}
+        <AssistantChat />
       </main>
     </AppShell>
   );
