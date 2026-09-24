@@ -23,7 +23,7 @@ export function DeletePanel({ email, contactCount }: { email: string; contactCou
         what={
           <>
             All {contactCount === 1 ? "1 contact" : `${contactCount} contacts`}, their addresses,
-            summaries, next touches, promises, drafts and what the Assistant did with them, and every stored message detail. Your
+            summaries, next touches, promises, drafts, what the Assistant did with them and what was found about them on the web, and every stored message detail. Your
             account and your Gmail connection stay, so a new sync would start from scratch.
           </>
         }
