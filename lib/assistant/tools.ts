@@ -7,6 +7,7 @@ import { suggestName } from "@/lib/contacts/name-suggestion";
 import { ilikePattern, normaliseQuery } from "@/lib/contacts/search";
 import { countPendingPromises, loadPendingPromises, type PendingPromise } from "@/lib/ai/promise-list";
 import { participantNamer } from "@/lib/ai/thread";
+import { loadResearch } from "@/lib/research/decide";
 import { hasResearch } from "@/lib/research/entitlement";
 import { getAccessToken } from "@/lib/google/tokens";
 import type { SavedSummary } from "@/lib/ai/summary-parts";
@@ -178,7 +179,8 @@ const TOOLS: Tool[] = [
     name: "get_contact",
     tier: "read",
     description:
-      "One contact: who they are, whose move it is, any planned next touch, your notes and tags, and their approved summary.",
+      "One contact: who they are, whose move it is, any planned next touch, your notes and tags, their approved summary, " +
+      "and the facts from the web the person has kept about them (each with its link and the day it was found).",
     parameters: object({ contact_id: contactId }),
     run: async (ctx, args) => {
       const id = contactIdOf(args);
@@ -191,11 +193,12 @@ const TOOLS: Tool[] = [
       if (error) throw supabaseError(error, "Couldn't load the contact");
       if (!row) return notFound("read");
 
-      const [relationship, touch, summaries, email] = await Promise.all([
+      const [relationship, touch, summaries, email, web] = await Promise.all([
         loadRelationship(ctx.db, ctx.userId, id, { now: ctx.now }),
         openNextTouch(ctx.db, ctx.userId, id),
         summariesFor(ctx.db, ctx.userId, id),
         primaryEmail(ctx, id),
+        keptFromTheWeb(ctx, id),
       ]);
       const standing = standingOf(
         {
@@ -233,6 +236,7 @@ const TOOLS: Tool[] = [
                 as_of: approved.as_of,
               }
             : null,
+          ...(web.length > 0 && { from_the_web: web, untrusted_web: true }),
         },
       };
     },
@@ -1092,6 +1096,24 @@ async function contactName(ctx: ToolContext, id: string): Promise<string | null>
     .maybeSingle();
   if (error) throw supabaseError(error, "Couldn't load the contact");
   return data ? displayName(data) : null;
+}
+
+/**
+ * The facts from the web the person has KEPT about a contact (slice 12).
+ *
+ * Only kept ones: a fact still waiting to be ticked is the AI's guess, and
+ * may be about somebody else with the same name, so the Assistant must not
+ * repeat it before the person has looked. And only with research switched
+ * on, like the button. Each fact keeps its link and its day, so an answer
+ * built on one can say where it came from. The text began on somebody's web
+ * page, so the result is marked untrusted_web: material, never instructions.
+ */
+async function keptFromTheWeb(ctx: ToolContext, contactId: string) {
+  if (!(await hasResearch(ctx.db, ctx.userId))) return [];
+  const { kept } = await loadResearch(ctx.db, ctx.userId, contactId);
+  return kept.flatMap((set) =>
+    set.facts.map((fact) => ({ fact: fact.text, link: fact.url, page: fact.title, found_on: set.foundAt.slice(0, 10) })),
+  );
 }
 
 async function primaryEmail(ctx: ToolContext, id: string): Promise<string | null> {
