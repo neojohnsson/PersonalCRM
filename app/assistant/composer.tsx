@@ -119,7 +119,7 @@ export function Composer({ onAsk, onStop, busy, full, placeholder }: Props) {
         event.preventDefault();
         send(box.current?.value ?? "");
       }}
-      className="relative flex h-14 items-center gap-1 rounded-full border border-line bg-white py-2 pr-2 pl-2 shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] focus-within:border-ink-faint"
+      className="assistant-composer relative flex h-14 items-center gap-1 rounded-full border border-line bg-white py-2 pr-2 pl-2 shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] focus-within:border-ink-faint"
     >
       <div ref={menu} className="relative shrink-0">
         <button

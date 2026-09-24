@@ -115,7 +115,7 @@ export function ContactForm({
       {errors.form && (
         <p
           role="alert"
-          className="flex items-start gap-3 rounded-[14px] bg-accent-tint px-[18px] py-[15px] text-[13.5px] leading-[1.55] text-[#7c3a12]"
+          className="flex items-start gap-3 rounded-[14px] bg-accent-tint px-[18px] py-[15px] text-[13.5px] leading-[1.55] text-alert-ink"
         >
           {errors.form}
         </p>

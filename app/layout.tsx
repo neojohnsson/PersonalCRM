@@ -19,7 +19,22 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={`${jakarta.variable} h-full antialiased`}
+      // The theme script below sets data-theme before React loads, so the
+      // server's <html> has no theme and the browser's has one. That is on
+      // purpose -- it stops a flash of the wrong theme -- and this silences
+      // the hydration warning for this one element's attributes only.
+      suppressHydrationWarning
     >
+      <head>
+        {/* Before anything paints: the saved theme, if there is one. In a
+            try, because some private windows throw on localStorage -- then
+            the page is simply Paper. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(() => { try { const saved = localStorage.getItem("personal-crm-theme"); if (saved === "paper" || saved === "night" || saved === "studio") document.documentElement.dataset.theme = saved; } catch {} })()`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

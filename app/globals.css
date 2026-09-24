@@ -16,6 +16,47 @@
   --background: #ffffff;
   --foreground: #1a1b1e;
 
+  --theme-paper: #f6f6f4;
+  --theme-paper-tint: #faf9f7;
+  --theme-chip: #f1f1ef;
+  --theme-chip-track: #eaeae7;
+  --theme-white: #ffffff;
+  --theme-ink: #1a1b1e;
+  --theme-ink-deep: #17181a;
+  --theme-ink-body: #4a4c52;
+  --theme-ink-soft: #6f7177;
+  --theme-ink-faint: #9c9ea4;
+  --theme-ink-quiet: #8a8c92;
+  --theme-ink-muted: #82848a;
+  --theme-ink-ghost: #b0b2b8;
+  --theme-ink-hush: #b9bbc0;
+  --theme-line: #ecece9;
+  --theme-line-soft: #f4f4f2;
+  --theme-line-strong: #d8d8d4;
+  --theme-accent: #c2410c;
+  --theme-accent-dark: #9a3412;
+  --theme-accent-tint: #fdf1ea;
+  --theme-accent-soft: #e2703a;
+  --theme-info: #1e5fa8;
+  --theme-info-ink: #2c5c96;
+  --theme-info-tint: #e8eef7;
+  --theme-rail-active: #303237;
+  --theme-rail-icon: #75777e;
+  --theme-rail-avatar: #4a4d54;
+  --theme-affirm: #15803d;
+  --theme-cooling: #a5811f;
+  --theme-radio-ring: #c5c7cc;
+  --theme-switch-off: #e4e4e1;
+  --theme-danger: #b42318;
+  --theme-danger-dark: #912018;
+  --theme-decide: #8a5a1e;
+  --theme-done-tint: #f6f8f6;
+  --theme-needs-ink: #8a3d0b;
+  /* The brown of a warning sentence on the orange tint (the Assistant's
+     "stopped" line, the contact form's and intro's notices). It was written
+     as text-[#7c3a12] in three places until themes needed it to change. */
+  --theme-alert-ink: #7c3a12;
+
   /* Scrollbar thumb: a soft grey between the design's line and ghost greys. */
   --scrollbar-thumb: #d6d7d9;
   --scrollbar-thumb-hover: #b0b2b8;
@@ -58,69 +99,158 @@ html {
   --color-foreground: var(--foreground);
   --font-sans: var(--font-jakarta);
 
-  --color-ink: #1a1b1e;
-  --color-ink-soft: #6f7177;
-  --color-ink-faint: #9c9ea4;
-  --color-paper: #f6f6f4;
-  --color-line: #ecece9;
-  --color-accent: #c2410c;
-  --color-accent-dark: #9a3412;
-  --color-accent-tint: #fdf1ea;
-  --color-affirm: #15803d;
-  --color-info: #1e5fa8;
+  --color-ink: var(--theme-ink);
+  --color-ink-soft: var(--theme-ink-soft);
+  --color-ink-faint: var(--theme-ink-faint);
+  --color-paper: var(--theme-paper);
+  --color-line: var(--theme-line);
+  --color-accent: var(--theme-accent);
+  --color-accent-dark: var(--theme-accent-dark);
+  --color-accent-tint: var(--theme-accent-tint);
+  --color-affirm: var(--theme-affirm);
+  --color-info: var(--theme-info);
 
   /* The near-black of the sidebar and the dark pill buttons. */
-  --color-ink-deep: #17181a;
+  --color-ink-deep: var(--theme-ink-deep);
   /* Secondary text steps from ContactList / Main: status line, cells, headings. */
-  --color-ink-quiet: #8a8c92;
-  --color-ink-muted: #82848a;
-  --color-ink-ghost: #b0b2b8;
+  --color-ink-quiet: var(--theme-ink-quiet);
+  --color-ink-muted: var(--theme-ink-muted);
+  --color-ink-ghost: var(--theme-ink-ghost);
   /* The faint count on an inactive tab, and the search placeholder. */
-  --color-ink-hush: #b9bbc0;
+  --color-ink-hush: var(--theme-ink-hush);
   /* The grey track behind ContactList's Contacts / Seen once tabs. */
-  --color-chip-track: #eaeae7;
+  --color-chip-track: var(--theme-chip-track);
 
   /* ReviewQueue: checkbox outline, subject text, the "from them" pill, and
      the sidebar's waiting dot. */
-  --color-line-strong: #d8d8d4;
-  --color-ink-body: #4a4c52;
-  --color-info-tint: #e8eef7;
-  --color-info-ink: #2c5c96;
-  --color-accent-soft: #e2703a;
+  --color-line-strong: var(--theme-line-strong);
+  --color-ink-body: var(--theme-ink-body);
+  --color-info-tint: var(--theme-info-tint);
+  --color-info-ink: var(--theme-info-ink);
+  --color-accent-soft: var(--theme-accent-soft);
 
   /* ContactDetail's tag chips. */
-  --color-chip: #f1f1ef;
+  --color-chip: var(--theme-chip);
 
   /* Warmth's middle band, "cooling" — the amber in ContactList and ContactDetail. */
-  --color-cooling: #a5811f;
+  --color-cooling: var(--theme-cooling);
   /* Row dividers and the hover tint of the table. */
-  --color-line-soft: #f4f4f2;
-  --color-paper-tint: #faf9f7;
+  --color-line-soft: var(--theme-line-soft);
+  --color-paper-tint: var(--theme-paper-tint);
 
   /* Profile: an unselected radio's ring, and a switch that's off. */
-  --color-radio-ring: #c5c7cc;
-  --color-switch-off: #e4e4e1;
+  --color-radio-ring: var(--theme-radio-ring);
+  --color-switch-off: var(--theme-switch-off);
 
   /* Deleting: the only red in the app. No design covers deletion, so this is
      not lifted from one -- it is a red at the same depth as the accent
      (#c2410c), so a destructive button reads as a warning rather than as
      another primary action. Slice 9b, Part 2. */
-  --color-danger: #b42318;
-  --color-danger-dark: #912018;
+  --color-danger: var(--theme-danger);
+  --color-danger-dark: var(--theme-danger-dark);
 
   /* The Assistant's "Things to decide" dot, from its approved design
      (https://claude.ai/artifact/5ZpxKE8QYemKm7ceo9Twgg) -- the same brown as
      Main.dc.html's #faf0e4 / #8a5a1e avatar pair. Slice 11. */
-  --color-decide: #8a5a1e;
+  --color-decide: var(--theme-decide);
   /* The Assistant's conversation, from the same design: the green-grey behind
      "Done, and undoable", and the ink of a "Needs you" badge. */
-  --color-done-tint: #f6f8f6;
-  --color-needs-ink: #8a3d0b;
+  --color-done-tint: var(--theme-done-tint);
+  --color-needs-ink: var(--theme-needs-ink);
+  --color-alert-ink: var(--theme-alert-ink);
 
   /* The left sidebar. */
-  --color-rail-active: #303237;
-  --color-rail-icon: #75777e;
-  --color-rail-avatar: #4a4d54;
+  --color-rail-active: var(--theme-rail-active);
+  --color-rail-icon: var(--theme-rail-icon);
+  --color-rail-avatar: var(--theme-rail-avatar);
+  /* The logo tile stays white in every theme: the rail is dark in all of
+     them, and Night's .bg-white repaint made the "C" disappear. */
+  --color-rail-logo: #ffffff;
+}
+
+:root[data-theme="night"] {
+  color-scheme: dark;
+  --background: #111214;
+  --foreground: #f5f3ee;
+  --theme-paper: #111214;
+  --theme-paper-tint: #181a1e;
+  --theme-chip: #24272c;
+  --theme-chip-track: #2c3036;
+  --theme-white: #1b1e23;
+  --theme-ink: #f5f3ee;
+  --theme-ink-deep: #0d0f11;
+  --theme-ink-body: #ddd9d0;
+  --theme-ink-soft: #aaa9a6;
+  --theme-ink-faint: #85878b;
+  --theme-ink-quiet: #97999d;
+  --theme-ink-muted: #a3a4a7;
+  --theme-ink-ghost: #686b72;
+  --theme-ink-hush: #5d6067;
+  --theme-line: #30343a;
+  --theme-line-soft: #25282d;
+  --theme-line-strong: #454a52;
+  --theme-accent: #f18b62;
+  --theme-accent-dark: #ffad88;
+  --theme-accent-tint: #3a241f;
+  --theme-accent-soft: #f5a47e;
+  --theme-info: #80b7ee;
+  --theme-info-ink: #a9d0f8;
+  --theme-info-tint: #1e2d40;
+  --theme-rail-active: #343941;
+  --theme-rail-icon: #a6a8ae;
+  --theme-rail-avatar: #525862;
+  /* The colours that carry a meaning, lifted so they read on graphite:
+     green done, amber cooling and deciding, red danger, the orange inks. */
+  --theme-affirm: #5ec48a;
+  --theme-cooling: #d9b85e;
+  --theme-radio-ring: #5a5f68;
+  --theme-switch-off: #3a3f47;
+  --theme-danger: #f5877d;
+  --theme-danger-dark: #ffa39a;
+  --theme-decide: #e3b672;
+  --theme-done-tint: #18261e;
+  --theme-needs-ink: #ffb48f;
+  --theme-alert-ink: #ffc2a3;
+}
+
+:root[data-theme="studio"] {
+  --theme-paper: #f4f8f5;
+  --theme-paper-tint: #edf5f0;
+  --theme-chip: #e6f0eb;
+  --theme-chip-track: #dcebe3;
+  --theme-accent: #d44f69;
+  --theme-accent-dark: #a9334c;
+  --theme-accent-tint: #fff0f3;
+  --theme-accent-soft: #ed7690;
+  --theme-info: #376fc5;
+  --theme-info-ink: #2d5da8;
+  --theme-info-tint: #eaf1ff;
+  --theme-rail-active: #253e39;
+  --theme-rail-icon: #78918a;
+  --theme-rail-avatar: #4c7569;
+}
+
+:root[data-theme="studio"] .assistant-composer {
+  border-color: #cfe3d7;
+  box-shadow: 0 1px 2px rgb(20 20 25 / 0.04), 0 8px 24px rgb(212 79 105 / 0.12);
+}
+
+:root[data-theme="night"] .assistant-composer {
+  border-color: #454a52;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.24), 0 8px 24px rgb(0 0 0 / 0.22);
+}
+
+/* Utility classes that represent elevated surfaces stay theme-aware. */
+:root[data-theme="night"] .bg-white {
+  background-color: var(--theme-white) !important;
+}
+
+:root[data-theme="night"] .bg-paper {
+  background-color: var(--theme-paper) !important;
+}
+
+:root[data-theme="night"] .shadow-\[0_1px_2px_rgba\(20\,20\,25\,\.04\)\,0_6px_16px_rgba\(20\,20\,25\,\.05\)\] {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.22), 0 8px 24px rgb(0 0 0 / 0.2) !important;
 }
 
 body {

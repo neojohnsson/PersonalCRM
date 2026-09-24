@@ -83,7 +83,7 @@ export function Callout({
       className="flex items-start gap-3 rounded-[14px] bg-accent-tint px-[18px] py-[15px]"
     >
       <Icon name={icon} className="mt-0.5 size-[17px] shrink-0 text-accent" />
-      <p className="text-[13.5px] leading-[1.55] text-[#7c3a12]">{children}</p>
+      <p className="text-[13.5px] leading-[1.55] text-alert-ink">{children}</p>
     </div>
   );
 }

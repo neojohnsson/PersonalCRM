@@ -51,6 +51,12 @@ Architecture: `docs/architecture.md`. Decisions and their reasons: `docs/decisio
   "styled from" it.
 - Colours live as tokens in `app/globals.css`; add new ones there, taken
   from the design, rather than inventing values.
+  **Themes** (added 2026-09-24, by the user): Paper is the design. Night and
+  Studio are the user's own variations of it, switched from the header and
+  kept in the browser. Every colour is a `--theme-*` token, so a new colour
+  gets a Paper value from the design and a value in each theme; nothing is
+  written into a class as a hex. `tests/styles.test.ts` parses the stylesheet
+  and checks the themes cover the colours that carry a meaning.
 - Differences only for honest reasons, each written in a comment where it
   happens: copy that would describe a feature the current slice doesn't
   have yet, real data instead of the mock names, and fitting phone widths.

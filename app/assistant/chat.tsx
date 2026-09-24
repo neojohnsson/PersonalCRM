@@ -310,7 +310,7 @@ function EntryView({
       );
     case "stopped":
       return (
-        <p role="status" className="rounded-[12px] bg-accent-tint px-3.5 py-2.5 text-[12.5px] leading-[1.5] font-medium text-[#7c3a12]">
+        <p role="status" className="rounded-[12px] bg-accent-tint px-3.5 py-2.5 text-[12.5px] leading-[1.5] font-medium text-alert-ink">
           {entry.reason}
         </p>
       );
