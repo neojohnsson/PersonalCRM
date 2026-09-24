@@ -17,6 +17,7 @@ import { Parts } from "@/app/contacts/[id]/summary-card";
 import { PromiseCard } from "@/app/assistant/promises/promise-card";
 import { addAsContacts, dismissPeople } from "@/app/seen-once/actions";
 import { SyncButton } from "@/app/sync-button";
+import { researchAction } from "@/app/contacts/[id]/research-actions";
 import type { PendingPromise } from "@/lib/ai/promise-list";
 import { dayMonth, timeAgo } from "@/lib/format";
 import { priceInWords } from "@/lib/assistant/price";
@@ -75,6 +76,8 @@ export function NeedsYouCard({ proposal, onSettled }: { proposal: Proposal; onSe
       return <SeenOnceCard people={proposal.people} onSettled={onSettled} />;
     case "sync":
       return <SyncCard lastSyncedAt={proposal.lastSyncedAt} onSettled={onSettled} />;
+    case "research":
+      return <ResearchOfferCard proposal={proposal} onSettled={onSettled} />;
   }
 }
 
@@ -932,6 +935,86 @@ function SyncCard({ lastSyncedAt, onSettled }: { lastSyncedAt: string | null; on
           />
         </div>
       )}
+    </Card>
+  );
+}
+
+// ── Web research ───────────────────────────────────────────────────────────
+
+/**
+ * "Look Karin up on the web" (slice 12). The press is the contact page's own
+ * researchAction -- the same switch, the same checks, the same waiting set --
+ * and what it finds waits on her page to be ticked, not here: that is where
+ * the facts would go, and where the person already reads about her.
+ */
+function ResearchOfferCard({
+  proposal,
+  onSettled,
+}: {
+  proposal: Extract<Proposal, { kind: "research" }>;
+  onSettled: Settle;
+}) {
+  const [stage, setStage] = useState<
+    { at: "offer" } | { at: "found"; count: number } | { at: "nothing"; why: string } | { at: "no" }
+  >({ at: "offer" });
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  const first = proposal.name.split(" ")[0];
+
+  function research() {
+    setError(null);
+    start(async () => {
+      const result = await researchAction(proposal.contactId);
+      if (result?.error) return setError(result.error);
+      if (result?.nothingFound) {
+        setStage({ at: "nothing", why: result.nothingFound });
+        onSettled(`The web search about ${proposal.name} found nothing reliable.`);
+        return;
+      }
+      const count = result?.found ?? 0;
+      setStage({ at: "found", count });
+      onSettled(`The web search about ${proposal.name} found ${count} facts; they wait on the contact's page to be ticked.`);
+    });
+  }
+
+  return (
+    <Card
+      title={`Look ${first} up on the web`}
+      state={stage.at === "found" || stage.at === "nothing" ? "done" : stage.at === "no" ? "no" : "needs"}
+      small="Public web only. LinkedIn, people-search sites and social media are never searched, and nothing is added until you tick it."
+      error={error}
+    >
+      {stage.at === "offer" && (
+        <>
+          <p className="text-[12.5px] leading-[1.5] text-ink-body">
+            Public, professional facts about {proposal.name}, each with the link it came from.{" "}
+            {costLine(proposal.typicalUsd)}
+          </p>
+          <Buttons>
+            <Primary onClick={research} disabled={pending}>
+              {pending ? "Searching…" : "Research"}
+            </Primary>
+            <Quiet
+              onClick={() => {
+                setStage({ at: "no" });
+                onSettled(`The person said no to a web search about ${proposal.name}.`);
+              }}
+              disabled={pending}
+            >
+              No
+            </Quiet>
+          </Buttons>
+        </>
+      )}
+      {stage.at === "found" && (
+        <Link href={`/contacts/${proposal.contactId}`} className="self-start text-[12.5px] font-semibold text-info-ink">
+          {stage.count === 1 ? "1 fact waits" : `${stage.count} facts wait`} on {first}&rsquo;s page — tick what to keep
+        </Link>
+      )}
+      {stage.at === "nothing" && (
+        <p className="text-[12.5px] leading-[1.5] text-ink-body">Nothing reliable was found, so nothing was saved. {stage.why}</p>
+      )}
+      {stage.at === "no" && <p className="text-[12.5px] text-ink-soft">Not searched.</p>}
     </Card>
   );
 }

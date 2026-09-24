@@ -20,7 +20,12 @@ import { createClient } from "@/lib/supabase/server";
  * as the user, so RLS decides which research exists.
  */
 
-export type ResearchState = { error: string | null; nothingFound?: string | null } | null;
+export type ResearchState = {
+  error: string | null;
+  nothingFound?: string | null;
+  /** How many facts now wait on the contact's page (the Assistant's card says so). */
+  found?: number;
+} | null;
 
 async function allowed() {
   const user = await requireUser();
@@ -38,7 +43,7 @@ export async function researchAction(contactId: string): Promise<ResearchState> 
     const result = await researchContact(supabase, user.id, contactId);
     refresh();
     // Nothing survived: say why, rather than an empty card that looks broken.
-    return { error: null, nothingFound: result.saved ? null : result.identityWhy };
+    return { error: null, nothingFound: result.saved ? null : result.identityWhy, found: result.facts.length };
   } catch (failure) {
     if (failure instanceof ResearchContactNotFound) notFound();
     if (failure instanceof AiCapReached) {
