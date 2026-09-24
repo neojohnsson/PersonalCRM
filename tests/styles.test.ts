@@ -38,6 +38,22 @@ describe("the themes", () => {
     }
   });
 
+  it("keep Night to a few quiet layers, and no shadows", () => {
+    // 2026-09-24, the user: "so many different colours and layers, and the
+    // stuff around looks so sharp". It had 13 backgrounds, 3 border greys and
+    // 4 kinds of shadow on one page.
+    const night = block(':root[data-theme="night"]');
+    const value = (name: string) => night.match(new RegExp(`--theme-${name}: (#[0-9a-f]{6});`))![1];
+    // One border colour, not three.
+    expect(value("line-soft")).toBe(value("line"));
+    // Chips and their track are one raised tone.
+    expect(value("chip-track")).toBe(value("chip"));
+    // Every Tailwind shadow is emptied in Night.
+    expect(css).toMatch(/:root\[data-theme="night"\] \* \{\s*--tw-shadow: 0 0 #0000 !important;/);
+    // Avatars are theme variables, so Night can mute the six pastels.
+    for (let n = 1; n <= 6; n += 1) expect(night).toContain(`--avatar-${n}-bg:`);
+  });
+
   it("leave no colour written into a class where a theme cannot reach it", () => {
     // text-[#7c3a12] was in three files; a theme cannot change a colour that
     // is not a token.

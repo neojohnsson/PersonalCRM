@@ -116,7 +116,7 @@ export async function AppShell({
         >
           Skip to main content
         </a>
-        <aside className="sticky top-0 z-40 hidden h-dvh w-14 shrink-0 flex-col items-center gap-[3px] self-start bg-ink-deep pt-3.5 pb-4 sm:flex">
+        <aside className="sticky top-0 z-40 hidden h-dvh w-14 shrink-0 flex-col items-center gap-[3px] self-start bg-rail pt-3.5 pb-4 sm:flex">
           <div
             aria-hidden="true"
             className="mb-3 flex size-[30px] items-center justify-center rounded-[9px] bg-rail-logo"

@@ -84,18 +84,18 @@ export function initials(name: string | null, email: string): string {
   return picked.join("").toUpperCase();
 }
 
-/** The six soft avatar colour pairs used in design/ContactList.dc.html. */
-export const AVATAR_COLORS = [
-  { background: "#e8eef7", color: "#2c5c96" },
-  { background: "#f9eaee", color: "#9b405a" },
-  { background: "#e9f3ec", color: "#2c6b47" },
-  { background: "#eeeaf7", color: "#58479b" },
-  { background: "#e5f2f1", color: "#266b66" },
-  { background: "#faf0e4", color: "#8a5a1e" },
-] as const;
+/**
+ * The six soft avatar colour pairs used in design/ContactList.dc.html, as CSS
+ * variables (app/globals.css) so a theme can change them: Paper keeps the
+ * design's pastels, Night mutes them (2026-09-24).
+ */
+export const AVATAR_COLORS = [1, 2, 3, 4, 5, 6].map((n) => ({
+  background: `var(--avatar-${n}-bg)`,
+  color: `var(--avatar-${n}-ink)`,
+}));
 
 /** The same person always gets the same colour. */
-export function avatarColors(key: string): (typeof AVATAR_COLORS)[number] {
+export function avatarColors(key: string): { background: string; color: string } {
   let hash = 0;
   for (const char of key) {
     hash = (hash * 31 + char.codePointAt(0)!) >>> 0;
