@@ -1,3 +1,4 @@
+import type { InputItem } from "@/lib/ai/openai-tools";
 import type { Said } from "./converse";
 
 /**
@@ -31,4 +32,45 @@ export function parseHistory(body: unknown): Said[] | null {
     history.push({ role, text });
   }
   return history[history.length - 1].role === "user" ? history : null;
+}
+
+/** How much working memory a paused turn may hand back: steps, not a novel. */
+export const MAX_RESUME_ITEMS = 300;
+export const MAX_RESUME_BYTES = 600_000;
+
+/** The item kinds a turn's working memory is made of, and nothing else. */
+const TOOL_ITEMS = new Set(["function_call", "function_call_output", "reasoning"]);
+
+/**
+ * A paused turn's working memory, sent back with Carry on (2026-09-24), or
+ * null when there is none. It came from this server a moment ago, but it
+ * arrives from the browser, so it is checked as strictly as the conversation:
+ *
+ *   - only what a turn is made of: your words and its answers (roles "user"
+ *     and "assistant"), its tool calls and their results, its reasoning.
+ *     Never "system" or "developer" -- the same rule as parseHistory, for the
+ *     same reason
+ *   - at most 300 items and 600 kB
+ *
+ * Returns undefined when the body carries something that is not that: the
+ * route refuses the request whole.
+ */
+export function parseResume(body: unknown): InputItem[] | null | undefined {
+  if (!body || typeof body !== "object") return null;
+  const resume = (body as { resume?: unknown }).resume;
+  if (resume === undefined || resume === null) return null;
+  if (!Array.isArray(resume) || resume.length === 0 || resume.length > MAX_RESUME_ITEMS) return undefined;
+  if (JSON.stringify(resume).length > MAX_RESUME_BYTES) return undefined;
+
+  for (const item of resume) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return undefined;
+    const { type, role } = item as { type?: unknown; role?: unknown };
+    if (role !== undefined) {
+      if (role !== "user" && role !== "assistant") return undefined;
+      if (type !== undefined && type !== "message") return undefined;
+    } else if (typeof type !== "string" || !TOOL_ITEMS.has(type)) {
+      return undefined;
+    }
+  }
+  return resume as InputItem[];
 }
