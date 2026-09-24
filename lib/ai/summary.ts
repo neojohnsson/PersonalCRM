@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { aiConfig, type AiConfig } from "@/lib/ai/config";
 import { readConversation, type ConversationMessage } from "@/lib/ai/conversation";
-import { loadThreadContext, writerOf } from "@/lib/ai/thread";
+import { loadThreadContext, recipientsOf, writerOf } from "@/lib/ai/thread";
 import { nextMeetingWith } from "@/lib/calendar/next-meeting";
 import { openNextTouch, openNextTouches } from "@/lib/relationship/next-touch";
 import { estimateTokens, maxCostOf } from "@/lib/ai/models";
@@ -194,7 +194,7 @@ export function buildInput(
   const addressLines = addresses.map((address, index) => `[a${index + 1}] ${address}`);
   const messages = conversation.map((message) =>
     [
-      `[${message.ref}] ${message.at.toISOString().slice(0, 10)} · from ${writerOf(message)}` +
+      `[${message.ref}] ${message.at.toISOString().slice(0, 10)} · from ${writerOf(message)}${recipientsOf(message)}` +
         (message.subject ? ` · Subject: ${message.subject}` : ""),
       message.text || "(no text)",
     ].join("\n"),

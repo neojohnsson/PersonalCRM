@@ -23,6 +23,8 @@ const message = (ref: string, text: string, from: "you" | "them" = "them"): Conv
   threadId: "t1",
   from,
   who: null,
+  to: [],
+  cc: [],
   at: new Date("2026-09-10T09:00:00Z"),
   subject: "Examensarbete",
   text,

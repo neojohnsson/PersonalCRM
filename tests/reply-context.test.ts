@@ -46,6 +46,8 @@ describe("latestThreadOf", () => {
     threadId: thread,
     from: day % 2 ? "them" : "you",
     who: null,
+    to: [],
+    cc: [],
     at: new Date(Date.UTC(2026, 8, day)),
     subject: thread,
   });

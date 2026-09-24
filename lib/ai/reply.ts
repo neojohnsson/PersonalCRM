@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { messageText } from "@/lib/google/body";
 import { getMessageFull, type GmailHeader } from "@/lib/google/gmail";
-import { latestThread, loadThreadMessages, writerOf, type ThreadItem } from "@/lib/ai/thread";
+import { latestThread, loadThreadMessages, recipientsOf, writerOf, type ThreadItem } from "@/lib/ai/thread";
 import { supabaseError } from "@/lib/supabase/errors";
 
 /**
@@ -28,6 +28,9 @@ export type ReplyMessage = {
   from: "you" | "them" | "other";
   /** For "other": who wrote it. */
   who: string | null;
+  /** Who it went to and who was copied (lib/ai/thread.ts). */
+  to: string[];
+  cc: string[];
   at: Date;
   text: string;
 };
@@ -114,6 +117,8 @@ export async function loadReplyContext(
       messageId: item.messageId,
       from: item.from,
       who: item.who,
+      to: item.to,
+      cc: item.cc,
       at: item.at,
       text: messageText(message.payload),
     });
@@ -172,7 +177,7 @@ export function replyThreadText(context: ReplyContext): string {
   return context.messages
     .map((message) =>
       [
-        `[${message.ref}] ${message.at.toISOString().slice(0, 10)} · from ${writerOf(message)}`,
+        `[${message.ref}] ${message.at.toISOString().slice(0, 10)} · from ${writerOf(message)}${recipientsOf(message)}`,
         message.text || "(no text)",
       ].join("\n"),
     )

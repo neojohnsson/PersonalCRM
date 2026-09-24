@@ -1,6 +1,6 @@
 import type { ConversationMessage } from "@/lib/ai/conversation";
 import type { JsonSchema } from "@/lib/ai/openai";
-import { writerOf } from "@/lib/ai/thread";
+import { recipientsOf, writerOf } from "@/lib/ai/thread";
 import { addDays, isIsoDate, todayIn } from "@/lib/relationship/dates";
 import { touchDate } from "@/lib/relationship/touch-date";
 
@@ -186,7 +186,7 @@ export function buildPromiseInput(
 ): string {
   const messages = conversation.map((message) =>
     [
-      `[${message.ref}] ${message.at.toISOString().slice(0, 10)} · from ${writerOf(message)}` +
+      `[${message.ref}] ${message.at.toISOString().slice(0, 10)} · from ${writerOf(message)}${recipientsOf(message)}` +
         (message.subject ? ` · Subject: ${message.subject}` : ""),
       message.text || "(no text)",
     ].join("\n"),

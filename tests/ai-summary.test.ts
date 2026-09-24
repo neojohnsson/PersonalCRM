@@ -27,6 +27,8 @@ const message = (n: number, from: "you" | "them" | "other", text: string, who: s
   threadId: "thread-1",
   from,
   who,
+  to: [],
+  cc: [],
   at: new Date(Date.UTC(2026, 8, n, 9)),
   subject: n === 1 ? "Examensarbete" : "Re: Examensarbete",
   text,
