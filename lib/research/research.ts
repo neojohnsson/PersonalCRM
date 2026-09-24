@@ -66,7 +66,8 @@ Find public, professional facts about THIS person: their current role and employ
 Rules:
 - Only professional facts. Never home address, family, relationships, health, politics, religion, age or birthday, personal ID numbers, salary, finances or anything about private life. Write each fact as if the person will read it one day.
 - Every fact must come from a page you actually opened in your search, and its "url" must be that page's address exactly. Never cite a page you did not open. Never cite LinkedIn, people-search or data-broker sites, or personal social media.
-- One sentence per fact, at most 240 characters, in plain English. At most 8 facts. No fact that only repeats what the user already gave you.
+- One sentence per fact, at most 240 characters, in plain English. At most 8 facts. No fact that only repeats what the user already gave you, and no two facts that say the same thing -- one page usually gives one fact.
+- No contact details in a fact: no email addresses and no phone numbers, even public ones. The user already has a way to reach them; a fact is about who they are and what they do.
 - "identity": "sure" only when a page ties the name to the given company or email domain; "likely" when it fits but nothing ties it for certain; "unsure" when it may be someone else with the same name. "identity_why" says why, in one sentence.
 - If you find nothing reliable, return an empty list of facts and say so in identity_why. An empty answer is better than a wrong one about a real person.`;
 

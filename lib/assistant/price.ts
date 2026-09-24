@@ -16,7 +16,7 @@ import { supabaseError } from "@/lib/supabase/errors";
  * pages, through the same code.
  */
 
-export type PricedPurpose = "draft" | "summary" | "promises";
+export type PricedPurpose = "draft" | "summary" | "promises" | "research";
 
 /** How many recent requests the average is taken over. */
 export const PRICE_SAMPLE = 10;

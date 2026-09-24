@@ -7,6 +7,7 @@ import { BLOCKED_DOMAINS, isBlocked } from "@/lib/research/blocked";
 import {
   MAX_FACTS,
   MAX_SEARCHES,
+  RESEARCH_INSTRUCTIONS,
   ResearchContactNotFound,
   checkFacts,
   researchContact,
@@ -112,6 +113,14 @@ describe("where it never looks", () => {
 });
 
 describe("what the model is told", () => {
+  it("is told to keep facts about the person: no contact details, no repeats, no private life", () => {
+    // Found 2026-09-24 on the first real search: a fact carried a job ad's
+    // email address, and two facts said the same thing from one page.
+    expect(RESEARCH_INSTRUCTIONS).toContain("No contact details in a fact: no email addresses and no phone numbers");
+    expect(RESEARCH_INSTRUCTIONS).toContain("no two facts that say the same thing");
+    expect(RESEARCH_INSTRUCTIONS).toMatch(/Never home address, family, relationships, health, politics, religion, age or birthday/);
+  });
+
   it("gets a work email's domain, never the address, and nothing for a personal mailbox", () => {
     expect(workDomain("karin@combitech.se")).toBe("combitech.se");
     expect(workDomain("karin.l@gmail.com")).toBeNull();

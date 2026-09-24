@@ -42,6 +42,10 @@ import { DraftCard } from "./draft-card";
 import { CreateEvent } from "@/app/calendar/create-event";
 import { NextTouchCard } from "./next-touch-card";
 import { SummaryCard, type AiBudget } from "./summary-card";
+import { ResearchCard } from "./research-card";
+import { loadResearch } from "@/lib/research/decide";
+import { hasResearch } from "@/lib/research/entitlement";
+import { typicalCostUsd } from "@/lib/assistant/price";
 
 export const metadata = { title: `Contact · ${APP_NAME}` };
 
@@ -118,13 +122,18 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
   if (!contact) notFound();
 
   const emails = emailsResult.data.map((row) => row.email as string);
-  const [thread, relationship, nextTouch, summaries, spentUsd] = await Promise.all([
+  const [thread, relationship, nextTouch, summaries, spentUsd, researchOn] = await Promise.all([
     latestThread(supabase, user.id, emails),
     loadRelationship(supabase, user.id, contact.id),
     openNextTouch(supabase, user.id, contact.id),
     summariesFor(supabase, user.id, contact.id),
     spentThisMonth(supabase, user.id),
+    hasResearch(supabase, user.id),
   ]);
+  // Web research (slice 12): only for an account that has it switched on.
+  const [research, researchUsd] = researchOn
+    ? await Promise.all([loadResearch(supabase, user.id, contact.id), typicalCostUsd(supabase, user.id, "research")])
+    : [null, null];
 
   const [draft, savedDraft, profile, calendar] = await Promise.all([
     pendingDraft(supabase, user.id, contact.id),
@@ -377,6 +386,10 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
           askNow={askForSummary}
           referrals={referrals}
         />
+
+        {research && (
+          <ResearchCard contactId={contact.id} pending={research.pending} kept={research.kept} typicalUsd={researchUsd} />
+        )}
 
         <div className="flex flex-col gap-[18px] lg:flex-row">
           <section className={`${CARD} flex min-w-0 flex-1 flex-col gap-[11px] px-[22px] py-[18px]`}>
