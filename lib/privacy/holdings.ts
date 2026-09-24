@@ -131,7 +131,7 @@ const HOLDINGS: Omit<Holding, "count">[] = [
     table: "entitlements",
     group: "you",
     label: "Your plan",
-    what: "Whether the Assistant is part of your account. Only the app's operator can change it.",
+    what: "Your plan (Free, Pro or Premium), and if you pay: your Stripe customer and subscription ids, when the paid month ends, and when you agreed to start at once. Only a payment through Stripe, or the app's operator, can change it.",
   },
   {
     table: "gmail_sync_state",

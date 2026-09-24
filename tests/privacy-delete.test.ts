@@ -96,7 +96,7 @@ async function fillUp(db: SupabaseClient, userId: string): Promise<string> {
       after: { notes: "Wants the thesis dates." },
     }),
     // Only the operator can grant the Assistant (migration 0025), so as the operator.
-    admin.from("entitlements").insert({ user_id: userId, assistant: true }),
+    admin.from("entitlements").insert({ user_id: userId, plan: "pro" }),
   ]);
   for (const result of inserts) if (result.error) throw result.error;
 

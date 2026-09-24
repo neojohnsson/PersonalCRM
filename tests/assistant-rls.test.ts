@@ -69,7 +69,7 @@ beforeAll(async () => {
   alice = await person("alice");
   bob = await person("bob");
   // Only the owner can write an entitlement -- exactly what the tests check.
-  const { error } = await admin.from("entitlements").insert({ user_id: alice.user.id, assistant: true });
+  const { error } = await admin.from("entitlements").insert({ user_id: alice.user.id, plan: "pro" });
   if (error) throw error;
 });
 
@@ -79,19 +79,19 @@ afterAll(async () => {
 
 describe("the premium flag", () => {
   it("can be read by its owner", async () => {
-    const { data } = await alice.db.from("entitlements").select("assistant").eq("user_id", alice.user.id).single();
-    expect(data?.assistant).toBe(true);
+    const { data } = await alice.db.from("entitlements").select("plan").eq("user_id", alice.user.id).single();
+    expect(data?.plan).toBe("pro");
   });
 
   it("cannot be switched on by the user it belongs to", async () => {
     // The reason it is not a column on `profiles`: there, "update your own
     // row" would include this. Here nobody holds the privilege to write.
-    const { error: insertError } = await bob.db.from("entitlements").insert({ user_id: bob.user.id, assistant: true });
+    const { error: insertError } = await bob.db.from("entitlements").insert({ user_id: bob.user.id, plan: "pro" });
     expect(insertError).not.toBeNull();
 
-    await alice.db.from("entitlements").update({ assistant: false }).eq("user_id", alice.user.id);
-    const { data: stillOn } = await admin.from("entitlements").select("assistant").eq("user_id", alice.user.id).single();
-    expect(stillOn?.assistant).toBe(true);
+    await alice.db.from("entitlements").update({ plan: "free" }).eq("user_id", alice.user.id);
+    const { data: stillOn } = await admin.from("entitlements").select("plan").eq("user_id", alice.user.id).single();
+    expect(stillOn?.plan).toBe("pro");
 
     await alice.db.from("entitlements").delete().eq("user_id", alice.user.id);
     const { data: stillThere } = await admin.from("entitlements").select("user_id").eq("user_id", alice.user.id);

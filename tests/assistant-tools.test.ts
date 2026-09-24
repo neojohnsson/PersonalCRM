@@ -665,7 +665,7 @@ describe("a web search offer", () => {
     });
 
     // Only the owner can switch it on (migration 0026).
-    await admin.from("entitlements").upsert({ user_id: alice.user.id, research: true });
+    await admin.from("entitlements").upsert({ user_id: alice.user.id, plan: "premium" });
     expect(await call(alice, "propose_research", { contact_id: alice.karinId })).toMatchObject({
       tier: "propose",
       proposal: { kind: "research", contactId: alice.karinId, name: "Karin Lindqvist" },
@@ -679,7 +679,7 @@ describe("a web search offer", () => {
   });
 
   it("offers nothing about somebody else's contact", async () => {
-    await admin.from("entitlements").upsert({ user_id: bob.user.id, research: true });
+    await admin.from("entitlements").upsert({ user_id: bob.user.id, plan: "premium" });
     expect(await call(bob, "propose_research", { contact_id: alice.karinId })).toMatchObject({ refused: expect.any(String) });
   });
 
