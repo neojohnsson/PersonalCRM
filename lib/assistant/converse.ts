@@ -18,18 +18,26 @@ import { runTool, toolDefinitions, type Proposal, type ToolContext } from "./too
  *
  * The limits, each one for a reason:
  *
- *   8 steps      one badly phrased question cannot become twenty tool calls
+ *   8 steps      one badly phrased question cannot quietly become fifty tool
+ *                calls. A big task is allowed, but not without you knowing:
+ *                at 8 steps the turn PAUSES (2026-09-24, at the user's
+ *                request -- it used to stop), says what it has looked at, done
+ *                and offered, and carries on only if you press Carry on.
  *   $0.50        per turn, checked BEFORE each step against the most that step
- *                could cost, so it stops short rather than overshooting. The
- *                page also stops the conversation at $0.50 in total; that is
- *                where the per-conversation ceiling you chose is applied, since
- *                the conversation itself is never stored here.
+ *                could cost, so it pauses short rather than overshooting. The
+ *                page holds the conversation to $0.50 in total, and each
+ *                Carry on you press raises that by another $0.50, said on the
+ *                card before you press.
  *   the month    every step reserves against the Assistant's own budget line
  *                in the database first (withSpendCap, migration 0025) — the
  *                limit nothing on the page can get round
  *
  * Nothing about the conversation is written anywhere. The only rows a turn
  * can create are ai_usage (what it cost) and assistant_actions (what it did).
+ * A paused turn hands its working memory -- the items so far, reasoning and
+ * tool results included -- to the page, which holds it in memory and sends it
+ * back with Carry on, so the turn resumes instead of starting over.
+ * lib/assistant/history.ts checks it on the way back in.
  */
 
 export const MAX_STEPS = 8;
@@ -48,6 +56,16 @@ export type ConverseEvent =
   | { type: "refused"; tool: string; reason: string }
   | { type: "spend"; turnUsd: number }
   | { type: "stopped"; reason: string }
+  | {
+      type: "paused";
+      /** Why: it used its steps, or it reached the turn's $0.50. */
+      reason: "steps" | "cost";
+      turnUsd: number;
+      /** What this turn has done so far, for the card. */
+      tally: { looked: number; acted: number; proposed: number };
+      /** The turn's working memory, to send back with Carry on. */
+      resume: InputItem[];
+    }
   | { type: "done" };
 
 export type ConverseInput = {
@@ -60,7 +78,12 @@ export type ConverseInput = {
   now?: Date;
   /** Swapped for a fake in tests; OpenAI otherwise. */
   step?: (request: ToolStepRequest) => Promise<ToolStep>;
+  /** A paused turn's working memory, checked by parseResume: carry on from it. */
+  resume?: InputItem[] | null;
 };
+
+/** What a resumed turn is told the person said. */
+export const CARRY_ON = "Carry on with the same task, from where you paused.";
 
 export async function* converse(input: ConverseInput): AsyncGenerator<ConverseEvent> {
   const now = input.now ?? new Date();
@@ -70,8 +93,20 @@ export async function* converse(input: ConverseInput): AsyncGenerator<ConverseEv
   const tools = toolDefinitions();
 
   const ctx: ToolContext = { db: input.db, userId: input.userId, today, now, mailSeen: [] };
-  const items: InputItem[] = input.history.map((said) => ({ role: said.role, content: said.text }));
+  const items: InputItem[] = input.resume
+    ? [...input.resume, { role: "user", content: CARRY_ON }]
+    : input.history.map((said) => ({ role: said.role, content: said.text }));
+  // A resumed turn has read mail already; a note still may not copy it.
+  if (input.resume) ctx.mailSeen.push(...mailLinesIn(input.resume));
   let turnUsd = 0;
+  const tally = { looked: 0, acted: 0, proposed: 0 };
+  const pause = (reason: "steps" | "cost"): ConverseEvent => ({
+    type: "paused",
+    reason,
+    turnUsd,
+    tally: { ...tally },
+    resume: [...items],
+  });
 
   for (let stepNumber = 1; stepNumber <= MAX_STEPS; stepNumber += 1) {
     // The most this step could cost: everything sent at full price, and the
@@ -82,7 +117,7 @@ export async function* converse(input: ConverseInput): AsyncGenerator<ConverseEv
       MAX_OUTPUT_TOKENS,
     );
     if (turnUsd + estimate > TURN_CEILING_USD) {
-      yield { type: "stopped", reason: "This reached its $0.50 limit, so it stopped here. Ask again to carry on." };
+      yield pause("cost");
       return;
     }
 
@@ -137,19 +172,23 @@ export async function* converse(input: ConverseInput): AsyncGenerator<ConverseEv
       let forModel: unknown;
 
       if ("refused" in outcome) {
+        // Counted nowhere: it did nothing.
         yield { type: "refused", tool: call.name, reason: outcome.refused };
         forModel = { refused: outcome.refused };
       } else if (outcome.tier === "act") {
         const { action } = outcome;
+        tally.acted += 1;
         yield {
           type: "acted",
           action: { id: action.id, kind: action.kind, summary: action.summary, contactId: action.contactId },
         };
         forModel = { done: action.summary, undoable: true };
       } else if (outcome.tier === "propose") {
+        tally.proposed += 1;
         yield { type: "proposal", proposal: outcome.proposal };
         forModel = { waiting_for_the_person: true, note: "Shown as a card. Nothing has happened until they press it." };
       } else {
+        tally.looked += 1;
         yield { type: "looked", tool: call.name };
         forModel = outcome.result;
       }
@@ -158,5 +197,27 @@ export async function* converse(input: ConverseInput): AsyncGenerator<ConverseEv
     }
   }
 
-  yield { type: "stopped", reason: `That took more than ${MAX_STEPS} steps, so it stopped. Ask again, a bit more narrowly.` };
+  yield pause("steps");
+}
+
+/**
+ * The first lines of mail a paused turn had read, found again in its tool
+ * results, so the rule that a note never copies a sentence from an email
+ * still holds after Carry on (lib/assistant/act.ts).
+ */
+function mailLinesIn(items: InputItem[]): string[] {
+  const lines: string[] = [];
+  for (const item of items) {
+    if (item.type !== "function_call_output" || typeof item.output !== "string") continue;
+    try {
+      const result = JSON.parse(item.output) as { untrusted_mail?: boolean; messages?: { first_line?: unknown }[] };
+      if (!result.untrusted_mail) continue;
+      for (const message of result.messages ?? []) {
+        if (typeof message.first_line === "string") lines.push(message.first_line);
+      }
+    } catch {
+      // Not JSON: nothing to remember.
+    }
+  }
+  return lines;
 }

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { undoAssistantAction } from "@/app/assistant/actions";
 import { Composer } from "@/app/assistant/composer";
 import { NeedsYouCard } from "@/app/assistant/needs-you";
+import { PausedCard, type Tally } from "@/app/assistant/paused-card";
 import type { ConverseEvent, Said } from "@/lib/assistant/converse";
 import type { Proposal } from "@/lib/assistant/tools";
 
@@ -41,7 +42,16 @@ type Entry =
   | { kind: "said"; text: string }
   | { kind: "done"; actions: { id: string; summary: string; undone: boolean; problem: string | null }[] }
   | { kind: "needs"; proposals: { key: string; proposal: Proposal }[] }
-  | { kind: "stopped"; reason: string };
+  | { kind: "stopped"; reason: string }
+  | {
+      kind: "paused";
+      reason: "steps" | "cost";
+      tally: Tally;
+      turnUsd: number;
+      /** The turn's working memory, sent back with Carry on. */
+      resume: unknown[];
+      state: "asking" | "carried-on" | "stopped";
+    };
 
 export function AssistantChat() {
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -53,7 +63,10 @@ export function AssistantChat() {
   const request = useRef<AbortController | null>(null);
   const router = useRouter();
 
-  const full = spentUsd >= CONVERSATION_CEILING_USD;
+  // What this conversation may cost: $0.50, plus $0.50 for each Carry on you
+  // press on a big task -- said on the card before you press it.
+  const [ceilingUsd, setCeilingUsd] = useState(CONVERSATION_CEILING_USD);
+  const full = spentUsd >= ceilingUsd;
   const { following, awayFromBottom, jumpToLatest, follow } = useFollowLatest(conversation);
 
   // Every change to the conversation follows it down, if you are following.
@@ -63,7 +76,7 @@ export function AssistantChat() {
     follow();
   }, [entries, busy, looking, follow]);
 
-  async function ask(question: string) {
+  async function ask(question: string, resume: unknown[] | null = null) {
     const text = question.trim();
     if (!text || busy || full) return;
 
@@ -86,7 +99,7 @@ export function AssistantChat() {
       const response = await fetch("/api/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: sent }),
+        body: JSON.stringify({ messages: sent, resume }),
         signal: controller.signal,
       });
       if (!response.ok || !response.body) {
@@ -166,9 +179,37 @@ export function AssistantChat() {
       case "stopped":
         add({ kind: "stopped", reason: event.reason });
         return;
+      case "paused":
+        answer.push("(Paused a big task to ask whether to carry on.)");
+        add({
+          kind: "paused",
+          reason: event.reason,
+          tally: event.tally,
+          turnUsd: event.turnUsd,
+          resume: event.resume,
+          state: "asking",
+        });
+        return;
       case "done":
         return;
     }
+  }
+
+  /** Carry on or stop a paused big task (./paused-card.tsx). */
+  function decidePause(index: number, choice: "carry-on" | "stop") {
+    const entry = entries[index];
+    if (entry?.kind !== "paused" || entry.state !== "asking") return;
+    setEntries((list) =>
+      list.map((item, at) =>
+        at === index && item.kind === "paused" ? { ...item, state: choice === "carry-on" ? "carried-on" : "stopped" } : item,
+      ),
+    );
+    if (choice === "stop") {
+      settle("The person stopped the task there.");
+      return;
+    }
+    setCeilingUsd((ceiling) => ceiling + CONVERSATION_CEILING_USD);
+    void ask("Carry on", entry.resume);
   }
 
   function add(entry: Entry) {
@@ -211,7 +252,14 @@ export function AssistantChat() {
           className="flex flex-col gap-[13px] rounded-[18px] bg-white px-5 py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]"
         >
           {entries.map((entry, index) => (
-            <EntryView key={index} entry={entry} onUndone={markUndone} onSettled={settle} />
+            <EntryView
+              key={index}
+              entry={entry}
+              onUndone={markUndone}
+              onSettled={settle}
+              onPaused={(choice) => decidePause(index, choice)}
+              busy={busy}
+            />
           ))}
           {busy && (
             <p role="status" className="flex items-center gap-2 text-[12.5px] font-medium text-ink-soft">
@@ -267,7 +315,7 @@ export function AssistantChat() {
             <span>Notes and dates it changes on its own. Mail and calendar always ask.</span>
             {spentUsd > 0 && (
               <span className="sm:ml-auto">
-                This conversation: ${spentUsd.toFixed(2)} of ${CONVERSATION_CEILING_USD.toFixed(2)}
+                This conversation: ${spentUsd.toFixed(2)} of ${ceilingUsd.toFixed(2)}
               </span>
             )}
           </p>
@@ -289,10 +337,14 @@ function EntryView({
   entry,
   onUndone,
   onSettled,
+  onPaused,
+  busy,
 }: {
   entry: Entry;
   onUndone: (id: string, problem: string | null) => void;
   onSettled: (note: string) => void;
+  onPaused: (choice: "carry-on" | "stop") => void;
+  busy: boolean;
 }) {
   switch (entry.kind) {
     case "you":
@@ -324,6 +376,18 @@ function EntryView({
             <NeedsYouCard key={key} proposal={proposal} onSettled={onSettled} />
           ))}
         </div>
+      );
+    case "paused":
+      return (
+        <PausedCard
+          reason={entry.reason}
+          tally={entry.tally}
+          turnUsd={entry.turnUsd}
+          extraUsd={CONVERSATION_CEILING_USD}
+          state={busy && entry.state === "asking" ? "carried-on" : entry.state}
+          onCarryOn={() => onPaused("carry-on")}
+          onStop={() => onPaused("stop")}
+        />
       );
     case "stopped":
       return (

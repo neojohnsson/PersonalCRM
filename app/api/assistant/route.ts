@@ -1,7 +1,7 @@
 import { AiNotConfigured, aiConfig, assistantModel, assistantMonthlyCapUsd } from "@/lib/ai/config";
 import { hasAssistant } from "@/lib/assistant/entitlement";
 import { converse } from "@/lib/assistant/converse";
-import { parseHistory } from "@/lib/assistant/history";
+import { parseHistory, parseResume } from "@/lib/assistant/history";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -45,8 +45,12 @@ export async function POST(request: Request) {
     throw failure;
   }
 
-  const history = parseHistory(await request.json().catch(() => null));
-  if (!history) {
+  const body = await request.json().catch(() => null);
+  const history = parseHistory(body);
+  // A paused turn's working memory, sent back with Carry on: checked as
+  // strictly as the words (lib/assistant/history.ts).
+  const resume = parseResume(body);
+  if (!history || resume === undefined) {
     return Response.json({ error: "That isn't a conversation this page could have sent." }, { status: 400 });
   }
 
@@ -61,6 +65,7 @@ export async function POST(request: Request) {
           apiKey,
           model,
           history,
+          resume,
           monthlyCapUsd: assistantMonthlyCapUsd(),
         })) {
           send(event);
