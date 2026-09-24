@@ -343,6 +343,17 @@ describe("the Assistant page", () => {
     expect(source.indexOf("<AssistantChat")).toBeGreaterThan(source.indexOf("<ThingsToDecide"));
   });
 
+  it("scrolls the chat as ChatGPT does: the page, not a box inside it", () => {
+    // 2026-09-24: a conversation capped at 60% of the window with its own
+    // scrollbar jumped about while answers came in. It is part of the page
+    // now, followed down while you are at the bottom, with an arrow back.
+    const chat = readFileSync(join("app", "assistant", "chat.tsx"), "utf8");
+    const section = chat.slice(chat.indexOf('aria-label="Conversation"'), chat.indexOf("{entries.map"));
+    expect(section).not.toMatch(/overflow-y-(auto|scroll)|max-h-/);
+    expect(chat).toContain("function useFollowLatest(");
+    expect(chat).toContain('aria-label="Scroll to the latest"');
+  });
+
   it("never has a send button, even in the chat", () => {
     // The app's rule against send buttons covers words too: the chat's
     // button says Ask. Since the bar became round (2026-09-23) the word is
