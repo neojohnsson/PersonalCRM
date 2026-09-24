@@ -131,6 +131,7 @@ export type PersonExport = {
   settled_threads: Record<string, unknown>[];
   drafts: Record<string, unknown>[];
   assistant_actions: Record<string, unknown>[];
+  web_research: Record<string, unknown>[];
 };
 
 /**
@@ -154,13 +155,14 @@ export async function exportPerson(
 
   const theirAddresses = (addresses.data ?? []).map((row) => String(row.email));
 
-  const [summaries, touches, promises, settled, drafts, assistantActions, messages] = await Promise.all([
+  const [summaries, touches, promises, settled, drafts, assistantActions, research, messages] = await Promise.all([
     rowsFor(db, "contact_summaries", userId, contactId),
     rowsFor(db, "next_touches", userId, contactId),
     rowsFor(db, "promises", userId, contactId),
     rowsFor(db, "settled_threads", userId, contactId),
     rowsFor(db, "contact_drafts", userId, contactId),
     rowsFor(db, "assistant_actions", userId, contactId),
+    rowsFor(db, "contact_research", userId, contactId),
     messagesFor(db, userId, theirAddresses),
   ]);
 
@@ -176,6 +178,7 @@ export async function exportPerson(
     settled_threads: settled,
     drafts,
     assistant_actions: assistantActions,
+    web_research: research,
   };
 }
 

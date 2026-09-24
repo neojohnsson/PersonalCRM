@@ -92,6 +92,12 @@ const HOLDINGS: Omit<Holding, "count">[] = [
     what: "Each thing the Assistant did on its own — a note, tags, a next touch, a finished conversation, reminders on or off — and what was there before, so it can be undone. Never message text; the conversation itself is not kept.",
   },
   {
+    table: "contact_research",
+    group: "people",
+    label: "Found on the web",
+    what: "Facts a web search found about a contact, each one sentence with the link it came from and when -- waiting for you to tick, or kept because you did. Never the pages themselves; what you discard is deleted.",
+  },
+  {
     table: "seen_once_dismissals",
     group: "people",
     label: "Dismissed addresses",

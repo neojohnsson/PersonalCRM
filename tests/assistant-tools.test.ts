@@ -133,6 +133,7 @@ describe("the tools the Assistant is given", () => {
       propose_promises: "propose",
       propose_seen_once: "propose",
       propose_sync: "propose",
+      propose_research: "propose",
     });
   });
 
@@ -654,6 +655,37 @@ describe("a sync", () => {
   it("syncs only through the header's own button", () => {
     const cards = readFileSync("app/assistant/needs-you.tsx", "utf8");
     expect(cards).toContain('import { SyncButton } from "@/app/sync-button";');
+  });
+});
+
+describe("a web search offer", () => {
+  it("is only for an account with research switched on, and searches nothing by being offered", async () => {
+    expect(await call(alice, "propose_research", { contact_id: alice.karinId })).toMatchObject({
+      refused: "Web research isn't switched on for this account.",
+    });
+
+    // Only the owner can switch it on (migration 0026).
+    await admin.from("entitlements").upsert({ user_id: alice.user.id, research: true });
+    expect(await call(alice, "propose_research", { contact_id: alice.karinId })).toMatchObject({
+      tier: "propose",
+      proposal: { kind: "research", contactId: alice.karinId, name: "Karin Lindqvist" },
+    });
+    const { count } = await admin
+      .from("ai_usage")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", alice.user.id)
+      .eq("purpose", "research");
+    expect(count).toBe(0);
+  });
+
+  it("offers nothing about somebody else's contact", async () => {
+    await admin.from("entitlements").upsert({ user_id: bob.user.id, research: true });
+    expect(await call(bob, "propose_research", { contact_id: alice.karinId })).toMatchObject({ refused: expect.any(String) });
+  });
+
+  it("searches only through the contact page's own action", () => {
+    const cards = readFileSync("app/assistant/needs-you.tsx", "utf8");
+    expect(cards).toContain('import { researchAction } from "@/app/contacts/[id]/research-actions";');
   });
 });
 

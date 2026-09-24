@@ -7,6 +7,7 @@ import { suggestName } from "@/lib/contacts/name-suggestion";
 import { ilikePattern, normaliseQuery } from "@/lib/contacts/search";
 import { countPendingPromises, loadPendingPromises, type PendingPromise } from "@/lib/ai/promise-list";
 import { participantNamer } from "@/lib/ai/thread";
+import { hasResearch } from "@/lib/research/entitlement";
 import { getAccessToken } from "@/lib/google/tokens";
 import type { SavedSummary } from "@/lib/ai/summary-parts";
 import { summariesFor } from "@/lib/ai/summary-record";
@@ -90,7 +91,8 @@ export type Proposal =
   | { kind: "summary_review"; name: string; summary: SavedSummary; gmailEmail: string | null }
   | { kind: "promises"; promises: PendingPromise[] }
   | { kind: "seen_once"; people: SeenOncePerson[] }
-  | { kind: "sync"; lastSyncedAt: string | null };
+  | { kind: "sync"; lastSyncedAt: string | null }
+  | { kind: "research"; contactId: string; name: string; typicalUsd: number | null };
 
 /** One person in the Seen once queue. Name and subject are from mail headers. */
 export type SeenOncePerson = {
@@ -650,6 +652,28 @@ const TOOLS: Tool[] = [
         tier: "propose",
         result: "Shown to the person as a card.",
         proposal: { kind: "summary", contactId: id, name, typicalUsd: await typicalCostUsd(ctx.db, ctx.userId, "summary") },
+      };
+    },
+  },
+  {
+    name: "propose_research",
+    tier: "propose",
+    description:
+      "Offer to look a contact up on the public web: professional facts, each with its link, that wait on their " +
+      "page for the person to tick. It costs money, so the person decides. Only for accounts with web research.",
+    parameters: object({ contact_id: contactId }),
+    run: async (ctx, args) => {
+      // Slice 12: the same switch as the contact page's button.
+      if (!(await hasResearch(ctx.db, ctx.userId))) {
+        return { tier: "propose", refused: "Web research isn't switched on for this account." };
+      }
+      const id = contactIdOf(args);
+      const name = await contactName(ctx, id);
+      if (!name) return notFound("propose");
+      return {
+        tier: "propose",
+        result: "Shown to the person as a card. Nothing is searched until they press it.",
+        proposal: { kind: "research", contactId: id, name, typicalUsd: await typicalCostUsd(ctx.db, ctx.userId, "research") },
       };
     },
   },

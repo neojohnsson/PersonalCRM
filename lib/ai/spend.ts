@@ -29,18 +29,24 @@ export class AiCapReached extends Error {
 
 export type SpendRequest = {
   contactId: string | null;
-  purpose: "summary" | "draft" | "promises" | "assistant";
+  purpose: "summary" | "draft" | "promises" | "assistant" | "research";
   model: string;
   /** From maxCostOf: the most this request could cost. */
   estimateUsd: number;
   capUsd: number;
+  /**
+   * Cost beyond tokens if the work fails before saying what it spent -- a
+   * web search is paid per search, and a request cut off after searching has
+   * still searched. Charged in full then: too much, never too little.
+   */
+  extraUsdIfFailed?: number;
 };
 
 export async function withSpendCap<T>(
   db: SupabaseClient,
   userId: string,
   request: SpendRequest,
-  work: () => Promise<{ result: T; usage: TokenUsage }>,
+  work: () => Promise<{ result: T; usage: TokenUsage; extraUsd?: number }>,
 ): Promise<T> {
   const { data: usageId, error } = await db.rpc("reserve_ai_spend", {
     p_user_id: userId,
@@ -56,19 +62,23 @@ export async function withSpendCap<T>(
   }
 
   let usage: TokenUsage = { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 };
+  // What it cost beyond tokens: web searches (slice 12).
+  let extraUsd = 0;
   try {
     const done = await work();
     usage = done.usage;
+    extraUsd = done.extraUsd ?? 0;
     return done.result;
   } catch (failure) {
     // A refusal or a cut-off answer still used tokens, and still costs.
     if (failure instanceof OpenAiNoAnswer) usage = failure.usage;
+    extraUsd = request.extraUsdIfFailed ?? 0;
     throw failure;
   } finally {
     const { error: settleError } = await db.rpc("settle_ai_spend", {
       p_user_id: userId,
       p_usage_id: usageId,
-      p_cost: costOf(request.model, usage),
+      p_cost: costOf(request.model, usage) + extraUsd,
       p_input_tokens: usage.inputTokens,
       p_output_tokens: usage.outputTokens,
     });
