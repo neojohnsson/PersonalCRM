@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { displayName } from "@/lib/contacts/display";
 import { contactTouches } from "@/lib/relationship/load";
 import { supabaseError } from "@/lib/supabase/errors";
 import { readAll } from "@/lib/supabase/read-all";
@@ -25,6 +26,14 @@ export type ThreadItem = {
   from: "you" | "them" | "other";
   /** For "other": their name if the header had one, else their address. */
   who: string | null;
+  /**
+   * Who it went to and who was copied, as the model reads them: "you" for the
+   * user, a contact's name, or the bare address (2026-09-24 -- before, the AI
+   * saw only who wrote each message, so "who did she send it on to?" had no
+   * answer). From the synced headers; nothing new is read or stored.
+   */
+  to: string[];
+  cc: string[];
 };
 
 type ThreadRow = {
@@ -80,8 +89,10 @@ export async function loadThreadContext(
     }
   }
 
+  const nameOf = await participantNamer(db, userId, rows);
+
   return {
-    items: rows.map((row) => label(row, theirs)).sort((a, b) => a.at.getTime() - b.at.getTime()),
+    items: rows.map((row) => label(row, theirs, nameOf)).sort((a, b) => a.at.getTime() - b.at.getTime()),
     participants: [...participants],
   };
 }
@@ -95,7 +106,7 @@ export async function loadThreadMessages(
   return (await loadThreadContext(db, userId, contactId)).items;
 }
 
-function label(row: ThreadRow, theirs: Set<string>): ThreadItem {
+function label(row: ThreadRow, theirs: Set<string>, nameOf: (address: string) => string): ThreadItem {
   const from =
     row.direction === "outbound" ? "you" : theirs.has(row.from_email.toLowerCase()) ? "them" : "other";
 
@@ -107,7 +118,84 @@ function label(row: ThreadRow, theirs: Set<string>): ThreadItem {
     from,
     // The name is already in the synced headers; nothing new is read or stored.
     who: from === "other" ? (row.from_name?.trim() || row.from_email) : null,
+    to: (row.to_emails ?? []).map(nameOf),
+    cc: (row.cc_emails ?? []).map(nameOf),
   };
+}
+
+/** The rows' own columns this needs: who wrote, and who it went to. */
+type Addressed = { direction: string; from_email: string; to_emails: string[] | null; cc_emails: string[] | null };
+
+/**
+ * A way to say each address as a person would: "you" for the user's own (any
+ * address they have sent from, and their Gmail address), a contact's name,
+ * or the address itself. One lookup for the lot.
+ */
+export async function participantNamer(
+  db: SupabaseClient,
+  userId: string,
+  rows: Addressed[],
+): Promise<(address: string) => string> {
+  const all = new Set<string>();
+  const own = new Set<string>();
+  for (const row of rows) {
+    const from = row.from_email?.toLowerCase();
+    if (from && row.direction === "outbound") own.add(from);
+    for (const address of [from, ...(row.to_emails ?? []), ...(row.cc_emails ?? [])]) {
+      if (address) all.add(address.toLowerCase());
+    }
+  }
+  const { data: account } = await db.from("google_accounts").select("email").eq("user_id", userId).maybeSingle();
+  if (account?.email) own.add(String(account.email).toLowerCase());
+
+  const names = new Map<string, string>();
+  const others = [...all].filter((address) => !own.has(address));
+  if (others.length > 0) {
+    const { data: links, error } = await db
+      .from("contact_emails")
+      .select("email, contact_id")
+      .eq("user_id", userId)
+      .in("email", others);
+    if (error) throw supabaseError(error, "Couldn't look up who was on the thread");
+    const ids = [...new Set((links ?? []).map((link) => link.contact_id as string))];
+    if (ids.length > 0) {
+      const { data: contacts, error: contactError } = await db
+        .from("contact_list")
+        .select("id, first_name, last_name, primary_email")
+        .eq("user_id", userId)
+        .in("id", ids);
+      if (contactError) throw supabaseError(contactError, "Couldn't look up who was on the thread");
+      const byId = new Map((contacts ?? []).map((contact) => [contact.id as string, displayName(contact)]));
+      for (const link of links ?? []) {
+        const name = byId.get(link.contact_id as string);
+        if (name) names.set(String(link.email).toLowerCase(), name);
+      }
+    }
+  }
+
+  return (address: string) => {
+    const key = address.toLowerCase();
+    return own.has(key) ? "you" : (names.get(key) ?? address);
+  };
+}
+
+/** A long cc list is cut, not dropped: "..., and 12 more". */
+const MAX_NAMED = 8;
+
+/**
+ * " · to you, Karin Lindqvist · cc info@softwerk.se": who a message went to,
+ * for the line that introduces it to the model. Every AI input uses this one
+ * helper -- summaries, drafts, the promise scan and the Assistant -- so what
+ * one of them can see about a thread, all of them can.
+ */
+export function recipientsOf(item: { to?: string[]; cc?: string[] }): string {
+  const list = (people: string[]) =>
+    people.length > MAX_NAMED
+      ? `${people.slice(0, MAX_NAMED).join(", ")}, and ${people.length - MAX_NAMED} more`
+      : people.join(", ");
+  const to = item.to ?? [];
+  const cc = item.cc ?? [];
+  return (to.length > 0 ? ` · to ${list(to)}` : "") + (cc.length > 0 ? ` · cc ${list(cc)}` : "");
 }
 
 async function contactAddresses(db: SupabaseClient, userId: string, contactId: string): Promise<string[]> {

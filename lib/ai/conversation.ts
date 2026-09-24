@@ -28,6 +28,9 @@ export type ConversationMessage = {
   from: "you" | "them" | "other";
   /** For "other": who wrote it — their name from the header, or their address. */
   who: string | null;
+  /** Who it went to and who was copied (lib/ai/thread.ts). */
+  to: string[];
+  cc: string[];
   at: Date;
   subject: string | null;
   text: string;
@@ -71,6 +74,8 @@ export async function readConversation(
       threadId: item.threadId,
       from: item.from,
       who: item.who,
+      to: item.to,
+      cc: item.cc,
       at: item.at,
       subject: item.subject,
       text,

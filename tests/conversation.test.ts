@@ -17,6 +17,8 @@ const touch = (n: number, from: ThreadItem["from"] = n % 2 ? "them" : "you", who
   threadId: "t1",
   from,
   who,
+  to: [],
+  cc: [],
   at: new Date(Date.UTC(2026, 8, 1) + n * DAY),
   subject: `Subject ${n}`,
 });
@@ -63,6 +65,8 @@ describe("readConversation", () => {
       threadId: "t1",
       from: "you",
       who: null,
+      to: [],
+      cc: [],
       at: touch(6).at,
       subject: "Subject 6",
       text: "Text of msg-6",

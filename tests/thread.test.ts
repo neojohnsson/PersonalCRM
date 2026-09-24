@@ -35,6 +35,8 @@ describe("latestThread", () => {
     subject: null,
     from: "you" as const,
     who: null,
+    to: [],
+    cc: [],
   });
 
   it("is the thread holding the newest message", () => {
