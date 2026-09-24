@@ -43,6 +43,23 @@
   --theme-rail-active: #303237;
   --theme-rail-icon: #75777e;
   --theme-rail-avatar: #4a4d54;
+  /* The sidebar's own colour, apart from ink-deep: Night makes the dark
+     buttons a raised grey, and the sidebar must stay dark. */
+  --theme-rail: #17181a;
+  /* The design's six avatar pairs (lib/format.ts), as variables so a theme
+     can mute them. */
+  --avatar-1-bg: #e8eef7;
+  --avatar-1-ink: #2c5c96;
+  --avatar-2-bg: #f9eaee;
+  --avatar-2-ink: #9b405a;
+  --avatar-3-bg: #e9f3ec;
+  --avatar-3-ink: #2c6b47;
+  --avatar-4-bg: #eeeaf7;
+  --avatar-4-ink: #58479b;
+  --avatar-5-bg: #e5f2f1;
+  --avatar-5-ink: #266b66;
+  --avatar-6-bg: #faf0e4;
+  --avatar-6-ink: #8a5a1e;
   --theme-affirm: #15803d;
   --theme-cooling: #a5811f;
   --theme-radio-ring: #c5c7cc;
@@ -163,54 +180,84 @@ html {
   --color-rail-active: var(--theme-rail-active);
   --color-rail-icon: var(--theme-rail-icon);
   --color-rail-avatar: var(--theme-rail-avatar);
+  --color-rail: var(--theme-rail);
   /* The logo tile stays white in every theme: the rail is dark in all of
      them, and Night's .bg-white repaint made the "C" disappear. */
   --color-rail-logo: #ffffff;
 }
 
+/*
+ * Night, redone 2026-09-24 at the user's request: "so many different colours
+ * and layers, and the stuff around looks so sharp". Measured on /assistant it
+ * had 13 background shades, 3 border greys and 4 kinds of shadow. Dark themes
+ * that read calm (ChatGPT's, Claude's) keep to a few layers close in tone and
+ * no shadows, so this one does:
+ *
+ *   page     #161618   the canvas
+ *   surface  #1e1f22   every card, the bar, the menus
+ *   raised   #28292d   chips, bubbles, hover, the selected row, dark buttons
+ *   line     #2a2b2f   one border colour, just visible; #34363b for outlines
+ *
+ * No shadow anywhere: on dark, a shadow reads as a hard rim, not depth.
+ */
 :root[data-theme="night"] {
   color-scheme: dark;
-  --background: #111214;
-  --foreground: #f5f3ee;
-  --theme-paper: #111214;
-  --theme-paper-tint: #181a1e;
-  --theme-chip: #24272c;
-  --theme-chip-track: #2c3036;
-  --theme-white: #1b1e23;
-  --theme-ink: #f5f3ee;
-  --theme-ink-deep: #0d0f11;
-  --theme-ink-body: #ddd9d0;
-  --theme-ink-soft: #aaa9a6;
-  --theme-ink-faint: #85878b;
-  --theme-ink-quiet: #97999d;
-  --theme-ink-muted: #a3a4a7;
-  --theme-ink-ghost: #686b72;
-  --theme-ink-hush: #5d6067;
-  --theme-line: #30343a;
-  --theme-line-soft: #25282d;
-  --theme-line-strong: #454a52;
-  --theme-accent: #f18b62;
-  --theme-accent-dark: #ffad88;
-  --theme-accent-tint: #3a241f;
-  --theme-accent-soft: #f5a47e;
-  --theme-info: #80b7ee;
-  --theme-info-ink: #a9d0f8;
-  --theme-info-tint: #1e2d40;
-  --theme-rail-active: #343941;
-  --theme-rail-icon: #a6a8ae;
-  --theme-rail-avatar: #525862;
+  --background: #161618;
+  --foreground: #ececec;
+  --theme-paper: #161618;
+  --theme-white: #1e1f22;
+  --theme-paper-tint: #232427;
+  --theme-chip: #28292d;
+  --theme-chip-track: #28292d;
+  --theme-line: #2a2b2f;
+  --theme-line-soft: #2a2b2f;
+  --theme-line-strong: #34363b;
+  --theme-ink: #ececec;
+  --theme-ink-body: #c8c8cc;
+  --theme-ink-soft: #a0a1a6;
+  --theme-ink-faint: #85868c;
+  --theme-ink-quiet: #909197;
+  --theme-ink-muted: #97989d;
+  --theme-ink-ghost: #75767c;
+  --theme-ink-hush: #6b6c72;
+  /* The dark pill buttons: raised grey with white words, not a hole. */
+  --theme-ink-deep: #33343a;
+  --theme-rail: #111112;
+  --theme-rail-active: #28292d;
+  --theme-rail-icon: #8e8f95;
+  --theme-rail-avatar: #3a3b40;
+  --theme-accent: #e8835c;
+  --theme-accent-dark: #f29d7a;
+  --theme-accent-tint: #2c211d;
+  --theme-accent-soft: #ef9a76;
+  --theme-info: #8ab4e8;
+  --theme-info-ink: #a8c7ef;
+  --theme-info-tint: #1f2835;
   /* The colours that carry a meaning, lifted so they read on graphite:
      green done, amber cooling and deciding, red danger, the orange inks. */
-  --theme-affirm: #5ec48a;
+  --theme-affirm: #6cc995;
   --theme-cooling: #d9b85e;
-  --theme-radio-ring: #5a5f68;
-  --theme-switch-off: #3a3f47;
-  --theme-danger: #f5877d;
+  --theme-radio-ring: #4a4b51;
+  --theme-switch-off: #33343a;
+  --theme-danger: #f0877d;
   --theme-danger-dark: #ffa39a;
-  --theme-decide: #e3b672;
-  --theme-done-tint: #18261e;
-  --theme-needs-ink: #ffb48f;
-  --theme-alert-ink: #ffc2a3;
+  --theme-decide: #e0b36f;
+  --theme-done-tint: #1c2620;
+  --theme-needs-ink: #f7ad89;
+  --theme-alert-ink: #f7bda0;
+  /* Avatars: the same six hues, muted and dark, not six pastel lamps. */
+  --avatar-1-bg: #1f2a38;
+  --avatar-1-ink: #9cc0ea;
+  --avatar-2-bg: #33232a;
+  --avatar-2-ink: #e6a4b6;
+  --avatar-3-bg: #1f2d25;
+  --avatar-3-ink: #93cfa9;
+  --avatar-4-bg: #29243a;
+  --avatar-4-ink: #bcaaee;
+  --avatar-5-bg: #1d2e2d;
+  --avatar-5-ink: #8fcfc9;
+  --avatar-6-bg: #32291d;
+  --avatar-6-ink: #e2bd84;
 }
 
 :root[data-theme="studio"] {
@@ -235,12 +282,7 @@ html {
   box-shadow: 0 1px 2px rgb(20 20 25 / 0.04), 0 8px 24px rgb(212 79 105 / 0.12);
 }
 
-:root[data-theme="night"] .assistant-composer {
-  border-color: #454a52;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.24), 0 8px 24px rgb(0 0 0 / 0.22);
-}
-
-/* Utility classes that represent elevated surfaces stay theme-aware. */
+/* Night's surfaces: every white card and paper strip takes Night's tones. */
 :root[data-theme="night"] .bg-white {
   background-color: var(--theme-white) !important;
 }
@@ -249,8 +291,11 @@ html {
   background-color: var(--theme-paper) !important;
 }
 
-:root[data-theme="night"] .shadow-\[0_1px_2px_rgba\(20\,20\,25\,\.04\)\,0_6px_16px_rgba\(20\,20\,25\,\.05\)\] {
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.22), 0 8px 24px rgb(0 0 0 / 0.2) !important;
+/* No shadows in Night: Tailwind's shadow utilities all draw through
+   --tw-shadow, so emptying it removes every one without naming them.
+   Focus rings are drawn separately and stay. */
+:root[data-theme="night"] * {
+  --tw-shadow: 0 0 #0000 !important;
 }
 
 body {
