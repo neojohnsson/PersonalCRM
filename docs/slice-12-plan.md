@@ -93,14 +93,15 @@ _(wanted, decided 2026-09-23)_.
 
 ## Done when — a test proves it
 
-- [ ] A fact whose link was not among the sources is dropped, and so is one on a blocked domain
-- [ ] The blocked list holds LinkedIn and every broker named in §3, and a test fails if one goes
-- [ ] Nothing reaches the contact until you keep it; discarded facts are deleted, not kept
-- [ ] Two users: neither sees nor keeps the other's research
-- [ ] With research off, there is no button and the action refuses
-- [ ] The press is reserved and settled on the AI budget, searches included
-- [ ] Counted on the privacy page, in the exports, and deleted with the contact
-- [ ] Checked in the browser against the real search, at both widths
+- [x] A fact whose link was not among the sources is dropped, and so is one on a blocked domain
+- [x] The blocked list holds LinkedIn and every broker named in §3, and a test fails if one goes
+- [x] Nothing reaches the contact until you keep it; discarded facts are deleted, not kept
+- [x] Two users: neither sees nor keeps the other's research
+- [x] With research off, there is no button and the action refuses
+- [x] The press is reserved and settled on the AI budget, searches included
+- [x] Counted on the privacy page, in the exports, and deleted with the contact
+- [x] Checked in the browser against the real search, at both widths — by eye and by
+      measurement (2026-09-24): two real contacts researched, the card fits at 390px
 
 ## Commit order
 
@@ -108,6 +109,6 @@ _(wanted, decided 2026-09-23)_.
 2. Migration 0026 — tested with two users before any code uses it
 3. The research itself: instructions, the search, the checks, the spend (tests with a fake model)
 4. The From the web card: keep, discard, remove
-5. Privacy page, exports
+5. Privacy page, exports — done in commit 2, when the privacy test failed on the new table
 6. The Assistant's card
 7. Browser check, PR
