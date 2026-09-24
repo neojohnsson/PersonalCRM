@@ -126,9 +126,10 @@ describe("what a plan includes", () => {
     expect(await hasResearch(alva.db, alva.user.id)).toBe(false);
   });
 
-  it("is Free with no row at all", async () => {
+  it("is Free with no row at all: the Assistant on its allowance, and no research", async () => {
     expect(await currentPlan(bea.db, bea.user.id)).toEqual(PLANS.free);
-    expect(await hasAssistant(bea.db, bea.user.id)).toBe(false);
+    expect(await hasAssistant(bea.db, bea.user.id)).toBe(true);
+    expect(await hasResearch(bea.db, bea.user.id)).toBe(false);
   });
 
   it("is never more than was paid for: an unknown name is Free", () => {

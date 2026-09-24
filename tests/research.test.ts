@@ -59,6 +59,9 @@ async function person(label: string, withContact: boolean): Promise<Person> {
 beforeAll(async () => {
   alva = await person("research-alva", true);
   bea = await person("research-bea", false);
+  // Premium, the plan with web research: these tests are about the search,
+  // not the plan (tests/allowance.test.ts).
+  await admin.from("entitlements").insert({ user_id: alva.user.id, plan: "premium" });
 });
 
 afterAll(async () => {

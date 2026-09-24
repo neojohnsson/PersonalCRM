@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { costOf, estimateTokens, maxCostOf } from "@/lib/ai/models";
 import { OpenAiError, OpenAiNoAnswer } from "@/lib/ai/openai";
 import { createToolStep, type InputItem, type ToolStep, type ToolStepRequest } from "@/lib/ai/openai-tools";
-import { AiCapReached, withSpendCap } from "@/lib/ai/spend";
+import { AiCapReached, limitMessage, withSpendCap } from "@/lib/ai/spend";
 import { todayIn } from "@/lib/relationship/dates";
 import { assistantInstructions } from "./instructions";
 import { runTool, toolDefinitions, type Proposal, type ToolContext } from "./tools";
@@ -126,7 +126,16 @@ export async function* converse(input: ConverseInput): AsyncGenerator<ConverseEv
       result = await withSpendCap(
         input.db,
         input.userId,
-        { contactId: null, purpose: "assistant", model: input.model, estimateUsd: estimate, capUsd: input.monthlyCapUsd },
+        {
+          contactId: null,
+          purpose: "assistant",
+          model: input.model,
+          estimateUsd: estimate,
+          ceilingUsd: input.monthlyCapUsd,
+          // One question is one use of Free's allowance: its first step. The
+          // steps after it, and a Carry on, belong to the same question.
+          countsAsUse: stepNumber === 1 && !input.resume,
+        },
         async () => {
           const answer = await step({
             apiKey: input.apiKey,
@@ -141,10 +150,7 @@ export async function* converse(input: ConverseInput): AsyncGenerator<ConverseEv
       );
     } catch (failure) {
       if (failure instanceof AiCapReached) {
-        yield {
-          type: "stopped",
-          reason: `This month's Assistant budget is used up ($${failure.spentUsd.toFixed(2)} of $${failure.capUsd.toFixed(2)}). It starts again on the 1st.`,
-        };
+        yield { type: "stopped", reason: limitMessage(failure, now).replace("AI budget", "Assistant budget") };
         return;
       }
       if (failure instanceof OpenAiError || failure instanceof OpenAiNoAnswer) {

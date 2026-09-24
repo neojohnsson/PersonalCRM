@@ -6,24 +6,60 @@
  * the one place to read or change it, and a change here is a reviewed commit,
  * never a row somebody edited.
  *
- * Budgets and the free allowance join this in slice 13, commit 3.
+ *   assistant / research   what the plan switches on
+ *   aiUsd / assistantUsd   the monthly dollar limit on each budget line: a
+ *                          safety limit, never shown. What the AI really costs
+ *                          is far below it (docs/slice-13-plan.md §1)
+ *   allowance              Free only: how many of each a month, the limit a
+ *                          person sees ("3 of 5 summaries left"). null: none
+ *
+ * The environment's LLM_MONTHLY_CAP_USD and ASSISTANT_MONTHLY_CAP_USD sit above
+ * all of this as an emergency brake (lib/ai/config.ts): no plan gets more.
  */
 
 export const PLAN_NAMES = ["free", "pro", "premium"] as const;
 export type PlanName = (typeof PLAN_NAMES)[number];
+
+/** The five things the AI does, as ai_usage records them. */
+export type AiPurpose = "summary" | "draft" | "promises" | "assistant" | "research";
 
 export type Plan = {
   name: PlanName;
   label: string;
   assistant: boolean;
   research: boolean;
+  aiUsd: number;
+  assistantUsd: number;
+  allowance: Record<AiPurpose, number> | null;
 };
 
 export const PLANS: Record<PlanName, Plan> = {
-  free: { name: "free", label: "Free", assistant: false, research: false },
-  pro: { name: "pro", label: "Pro", assistant: true, research: false },
-  premium: { name: "premium", label: "Premium", assistant: true, research: true },
+  // The Assistant is on for Free, held to 20 questions a month. Web research
+  // is not: it costs the most per press and needs the most care.
+  free: {
+    name: "free",
+    label: "Free",
+    assistant: true,
+    research: false,
+    aiUsd: 0.25,
+    assistantUsd: 0.25,
+    allowance: { summary: 5, draft: 5, promises: 2, assistant: 20, research: 0 },
+  },
+  pro: { name: "pro", label: "Pro", assistant: true, research: false, aiUsd: 2, assistantUsd: 3, allowance: null },
+  premium: { name: "premium", label: "Premium", assistant: true, research: true, aiUsd: 5, assistantUsd: 10, allowance: null },
 };
+
+/** The two limits one AI request is held to. */
+export type SpendLimits = { capUsd: number; maxUses: number | null };
+
+/**
+ * A plan's limits for one purpose, under the environment's ceiling. The
+ * Assistant has its own budget line (migration 0025); the other four share one.
+ */
+export function limitsOf(plan: Plan, purpose: AiPurpose, ceilingUsd: number): SpendLimits {
+  const line = purpose === "assistant" ? plan.assistantUsd : plan.aiUsd;
+  return { capUsd: Math.min(line, ceilingUsd), maxUses: plan.allowance?.[purpose] ?? null };
+}
 
 /**
  * A plan name from the database. Anything unknown is Free: never more than was

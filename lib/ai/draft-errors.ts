@@ -3,7 +3,7 @@ import { DraftsNotAllowed } from "@/lib/ai/draft";
 import { DraftNotFound, DraftsNotAllowedHere, NewerDraftExists } from "@/lib/ai/draft-save";
 import { OpenAiError, OpenAiNoAnswer } from "@/lib/ai/openai";
 import { NoThreadToReplyTo } from "@/lib/ai/reply";
-import { AiCapReached } from "@/lib/ai/spend";
+import { AiCapReached, limitMessage } from "@/lib/ai/spend";
 import { GmailApiError } from "@/lib/google/gmail";
 import { GmailReconnectRequired } from "@/lib/google/tokens";
 
@@ -16,7 +16,7 @@ import { GmailReconnectRequired } from "@/lib/google/tokens";
  */
 export function explainDraftFailure(error: unknown): string | null {
   if (error instanceof AiCapReached) {
-    return `This month's AI budget is used up ($${error.spentUsd.toFixed(2)} of $${error.capUsd.toFixed(2)}). It resets on the 1st.`;
+    return limitMessage(error);
   }
   if (error instanceof DraftsNotAllowed || error instanceof DraftsNotAllowedHere) {
     return "Gmail isn't connected with permission to create drafts. Reconnect Gmail, then try again.";

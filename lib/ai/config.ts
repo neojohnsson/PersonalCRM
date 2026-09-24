@@ -7,8 +7,13 @@ import { DEFAULT_DRAFT_MODEL, DEFAULT_MODEL, isKnownModel } from "@/lib/ai/model
  * component fails the build.
  */
 
-/** Decision C: $2 a month unless LLM_MONTHLY_CAP_USD says otherwise. */
-export const DEFAULT_MONTHLY_CAP_USD = 2;
+/**
+ * The emergency brake on summaries, drafts, scans and research: no plan may
+ * spend more than this in a month (slice 13). The default is the most any plan
+ * includes (Premium, lib/plans/plans.ts); LLM_MONTHLY_CAP_USD can lower it for
+ * everyone at once. Was decision C's $2 for everybody until plans existed.
+ */
+export const DEFAULT_MONTHLY_CAP_USD = 5;
 
 export type AiConfig = {
   apiKey: string;
@@ -55,9 +60,11 @@ export function monthlyCapUsd(env: Env = process.env): number {
 }
 
 /**
- * The Assistant's own monthly budget (slice 11; migration 0025): about $10,
- * separate from the cap summaries and drafts share, so one long conversation
- * cannot use up tomorrow's summary. ASSISTANT_MONTHLY_CAP_USD overrides it.
+ * The emergency brake on the Assistant's own budget line (slice 11; migration
+ * 0025), separate from the one summaries and drafts share, so one long
+ * conversation cannot use up tomorrow's summary. Since slice 13 each plan has
+ * its own Assistant budget under it; the default is the most any plan
+ * includes, and ASSISTANT_MONTHLY_CAP_USD can lower it for everyone.
  */
 export const DEFAULT_ASSISTANT_CAP_USD = 10;
 
