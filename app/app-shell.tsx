@@ -6,6 +6,7 @@ import { hasAssistant } from "@/lib/assistant/entitlement";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ToastProvider } from "@/app/toasts";
+import { ThemeSwitcher } from "@/app/theme-switcher";
 
 /**
  * The frame around signed-in pages: design/Main.dc.html, ContactList.dc.html
@@ -118,7 +119,7 @@ export async function AppShell({
         <aside className="sticky top-0 z-40 hidden h-dvh w-14 shrink-0 flex-col items-center gap-[3px] self-start bg-ink-deep pt-3.5 pb-4 sm:flex">
           <div
             aria-hidden="true"
-            className="mb-3 flex size-[30px] items-center justify-center rounded-[9px] bg-white"
+            className="mb-3 flex size-[30px] items-center justify-center rounded-[9px] bg-rail-logo"
           >
             <span className="text-[14px] font-extrabold tracking-[-0.03em] text-ink-deep">
               {APP_NAME.charAt(0)}
@@ -173,7 +174,10 @@ export async function AppShell({
           <header className="relative flex h-[60px] shrink-0 items-center gap-3 px-4 sm:px-[26px]">
             <span className="text-[15px] font-semibold tracking-tight sm:hidden">{APP_NAME}</span>
             <PageSwitcher active={active} pages={pages} />
-            <div className="ml-auto flex items-center gap-2">{headerRight}</div>
+            <div className="ml-auto flex items-center gap-2">
+              <ThemeSwitcher />
+              {headerRight}
+            </div>
           </header>
 
           <div id="main-content" className="flex min-w-0 flex-1 flex-col focus:outline-none" tabIndex={-1}>
