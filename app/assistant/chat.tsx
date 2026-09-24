@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { undoAssistantAction } from "@/app/assistant/actions";
 import { Composer } from "@/app/assistant/composer";
 import { NeedsYouCard } from "@/app/assistant/needs-you";
@@ -54,23 +54,23 @@ export function AssistantChat() {
   const router = useRouter();
 
   const full = spentUsd >= CONVERSATION_CEILING_USD;
+  const { following, awayFromBottom, jumpToLatest, follow } = useFollowLatest(conversation);
 
+  // Every change to the conversation follows it down, if you are following.
+  // The ResizeObserver in useFollowLatest catches growth too, but only when
+  // the browser draws, and a tab in the background does not draw.
   useEffect(() => {
-    const element = conversation.current;
-    if (!element) return;
-
-    // Follow streamed replies while the reader is already at the bottom. If
-    // they scroll up, leave the history where they put it.
-    const distanceFromBottom = element.scrollHeight - element.scrollTop - element.clientHeight;
-    if (distanceFromBottom > 120) return;
-    element.scrollTo({ top: element.scrollHeight, behavior: busy ? "auto" : "smooth" });
-  }, [busy, entries.length, looking]);
+    follow();
+  }, [entries, busy, looking, follow]);
 
   async function ask(question: string) {
     const text = question.trim();
     if (!text || busy || full) return;
 
     const sent: Said[] = [...history, { role: "user", text }];
+    // Sending always brings you down to what you just said, and follows
+    // the answer from there, as ChatGPT does.
+    following.current = true;
     setEntries((list) => [...list, { kind: "you", text }]);
     setHistory(sent);
     setBusy(true);
@@ -205,7 +205,10 @@ export function AssistantChat() {
         <section
           ref={conversation}
           aria-label="Conversation"
-          className="flex max-h-[min(60dvh,620px)] flex-col gap-[13px] overflow-y-auto overscroll-contain rounded-[18px] bg-white px-5 py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]"
+          // No height of its own and no scrollbar (2026-09-24, as ChatGPT
+          // does it): the conversation is part of the page, the page scrolls,
+          // and the bar below stays pinned to the bottom of the window.
+          className="flex flex-col gap-[13px] rounded-[18px] bg-white px-5 py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]"
         >
           {entries.map((entry, index) => (
             <EntryView key={index} entry={entry} onUndone={markUndone} onSettled={settle} />
@@ -224,6 +227,20 @@ export function AssistantChat() {
           line under it: that nothing is kept, what it has cost, and what it
           may do without asking. */}
       <div className="sticky bottom-[74px] z-10 -mx-1 flex flex-col gap-2 bg-paper/95 px-1 pt-1 pb-1 backdrop-blur-sm sm:bottom-0">
+        {awayFromBottom && (
+          // You scrolled up to read: nothing moves under you. This brings you
+          // back to the latest and follows again.
+          <button
+            type="button"
+            onClick={jumpToLatest}
+            aria-label="Scroll to the latest"
+            className="absolute -top-12 left-1/2 flex size-9 -translate-x-1/2 items-center justify-center rounded-full border border-line bg-white text-ink-body shadow-[0_2px_8px_rgba(20,20,25,.12)] transition hover:bg-paper"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="size-[18px]">
+              <path d="M12 5v14M6 13l6 6 6-6" />
+            </svg>
+          </button>
+        )}
         <Composer
           onAsk={(text) => void ask(text)}
           onStop={stop}
@@ -364,4 +381,76 @@ function Spark() {
       </svg>
     </span>
   );
+}
+
+/**
+ * The page follows the conversation as ChatGPT does (2026-09-24):
+ *
+ *   - at the bottom, it stays at the bottom while the answer comes in -- a
+ *     ResizeObserver sees the conversation grow, whatever grew it: a line of
+ *     text, a card, "Thinking…"
+ *   - scroll up to read, and it stops following; nothing moves under you
+ *   - the round arrow above the bar takes you back and follows again
+ *   - asking always follows (set by ask())
+ *
+ * The page itself scrolls, not a box inside it, so there is one scrollbar,
+ * the window's.
+ */
+function useFollowLatest(conversation: React.RefObject<HTMLElement | null>) {
+  const following = useRef(true);
+  // True while the arrow's smooth scroll is on its way down: the positions it
+  // passes through are not you scrolling up.
+  const jumping = useRef(false);
+  const [awayFromBottom, setAwayFromBottom] = useState(false);
+
+  const toBottom = useCallback(
+    (behavior: ScrollBehavior) => window.scrollTo({ top: document.documentElement.scrollHeight, behavior }),
+    [],
+  );
+  const follow = useCallback(() => {
+    if (following.current) toBottom("auto");
+  }, [toBottom]);
+
+  useEffect(() => {
+    // Near enough counts as at the bottom: a line's height, not a pixel.
+    const onScroll = () => {
+      const below = document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+      if (jumping.current) {
+        if (below >= 80) return;
+        jumping.current = false;
+      }
+      following.current = below < 80;
+      setAwayFromBottom(!following.current && conversation.current !== null);
+    };
+    // Your own wheel or finger always wins over the arrow's glide.
+    const yours = () => {
+      jumping.current = false;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("wheel", yours, { passive: true });
+    window.addEventListener("touchstart", yours, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("wheel", yours);
+      window.removeEventListener("touchstart", yours);
+    };
+  }, [conversation]);
+
+  useEffect(() => {
+    const element = conversation.current;
+    if (!element) return;
+    const grew = new ResizeObserver(follow);
+    grew.observe(element);
+    return () => grew.disconnect();
+    // Re-attached when the conversation first appears.
+  });
+
+  function jumpToLatest() {
+    following.current = true;
+    jumping.current = true;
+    setAwayFromBottom(false);
+    toBottom("smooth");
+  }
+
+  return { following, awayFromBottom, jumpToLatest, follow };
 }
