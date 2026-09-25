@@ -18,7 +18,9 @@ const CSS = readFileSync("app/globals.css", "utf8");
 
 function tsxFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
-    const path = join(dir, name);
+    // Forward slashes on every system, so paths compare with EXCUSED below on
+    // Windows too (join gives app\app-shell.tsx there).
+    const path = join(dir, name).replaceAll("\\", "/");
     if (statSync(path).isDirectory()) return tsxFiles(path);
     return name.endsWith(".tsx") ? [path] : [];
   });
@@ -53,7 +55,7 @@ const EXCUSED = [
     instead: "focus-within:border-ink-soft",
   },
   {
-    file: "app/app-shell.tsx",
+    file: "app/shell-frame.tsx",
     mark: "flex min-w-0 flex-1 flex-col focus:outline-none",
     // #main-content: where "Skip to main content" puts focus. tabIndex -1,
     // so Tab never reaches it; a ring round the whole page would be noise.
@@ -105,7 +107,7 @@ describe("keyboard focus", () => {
   });
 
   it("stays inside the phone's bottom bar, which sits on the screen's edge", () => {
-    const shell = readFileSync("app/app-shell.tsx", "utf8");
+    const shell = readFileSync("app/shell-frame.tsx", "utf8");
     const item = shell.slice(shell.indexOf("function BottomItem("), shell.indexOf("function NavItem("));
     expect(item).toContain("focus-visible:-outline-offset-2");
   });

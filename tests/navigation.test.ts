@@ -19,7 +19,7 @@ import { PAGES, visiblePages } from "@/lib/nav";
  * destructive button in a page header.
  */
 
-const SHELL = readFileSync("app/app-shell.tsx", "utf8");
+const SHELL = readFileSync("app/shell-frame.tsx", "utf8");
 
 function tsxFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -108,7 +108,10 @@ describe("the sidebar and the bottom bar", () => {
     // in the shell and handed to both. (The header's page switcher mapped it
     // too, until the UI quality pass removed it.)
     expect(SHELL.match(/pages\.map\(/g)).toHaveLength(2);
-    expect(SHELL.match(/visiblePages\(/g)).toHaveLength(1);
+    // Worked out by AppShell for this person; the loading skeleton uses the
+    // same function for its frame (every plan has the Assistant).
+    expect(readFileSync("app/app-shell.tsx", "utf8").match(/visiblePages\(/g)).toHaveLength(1);
+    expect(readFileSync("app/skeletons.tsx", "utf8")).toContain("visiblePages(true)");
     for (const page of PAGES) {
       if (page.href === "/") continue;
       expect(SHELL.includes(`href="${page.href}"`), `${page.href} is hard-coded`).toBe(false);
@@ -201,7 +204,7 @@ describe("what you can do to a row", () => {
       // The shell's one hover-revealed thing is HoverLabel: a decoration on a
       // rail icon, and the rail itself does not exist below sm. It is right
       // for that to be hidden on a phone; a row action never is.
-      if (file.endsWith(join("app", "app-shell.tsx"))) continue;
+      if (file.endsWith(join("app", "shell-frame.tsx"))) continue;
       if (!value.includes("group-hover:opacity-100")) continue;
       expect(value.includes("hidden"), `${file}: a hover-only action is hidden`).toBe(false);
       expect(value, `${file}: a hover-only action needs no-hover:`).toContain(

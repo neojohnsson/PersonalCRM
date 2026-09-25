@@ -473,7 +473,7 @@ function ContactTable({
 
             return (
               // The name's link stretches over the whole row (after:inset-0).
-              <tr key={contact.id} className="relative h-[38px] border-t border-line-soft transition-colors hover:bg-paper-tint">
+              <tr key={contact.id} className="row-hover relative h-[38px] border-t border-line-soft">
                 <td className="py-0 pr-2 pl-[22px]">
                   <div className="flex min-w-0 items-center gap-[11px]">
                     <span

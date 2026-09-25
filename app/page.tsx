@@ -327,7 +327,7 @@ function PersonRow({ person, line, daysClass, draftHref }: Row) {
   const days = relationship.turn.kind === "none" ? null : relationship.turn.days;
 
   return (
-    <li className="group relative flex flex-wrap items-center gap-x-[13px] gap-y-2.5 px-[22px] py-[11px] transition-colors hover:bg-paper-tint">
+    <li className="row-hover group relative flex flex-wrap items-center gap-x-[13px] gap-y-2.5 px-[22px] py-[11px]">
       <span
         aria-hidden="true"
         style={avatarColors(contact.primary_email ?? contact.id)}

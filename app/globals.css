@@ -34,6 +34,10 @@
 
   --theme-paper: #f6f6f4;
   --theme-paper-tint: #faf9f7;
+  /* A row under the pointer or holding keyboard focus (UI quality pass,
+     milestone 3). paper-tint was 1.03:1 on white, which nobody could see;
+     this is about 1.1: visible, and still quiet. */
+  --theme-row-hover: #f3f3f0;
   --theme-chip: #f1f1ef;
   --theme-chip-track: #eaeae7;
   --theme-white: #ffffff;
@@ -170,6 +174,7 @@ html {
   /* Row dividers and the hover tint of the table. */
   --color-line-soft: var(--theme-line-soft);
   --color-paper-tint: var(--theme-paper-tint);
+  --color-row-hover: var(--theme-row-hover);
 
   /* Profile: an unselected radio's ring, and a switch that's off. */
   --color-radio-ring: var(--theme-radio-ring);
@@ -230,6 +235,7 @@ html {
   --theme-paper: #161618;
   --theme-white: #1e1f22;
   --theme-paper-tint: #232427;
+  --theme-row-hover: #26272b;
   --theme-chip: #28292d;
   --theme-chip-track: #28292d;
   --theme-line: #34363c;
@@ -413,6 +419,18 @@ body {
  * its ::after covers the row and draws the shared one, just inside the row so
  * a neighbour does not cover it. The row has to be `relative`.
  */
+/*
+ * A list row you can open (it holds a RowLink): the same tint under the
+ * pointer and when its link has keyboard focus, so the two states agree.
+ */
+@utility row-hover {
+  transition: background-color 150ms;
+  &:hover,
+  &:focus-within {
+    background-color: var(--color-row-hover);
+  }
+}
+
 @utility stretched-link {
   outline: none;
   &::after {

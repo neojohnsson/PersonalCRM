@@ -65,7 +65,7 @@ describe("the themes", () => {
     const night = block(':root[data-theme="night"]');
     // The rail is its own plane, with its own line.
     expect(night).toMatch(/--theme-rail-edge: #[0-9a-f]{6};/);
-    expect(readFileSync("app/app-shell.tsx", "utf8")).toContain("border-r border-rail-edge bg-rail");
+    expect(readFileSync("app/shell-frame.tsx", "utf8")).toContain("border-r border-rail-edge bg-rail");
     // The scrollbar is Night's, not Paper's light thumb on a dark page.
     expect(night).toContain("--scrollbar-thumb:");
   });
@@ -131,7 +131,7 @@ describe("the themes", () => {
 
   it("keep the sidebar's logo white in every theme", () => {
     // Night repaints .bg-white; the logo used it and disappeared.
-    expect(readFileSync("app/app-shell.tsx", "utf8")).toContain("bg-rail-logo");
+    expect(readFileSync("app/shell-frame.tsx", "utf8")).toContain("bg-rail-logo");
     expect(css).toMatch(/--color-rail-logo: #ffffff;/);
   });
 });

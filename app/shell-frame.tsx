@@ -1,0 +1,395 @@
+import Link from "next/link";
+import { APP_NAME } from "@/lib/app-config";
+import { initials } from "@/lib/format";
+import { visiblePages, type ActivePage, type PageKey } from "@/lib/nav";
+import { ToastProvider } from "@/app/toasts";
+import { ThemeSwitcher } from "@/app/theme-switcher";
+import { NavPending } from "@/app/nav-pending";
+
+/**
+ * The frame around signed-in pages: design/Main.dc.html, ContactList.dc.html
+ * and ReviewQueue.dc.html share it — a dark sidebar on the left, a header on top.
+ *
+ * Differences from the design, on purpose:
+ *   - The sidebar holds only pages that exist: Home, Calendar, Contacts and
+ *     Seen once. Calendar joined in slice 8b with design/Calendar.dc.html's
+ *     own icon, taken from that screen's sidebar. The design's Add and
+ *     Settings icons arrive with their pages, because a nav item that goes
+ *     nowhere would be a lie.
+ *   - Your week and Promises left the rail in slice 9b (docs/slice-9b-plan.md,
+ *     Part 7). Both pages still work: Home links to Your week, and Your week
+ *     links to Promises. They are deleted when the Assistant's cards replace
+ *     what they do.
+ *   - The Assistant (slice 11) sits second, and only for an account that
+ *     includes it (`entitlements`, migration 0025). Everybody else gets the
+ *     four; the rail and the bottom bar both read the same filtered list,
+ *     so neither can show it when the other doesn't.
+ *   - The rail is 72px, not the design's 56, and puts a word under each
+ *     icon (UI quality pass, milestone 3): the header's page switcher, which
+ *     carried the words before, is gone, so the rail has to carry them.
+ *   - The header's search and notification icons are left out — nothing
+ *     behind them yet. The right side holds what the design has no place
+ *     for: the connected Gmail address and Sign out.
+ *   - Below the sm breakpoint the sidebar is hidden and the app name shows
+ *     in the header instead, so lists keep the width on a phone. The
+ *     navigation is a bottom bar there (BottomBar, below). No design covers
+ *     a phone at all — the canvas is a fixed 1440x900 frame.
+ *
+ * The sidebar is sticky: it stays the height of the window and doesn't move
+ * while the page scrolls — the design is a fixed 900px frame, so it never
+ * had to say what happens below the fold.
+ */
+
+/**
+ * One icon per entry in lib/nav.ts, each taken from the design's own sidebar.
+ * The list of pages lives there, as data, so the rail, the bottom bar and a
+ * test can all read the same truth; only the drawing is here.
+ */
+/** The pages one person sees: the four, plus the Assistant when it is theirs. */
+export type VisiblePages = ReturnType<typeof visiblePages>;
+
+const ICONS: Record<PageKey, React.ReactNode> = {
+  home: (
+    <>
+      <path d="M3 10.5 12 3l9 7.5" />
+      <path d="M5.5 9.4V20h13V9.4" />
+    </>
+  ),
+  // The approved Assistant design's own mark: a four-pointed spark and a
+  // small one beside it (https://claude.ai/artifact/5ZpxKE8QYemKm7ceo9Twgg).
+  assistant: (
+    <>
+      <path d="M12 3.2l1.7 4.6 4.6 1.7-4.6 1.7L12 15.8l-1.7-4.6L5.7 9.5l4.6-1.7z" />
+      <path d="M18.2 15.2l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" />
+    </>
+  ),
+  // design/Calendar.dc.html's own sidebar icon, from the screen it belongs to:
+  // a month box with two pegs on top.
+  calendar: (
+    <>
+      <rect x="3.5" y="5" width="17" height="15.5" rx="2.6" />
+      <path d="M3.5 10h17M8 3v4M16 3v4" />
+    </>
+  ),
+  contacts: (
+    <>
+      <circle cx="9.5" cy="8" r="3.3" />
+      <path d="M3.5 20c0-3.4 2.7-5.6 6-5.6s6 2.2 6 5.6" />
+      <path d="M16.5 5.3a3.2 3.2 0 0 1 0 5.5" />
+      <path d="M18.4 14.9c1.9.7 2.9 2.5 2.9 5.1" />
+    </>
+  ),
+  "seen-once": (
+    <>
+      <path d="M4 13h4l1.4 2.4h5.2L16 13h4" />
+      <path d="M5.6 5h12.8l2.6 8v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5z" />
+    </>
+  ),
+};
+
+/**
+ * The frame itself -- rail, header, bottom bar -- with nothing to wait for
+ * (UI quality pass, milestone 3). AppShell above checks who you are and which
+ * pages you have, then draws this; a page's loading skeleton (app/skeletons.tsx)
+ * draws the same frame straight away, so the rail and header stay put while
+ * the page loads instead of blinking out with it.
+ */
+export function ShellFrame({
+  pages,
+  active,
+  seenOnceCount = 0,
+  userEmail,
+  headerRight,
+  children,
+}: {
+  pages: VisiblePages;
+  active: ActivePage;
+  seenOnceCount?: number;
+  userEmail: string | undefined;
+  headerRight?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <ToastProvider>
+      <div className="flex flex-1 bg-paper text-ink">
+        <a
+          href="#main-content"
+          className="sr-only fixed left-3 top-3 z-50 rounded-full bg-ink-deep px-4 py-2 text-[13px] font-semibold text-white focus:not-sr-only"
+        >
+          Skip to main content
+        </a>
+        <aside className="sticky top-0 z-40 hidden h-dvh w-[72px] shrink-0 flex-col items-center gap-[3px] self-start border-r border-rail-edge bg-rail pt-3.5 pb-4 sm:flex">
+          <div
+            aria-hidden="true"
+            className="mb-3 flex size-[30px] items-center justify-center rounded-[9px] bg-rail-logo"
+          >
+            <span className="text-[14px] font-extrabold tracking-[-0.03em] text-ink-deep">
+              {APP_NAME.charAt(0)}
+            </span>
+          </div>
+
+          <nav aria-label="Main" className="flex flex-col items-center gap-1">
+            {pages.map((page) => (
+              <NavItem
+                key={page.key}
+                href={page.href}
+                label={page.label}
+                title={page.title}
+                active={active === page.key}
+                dot={page.key === "seen-once" && seenOnceCount > 0}
+              >
+                {ICONS[page.key]}
+              </NavItem>
+            ))}
+          </nav>
+
+          <div className="flex-grow" />
+
+          {userEmail && (
+            // Opens Profile, as in design/Profile.dc.html, which also shows its
+            // active state: a lighter tile behind the avatar with a white ring.
+            // The rail's white focus ring, as on NavItem.
+            <Link
+              href="/profile"
+              aria-current={active === "profile" ? "page" : undefined}
+              className={`group relative mt-1.5 flex size-9 items-center justify-center rounded-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-rail ${
+                active === "profile" ? "bg-rail-active" : "hover:bg-rail-active"
+              }`}
+            >
+              <span
+                // A rounded square like the logo tile, not the design's circle:
+                // changed at the user's request, 2026-09-16.
+                className={`flex items-center justify-center rounded-[9px] bg-rail-avatar ${
+                  active === "profile" ? "size-7 ring-[1.5px] ring-white" : "size-[30px]"
+                }`}
+              >
+                <span className="text-[10.5px] font-bold text-white">{initials(null, userEmail)}</span>
+                <span className="sr-only">Profile</span>
+              </span>
+              <HoverLabel>{`Profile · ${userEmail}`}</HoverLabel>
+              {/* Under the tile, not across the avatar: there is no word to sit
+                  under. White, as the bar is drawn in the text's colour and
+                  this link has none of its own on the dark rail. */}
+              <NavPending className="-bottom-1.5 text-white" />
+            </Link>
+          )}
+        </aside>
+
+        {/* Room for the bottom bar, which is fixed and would otherwise cover the
+            last row of every page. */}
+        <div className="flex min-w-0 flex-1 flex-col pb-[74px] sm:pb-0">
+          <header className="relative flex h-[60px] shrink-0 items-center gap-3 px-4 sm:px-[26px]">
+            <span className="text-[15px] font-semibold tracking-tight sm:hidden">{APP_NAME}</span>
+            <div className="ml-auto flex items-center gap-2">
+              <ThemeSwitcher />
+              {headerRight}
+            </div>
+          </header>
+
+          <div id="main-content" className="flex min-w-0 flex-1 flex-col focus:outline-none" tabIndex={-1}>
+            {children}
+          </div>
+        </div>
+
+        <BottomBar active={active} pages={pages} seenOnceCount={seenOnceCount} userEmail={userEmail} />
+      </div>
+    </ToastProvider>
+  );
+}
+
+/*
+ * The header's centred page switcher -- the pill of words from five of the
+ * designs, added 2026-09-22 at the user's request -- was removed 2026-09-25
+ * (UI quality pass, milestone 3, the user's decision). It and the rail were
+ * two navigations with the same five links on every desktop screen, and a
+ * screen reader heard them twice. Its reason for being -- words, because the
+ * first outside test could not tell the rail's icons apart -- moved into the
+ * rail, which now carries a word under each icon (NavItem).
+ */
+
+/**
+ * The navigation on a phone (slice 9b, Part 1). Below the sm breakpoint the
+ * rail is hidden, and until now nothing replaced it: no hamburger, no bar,
+ * zero ways to reach another page. The first outside test of the app found it
+ * in a minute.
+ *
+ * Fixed to the bottom rather than in the page flow, so it is there without
+ * scrolling. Words under the icons, because the same test could not tell the
+ * icons apart even on desktop, where they at least had tooltips. Each entry is
+ * the full height of the bar, so the target is well over the 44px a thumb
+ * needs.
+ *
+ * Profile is on it, which the rail keeps separate at the bottom: Sign out,
+ * Disconnect Gmail and the privacy page all live behind it, and on a phone
+ * there would otherwise be no way in at all.
+ */
+function BottomBar({
+  active,
+  pages,
+  seenOnceCount,
+  userEmail,
+}: {
+  active: ActivePage;
+  pages: VisiblePages;
+  seenOnceCount: number;
+  userEmail: string | undefined;
+}) {
+  return (
+    <nav
+      aria-label="Pages"
+      // The safe-area padding keeps the labels clear of the home indicator on
+      // an iPhone. Written without the bracket syntax on purpose: Tailwind
+      // scans comments too, and a class candidate in one broke the build.
+      className="fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-1px_2px_rgba(20,20,25,.04)] sm:hidden"
+    >
+      {pages.map((page) => (
+        <BottomItem
+          key={page.key}
+          href={page.href}
+          label={page.label}
+          active={active === page.key}
+          dot={page.key === "seen-once" && seenOnceCount > 0}
+        >
+          {ICONS[page.key]}
+        </BottomItem>
+      ))}
+      {userEmail && (
+        <BottomItem href="/profile" label="You" active={active === "profile"}>
+          <circle cx="12" cy="8.5" r="3.6" />
+          <path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" />
+        </BottomItem>
+      )}
+    </nav>
+  );
+}
+
+function BottomItem({
+  href,
+  label,
+  active,
+  dot = false,
+  children,
+}: {
+  href: string;
+  label: string;
+  active: boolean;
+  dot?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      // The shared focus ring, drawn inside: the bar sits on the screen's
+      // bottom edge, where a ring 2px outside would be cut off.
+      className={`relative flex min-h-[58px] flex-1 flex-col items-center justify-center gap-1 focus-visible:-outline-offset-2 ${
+        active ? "text-ink" : "text-ink-soft"
+      }`}
+    >
+      {active && (
+        <span
+          aria-hidden="true"
+          className="absolute top-0 h-[2.5px] w-6 rounded-full bg-accent"
+        />
+      )}
+      <span className="relative">
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.7}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="size-[19px]"
+        >
+          {children}
+        </svg>
+        {dot && (
+          <span
+            aria-hidden="true"
+            className="absolute -top-0.5 -right-1 size-1.5 rounded-full bg-accent-soft"
+          />
+        )}
+      </span>
+      <span className={`text-[10px] ${active ? "font-bold" : "font-semibold"}`}>{label}</span>
+      <NavPending />
+    </Link>
+  );
+}
+
+function NavItem({
+  href,
+  label,
+  title,
+  active,
+  dot = false,
+  children,
+}: {
+  href: string;
+  label: string;
+  title: string;
+  active: boolean;
+  dot?: boolean;
+  children: React.ReactNode;
+}) {
+  // An icon over its word (UI quality pass, milestone 3): the pill switcher's
+  // words moved here when it went. The word is the page's short label; the
+  // longer title, where there is one ("Who needs you today"), is still the
+  // hover label and the screen reader's.
+  //
+  // The one focus ring that is not the accent: on the dark rail the accent is
+  // about 3:1, on the limit; white is about 18:1. The gap is the rail's colour.
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={`group relative flex w-[62px] flex-col items-center gap-[5px] rounded-[11px] px-1 pt-2 pb-[7px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-rail ${
+        active ? "bg-rail-active text-white" : "text-rail-icon hover:text-white"
+      }`}
+    >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="size-[18px]"
+      >
+        {children}
+      </svg>
+      {dot && (
+        <span
+          aria-hidden="true"
+          className="absolute top-1.5 right-[17px] size-1.5 rounded-full bg-accent-soft"
+        />
+      )}
+      <span className={`text-[10.5px] leading-none ${active ? "font-bold" : "font-semibold"}`}>{label}</span>
+      {label !== title && <span className="sr-only"> — {title}</span>}
+      {label !== title && <HoverLabel>{title}</HoverLabel>}
+      <NavPending />
+    </Link>
+  );
+}
+
+/**
+ * The word for a rail icon, shown beside it on hover or keyboard focus (slice
+ * 9b, Part 1). It replaces the `title` attribute, which the browser shows
+ * after a second-long wait and which the first outside test said was not
+ * enough to tell the icons apart.
+ *
+ * It floats over the page instead of widening the rail: the design's rail is
+ * 56px, and a rail that grew on hover would shove every list sideways.
+ */
+function HoverLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute left-full z-40 ml-2 hidden whitespace-nowrap rounded-[9px] bg-ink-deep px-2.5 py-1.5 text-[12px] font-semibold text-white opacity-0 shadow-[0_4px_12px_rgba(20,20,25,.18)] transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 sm:block"
+    >
+      {children}
+    </span>
+  );
+}
