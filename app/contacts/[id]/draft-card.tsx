@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
+import type { Allowance } from "@/lib/plans/allowance";
 import { useToast } from "@/app/toasts";
 import { MAX_BODY_CHARS, TONES, neverWriteHits, type SavedDraft, type Tone } from "@/lib/ai/draft-types";
 import { timeAgo } from "@/lib/format";
@@ -53,6 +54,7 @@ export function DraftCard({
   hasMail,
   budgetLeft,
   aiReady,
+  drafts = null,
 }: {
   contactId: string;
   /** The draft waiting for you, if any. */
@@ -66,6 +68,8 @@ export function DraftCard({
   hasMail: boolean;
   budgetLeft: boolean;
   aiReady: boolean;
+  /** Free's count of drafts this month (slice 13); null on a paid plan. */
+  drafts?: Allowance | null;
 }) {
   const [generateState, generate, generating] = useActionState<DraftState>(
     generateDraftAction.bind(null, contactId, null),
@@ -96,7 +100,9 @@ export function DraftCard({
       : !hasMail
         ? "Needs mail with this contact."
         : !budgetLeft
-          ? "This month's AI budget is used up."
+          ? drafts?.left === 0
+            ? `You've used this month's ${drafts.allowed} free drafts.`
+            : "This month's AI budget is used up."
           : null;
 
   const hits = neverWriteHits(body, neverWrite);

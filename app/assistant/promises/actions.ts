@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { notFound } from "next/navigation";
-import { AiCapReached } from "@/lib/ai/spend";
+import { AiCapReached, limitMessage } from "@/lib/ai/spend";
 import { scanForPromises } from "@/lib/ai/promise-scan";
 import { hasAssistant } from "@/lib/assistant/entitlement";
 import { requireUser } from "@/lib/auth";
@@ -192,7 +192,7 @@ export async function runScan(): Promise<ScanState> {
     };
   } catch (failure) {
     if (failure instanceof AiCapReached) {
-      return { message: "The monthly AI limit is reached, so nothing was read.", tone: "problem" };
+      return { message: `${limitMessage(failure)} Nothing was read.`, tone: "problem" };
     }
     throw failure;
   }

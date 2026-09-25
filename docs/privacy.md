@@ -61,8 +61,10 @@ The instructions tell the model to leave out health, family matters, religion, p
 union membership, sexuality, ethnicity and money troubles, and to write as if the
 person will read it. Code can't check that — you can, before approving.
 
-Spending is capped per user per month (`LLM_MONTHLY_CAP_USD`, $2 to start), checked in
-the database before any request is sent.
+Spending is capped per user per month, checked in the database before any request is sent.
+Since slice 13 the limit comes from the user's plan: Free has a small monthly count of each
+AI feature, Pro and Premium a dollar budget, and `LLM_MONTHLY_CAP_USD` is an emergency brake
+above every plan (`lib/plans/plans.ts`, migration 0028).
 
 ### What drafting sends, and what it keeps
 
@@ -125,6 +127,12 @@ Email content is sent to an LLM provider for summarising and drafting. That is a
 | **OpenAI** (API, `gpt-5.6-luna` by default) | The text of up to 20 emails with one contact, their name and addresses, per summary you ask for | Slice 4 |
 | **OpenAI** (API, `gpt-5-mini` for drafts) | The last messages of one thread, your Profile, your notes on that contact and its approved summary, per draft you ask for | Slice 5a |
 
+_Since slice 13 the full list is public at `/sub-processors`, built from one file,
+`lib/legal/sub-processors.ts`: Supabase (the database, Ireland), Vercel (runs the app; its
+US default region is to move to Dublin before launch), Google, OpenAI, and Stripe with Link
+as the seller of the paid plans. `tests/legal.test.ts` fails if the code calls a service
+that is not on it. The going-live steps for each are in `docs/release.md`._
+
 What OpenAI's API documentation says, checked 2026-09-17
 (https://developers.openai.com/api/docs/guides/your-data):
 
@@ -155,6 +163,12 @@ Built in slice 7, at `/privacy` — reached from Profile.
 | Disconnect Gmail | header | Revokes the token at Google and removes the connection, keeping the data. |
 
 Both of the big deletions need the phrase typed out, because there is no undo.
+
+**Account deletion ends everything outside the app first, and deletes nothing if any of it
+is not confirmed** (since slice 13, commit 6b; `lib/privacy/delete-account.ts`): the Gmail
+permission at Google, then the Calendar permission (which it did not revoke before), then a
+paid plan at Stripe, ended at once with no refund for the rest of the month. "Already gone"
+counts as done, so pressing Delete again after a failure finishes the job.
 
 **Account deletion revokes at Google first, and deletes nothing if Google does not
 confirm.** Deleting the stored row would only make this app forget the token while Google

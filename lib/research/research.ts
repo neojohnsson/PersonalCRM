@@ -237,7 +237,7 @@ export async function researchContact(
       estimateUsd:
         maxCostOf(model, estimateTokens(RESEARCH_INSTRUCTIONS + input) + SEARCH_CONTENT_TOKENS, MAX_OUTPUT_TOKENS) +
         searchesMax,
-      capUsd: config.monthlyCapUsd,
+      ceilingUsd: config.monthlyCapUsd,
       extraUsdIfFailed: searchesMax,
     },
     async () => {

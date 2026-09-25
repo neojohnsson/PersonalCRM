@@ -49,12 +49,12 @@ describe("withSpendCap", () => {
     await admin.from("ai_usage").delete().eq("user_id", alice.id);
   });
 
-  const request = (estimateUsd: number, capUsd: number) => ({
+  const request = (estimateUsd: number, ceilingUsd: number) => ({
     contactId: null,
     purpose: "summary" as const,
     model: MODEL,
     estimateUsd,
-    capUsd,
+    ceilingUsd,
   });
 
   async function rows() {

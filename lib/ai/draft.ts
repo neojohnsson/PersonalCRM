@@ -214,7 +214,7 @@ export async function generateDraft(
   const raw = await withSpendCap(
     db,
     userId,
-    { contactId, purpose: "draft", model: config.draftModel, estimateUsd, capUsd: config.monthlyCapUsd },
+    { contactId, purpose: "draft", model: config.draftModel, estimateUsd, ceilingUsd: config.monthlyCapUsd },
     async () => {
       const response = await createStructuredResponse<RawDraft>({
         apiKey: config.apiKey,

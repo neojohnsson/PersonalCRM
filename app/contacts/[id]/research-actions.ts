@@ -4,7 +4,7 @@ import { refresh } from "next/cache";
 import { notFound } from "next/navigation";
 import { AiNotConfigured } from "@/lib/ai/config";
 import { OpenAiError, OpenAiNoAnswer } from "@/lib/ai/openai";
-import { AiCapReached } from "@/lib/ai/spend";
+import { AiCapReached, limitMessage } from "@/lib/ai/spend";
 import { requireUser } from "@/lib/auth";
 import { isUuid } from "@/lib/contacts/contact-form";
 import { ResearchNotFound, discardPending, keepTicked, removeKeptFact } from "@/lib/research/decide";
@@ -47,9 +47,7 @@ export async function researchAction(contactId: string): Promise<ResearchState> 
   } catch (failure) {
     if (failure instanceof ResearchContactNotFound) notFound();
     if (failure instanceof AiCapReached) {
-      return {
-        error: `This month's AI budget is used up ($${failure.spentUsd.toFixed(2)} of $${failure.capUsd.toFixed(2)}). It resets on the 1st.`,
-      };
+      return { error: limitMessage(failure) };
     }
     if (failure instanceof AiNotConfigured) return { error: "The AI isn't set up on this server: an OpenAI key is missing." };
     if (failure instanceof OpenAiNoAnswer) return { error: "The search gave no usable answer, so nothing was saved. Try again." };

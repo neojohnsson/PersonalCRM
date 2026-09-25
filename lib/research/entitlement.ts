@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { supabaseError } from "@/lib/supabase/errors";
+import { currentPlan } from "@/lib/plans/current";
 
 /**
  * Whether web research is switched on for this user (migration 0026).
@@ -11,13 +11,10 @@ import { supabaseError } from "@/lib/supabase/errors";
  * was set by the database owner. No row means off.
  *
  * Cached for one request: the contact page and its actions both ask.
+ *
+ * Since slice 13 (migration 0027) it is part of your plan: lib/plans/plans.ts
+ * says which plans include it, and `entitlements.plan` says which one is yours.
  */
-export const hasResearch = cache(async (db: SupabaseClient, userId: string): Promise<boolean> => {
-  const { data, error } = await db
-    .from("entitlements")
-    .select("research")
-    .eq("user_id", userId)
-    .maybeSingle<{ research: boolean }>();
-  if (error) throw supabaseError(error, "Couldn't check what this account includes");
-  return data?.research === true;
-});
+export const hasResearch = cache(async (db: SupabaseClient, userId: string): Promise<boolean> =>
+  (await currentPlan(db, userId)).research,
+);

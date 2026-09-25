@@ -252,10 +252,13 @@ export async function scanForPromises(
   // token that is good for all of them.
   const token = await (options.accessToken ?? getAccessToken)(db, userId);
 
+  // One press is one use of Free's allowance (slice 13): the first contact
+  // actually sent counts, the rest of the press does not.
+  const press = { counted: false };
   for (const [index, candidate] of plan.contacts.entries()) {
     let found: { promises: FoundPromise[]; dropped: DropReason[] };
     try {
-      found = await readOneContact(db, userId, candidate, today, config, token);
+      found = await readOneContact(db, userId, candidate, today, config, token, press);
     } catch (failure) {
       if (failure instanceof AiCapReached) {
         result.stoppedAtCap = true;
@@ -294,6 +297,7 @@ async function readOneContact(
   today: string,
   config: AiConfig,
   token: string,
+  press: { counted: boolean },
 ): Promise<{ promises: FoundPromise[]; dropped: DropReason[] }> {
   // Everything that can fail for free happens before the reservation, so a
   // request is only paid for when it is really sent (as generateSummary does).
@@ -321,9 +325,12 @@ async function readOneContact(
       purpose: "promises",
       model: config.model,
       estimateUsd,
-      capUsd: config.monthlyCapUsd,
+      ceilingUsd: config.monthlyCapUsd,
+      countsAsUse: !press.counted,
     },
     async () => {
+      // Reserved: this press has used its one use.
+      press.counted = true;
       const response = await createStructuredResponse<RawPromises>({
         apiKey: config.apiKey,
         model: config.model,

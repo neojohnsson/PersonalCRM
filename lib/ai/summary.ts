@@ -540,7 +540,7 @@ export async function generateSummary(
   const raw = await withSpendCap(
     db,
     userId,
-    { contactId, purpose: "summary", model: config.model, estimateUsd, capUsd: config.monthlyCapUsd },
+    { contactId, purpose: "summary", model: config.model, estimateUsd, ceilingUsd: config.monthlyCapUsd },
     async () => {
       const response = await createStructuredResponse<RawSummary>({
         apiKey: config.apiKey,

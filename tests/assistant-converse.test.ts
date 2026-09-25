@@ -43,6 +43,9 @@ beforeAll(async () => {
   user = data.user;
   db = createClient(SUPABASE_URL, PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
   await db.auth.signInWithPassword({ email: user.email!, password: PASSWORD });
+  // Premium: these tests are about the turn, not Free's allowance
+  // (tests/allowance.test.ts), and some need more than Free's budget.
+  await admin.from("entitlements").insert({ user_id: user.id, plan: "premium" });
 
   const { data: contact } = await db
     .from("contacts")

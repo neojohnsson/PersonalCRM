@@ -37,10 +37,11 @@ export function DeletePanel({ email, contactCount }: { email: string; contactCou
         title="Delete everything, and this account"
         what={
           <>
-            Everything above, your profile, your AI spending records and the login itself. The
-            Gmail connection is removed at Google first &mdash; if Google doesn&rsquo;t confirm
-            it, nothing is deleted at all. Signing in again would start an empty account. This
-            cannot be undone.
+            Everything above, your profile, your AI spending records and the login itself. First the
+            Gmail and Calendar connections are removed at Google, and a paid plan ends at once, with
+            no refund for the rest of the month &mdash; if any of that isn&rsquo;t confirmed,
+            nothing is deleted at all. Signing in again would start an empty account. This cannot be
+            undone.
           </>
         }
         phrase={email}

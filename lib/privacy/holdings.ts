@@ -131,7 +131,7 @@ const HOLDINGS: Omit<Holding, "count">[] = [
     table: "entitlements",
     group: "you",
     label: "Your plan",
-    what: "Whether the Assistant is part of your account. Only the app's operator can change it.",
+    what: "Your plan (Free, Pro or Premium), and if you pay: your Stripe customer and subscription ids, and when the paid month ends. Never your card: that is typed on Stripe's page. Only a payment through Stripe, or the app's operator, can change it.",
   },
   {
     table: "gmail_sync_state",
@@ -153,6 +153,9 @@ const HOLDINGS: Omit<Holding, "count">[] = [
  * privacy page and then left out of the file it promises (lib/privacy/export.ts).
  */
 export const HOLDING_TABLES = HOLDINGS.map((holding) => holding.table);
+
+/** The same list, without counts, for the public privacy policy (slice 13): one description of each table, not two. */
+export const HOLDING_DESCRIPTIONS: readonly Omit<Holding, "count">[] = HOLDINGS;
 
 /**
  * Count each table for this user. One small counting query per table, in

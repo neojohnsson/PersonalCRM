@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { supabaseError } from "@/lib/supabase/errors";
+import { currentPlan } from "@/lib/plans/current";
 
 /**
  * Whether the Assistant is switched on for this user (migration 0025).
@@ -15,13 +15,10 @@ import { supabaseError } from "@/lib/supabase/errors";
  *
  * Cached for one request, because the shell (for the sidebar) and the page
  * (for the redirect) both ask.
+ *
+ * Since slice 13 (migration 0027) it is part of your plan: lib/plans/plans.ts
+ * says which plans include it, and `entitlements.plan` says which one is yours.
  */
-export const hasAssistant = cache(async (db: SupabaseClient, userId: string): Promise<boolean> => {
-  const { data, error } = await db
-    .from("entitlements")
-    .select("assistant")
-    .eq("user_id", userId)
-    .maybeSingle<{ assistant: boolean }>();
-  if (error) throw supabaseError(error, "Couldn't check what this account includes");
-  return data?.assistant === true;
-});
+export const hasAssistant = cache(async (db: SupabaseClient, userId: string): Promise<boolean> =>
+  (await currentPlan(db, userId)).assistant,
+);

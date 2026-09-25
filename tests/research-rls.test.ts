@@ -63,7 +63,7 @@ let bea: Person;
 beforeAll(async () => {
   alva = await person("alva");
   bea = await person("bea");
-  const { error } = await admin.from("entitlements").insert({ user_id: alva.user.id, research: true });
+  const { error } = await admin.from("entitlements").insert({ user_id: alva.user.id, plan: "premium" });
   if (error) throw error;
 });
 
@@ -73,15 +73,15 @@ afterAll(async () => {
 
 describe("the research switch", () => {
   it("is yours to read", async () => {
-    const { data } = await alva.db.from("entitlements").select("research").eq("user_id", alva.user.id).single();
-    expect(data).toEqual({ research: true });
+    const { data } = await alva.db.from("entitlements").select("plan").eq("user_id", alva.user.id).single();
+    expect(data).toEqual({ plan: "premium" });
   });
 
   it("is nobody's to switch on through the API, not even for themselves", async () => {
-    await bea.db.from("entitlements").insert({ user_id: bea.user.id, research: true });
-    await bea.db.from("entitlements").update({ research: true }).eq("user_id", bea.user.id);
-    const { data } = await admin.from("entitlements").select("research").eq("user_id", bea.user.id).maybeSingle();
-    expect(data?.research ?? false).toBe(false);
+    await bea.db.from("entitlements").insert({ user_id: bea.user.id, plan: "premium" });
+    await bea.db.from("entitlements").update({ plan: "premium" }).eq("user_id", bea.user.id);
+    const { data } = await admin.from("entitlements").select("plan").eq("user_id", bea.user.id).maybeSingle();
+    expect(data?.plan ?? "free").toBe("free");
   });
 });
 

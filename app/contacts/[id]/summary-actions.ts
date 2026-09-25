@@ -4,7 +4,7 @@ import { refresh } from "next/cache";
 import { notFound } from "next/navigation";
 import { AiNotConfigured } from "@/lib/ai/config";
 import { OpenAiError, OpenAiNoAnswer } from "@/lib/ai/openai";
-import { AiCapReached } from "@/lib/ai/spend";
+import { AiCapReached, limitMessage } from "@/lib/ai/spend";
 import { NoMailToSummarise, SummaryContactNotFound, generateSummary } from "@/lib/ai/summary";
 import {
   SummaryNotFound,
@@ -59,7 +59,7 @@ export async function generateSummaryAction(contactId: string, previous: Generat
  */
 function explain(error: unknown): string | null {
   if (error instanceof AiCapReached) {
-    return `This month's AI budget is used up ($${error.spentUsd.toFixed(2)} of $${error.capUsd.toFixed(2)}). It resets on the 1st.`;
+    return limitMessage(error);
   }
   if (error instanceof NoMailToSummarise) return "There's no mail with this contact to summarise yet.";
   if (error instanceof AiNotConfigured) return "The AI isn't set up on this server: an OpenAI key is missing.";
