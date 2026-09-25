@@ -42,6 +42,10 @@ import { DraftCard } from "./draft-card";
 import { CreateEvent } from "@/app/calendar/create-event";
 import { NextTouchCard } from "./next-touch-card";
 import { SummaryCard, type AiBudget } from "./summary-card";
+import { currentPlan } from "@/lib/plans/current";
+import { limitsOf } from "@/lib/plans/plans";
+import { allowanceOf, roomFor } from "@/lib/plans/allowance";
+import { usesThisMonth } from "@/lib/plans/usage";
 import { ResearchCard } from "./research-card";
 import { loadResearch } from "@/lib/research/decide";
 import { hasResearch } from "@/lib/research/entitlement";
@@ -144,7 +148,15 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
     calendarConnection(supabase, user.id),
   ]);
   const gmailScopes = (gmailResult.data?.scopes as string[] | undefined) ?? [];
-  const budget: AiBudget = { spentUsd, capUsd: monthlyCapUsd(), ready: aiIsReady() };
+  // Slice 13: the plan's own limit, and on Free what is left of the month's count.
+  const [plan, uses] = await Promise.all([currentPlan(supabase, user.id), usesThisMonth(supabase, user.id)]);
+  const budget: AiBudget = {
+    spentUsd,
+    capUsd: limitsOf(plan, "summary", monthlyCapUsd()).capUsd,
+    ready: aiIsReady(),
+    summaries: allowanceOf(plan, uses, "summary"),
+    drafts: allowanceOf(plan, uses, "draft"),
+  };
 
   // A summary that names a referral: have you written to that person since?
   // Worked out now, from your mail — not stored, so it's never out of date.
@@ -227,7 +239,7 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
     budget.ready &&
     canDraft(gmailScopes) &&
     relationship.messageCount > 0 &&
-    budget.capUsd - budget.spentUsd >= 0.01;
+    roomFor(budget, budget.drafts);
 
   const name = displayName({ ...contact, primary_email: emails[0] ?? null });
   // Slice 9b, Part 5: "Jönsson Linda", or no name at all and an address that
@@ -365,7 +377,8 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
           gmailDraftsUrl={gmailDraftsUrl(gmailResult.data?.email ?? null)}
           canDraft={canDraft(gmailScopes)}
           hasMail={relationship.messageCount > 0}
-          budgetLeft={budget.capUsd - budget.spentUsd >= 0.01}
+          budgetLeft={roomFor(budget, budget.drafts)}
+          drafts={budget.drafts}
           aiReady={budget.ready}
         />
 

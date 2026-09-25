@@ -19,6 +19,10 @@ import { displayName } from "@/lib/contacts/display";
 import { suggestName } from "@/lib/contacts/name-suggestion";
 import { avatarColors, dayMonth, initials, timeAgo, weekdayDayMonth } from "@/lib/format";
 import { calendarConnection } from "@/lib/google/calendar-tokens";
+import { allowanceLine, allowanceOf } from "@/lib/plans/allowance";
+import { currentPlan } from "@/lib/plans/current";
+import { limitsOf } from "@/lib/plans/plans";
+import { usesThisMonth } from "@/lib/plans/usage";
 import { pickBrief, thisWeek, type BriefEntry } from "@/lib/relationship/brief";
 import { todayIn } from "@/lib/relationship/dates";
 import { dateBadge, standingPill } from "@/lib/relationship/describe";
@@ -188,7 +192,13 @@ export default async function AssistantPage() {
     },
   });
 
-  const cap = assistantMonthlyCapUsd();
+  // Slice 13: Free sees its questions left; a paid plan its own dollar budget.
+  const [plan, uses] = await Promise.all([currentPlan(supabase, user.id), usesThisMonth(supabase, user.id, now)]);
+  const questions = allowanceOf(plan, uses, "assistant");
+  const cap = limitsOf(plan, "assistant", assistantMonthlyCapUsd()).capUsd;
+  const meter = questions
+    ? { label: allowanceLine(questions, "assistant"), share: questions.allowed > 0 ? questions.used / questions.allowed : 1 }
+    : { label: `$${spent.toFixed(2)} of $${cap.toFixed(0)} this month`, share: cap > 0 ? Math.min(1, spent / cap) : 1 };
 
   return (
     <AppShell userEmail={user.email} active="assistant" headerRight={<SignOutButton />}>
@@ -217,7 +227,7 @@ export default async function AssistantPage() {
           <ThingsToDecide rows={decide} />
         </div>
 
-        <SpendStrip spent={spent} cap={cap} latest={latest[0] ?? null} now={now} />
+        <SpendStrip meter={meter} latest={latest[0] ?? null} now={now} />
 
         {/* Last, on purpose: the cards above work with the AI switched off. */}
         <AssistantChat />
@@ -472,28 +482,28 @@ function ThingsToDecide({ rows }: { rows: DecideRow[] }) {
 // ── The strip ─────────────────────────────────────────────────────────────
 
 /**
- * The design's quiet strip: this month's spend on the Assistant's own line.
+ * The design's quiet strip: this month's spend on the Assistant's own line --
+ * or, on Free, the questions left of its 20 (slice 13), the number a person
+ * can act on where a dollar figure would not be.
  * The activity half — "added a note to Karin · Undo" — arrives with the
  * conversation, when there is something to show.
  */
 function SpendStrip({
-  spent,
-  cap,
+  meter,
   latest,
   now,
 }: {
-  spent: number;
-  cap: number;
+  meter: { label: string; share: number };
   latest: ActivityRow | null;
   now: Date;
 }) {
-  const share = cap > 0 ? Math.min(1, spent / cap) : 1;
+  const share = Math.min(1, meter.share);
 
   return (
     <div className="flex flex-wrap items-center gap-x-[18px] gap-y-2 rounded-[14px] bg-white px-[18px] py-[11px] shadow-[0_1px_2px_rgba(20,20,25,.04)]">
       <div className="flex shrink-0 items-center gap-2.5">
         <span className="text-[12px] font-semibold text-ink-body">
-          ${spent.toFixed(2)} of ${cap.toFixed(0)} this month
+          {meter.label}
         </span>
         <span
           aria-hidden="true"

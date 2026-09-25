@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { allowanceLine, roomFor, type Allowance } from "@/lib/plans/allowance";
 import { sourceNumbers } from "@/lib/ai/source-numbers";
 import { useFormStatus } from "react-dom";
 import {
@@ -78,10 +79,15 @@ export type ContactNow = {
 
 export type AiBudget = {
   spentUsd: number;
+  /** The plan's own dollar limit on this line, under the emergency brake (slice 13). */
   capUsd: number;
   /** False when the server has no OpenAI key. */
   ready: boolean;
+  /** Free's count for summaries and drafts; null on a paid plan. */
+  summaries: Allowance | null;
+  drafts: Allowance | null;
 };
+
 
 export function SummaryCard({
   contactId,
@@ -112,9 +118,7 @@ export function SummaryCard({
     null,
   );
 
-  // A cent is more than any one summary costs (lib/ai/models.ts); below that,
-  // the database would refuse the reservation anyway.
-  const budgetLeft = budget.capUsd - budget.spentUsd >= 0.01;
+  const budgetLeft = roomFor(budget, budget.summaries);
   // While the new-contact question shows, it holds the only Generate button.
   const asking = askNow && !notNow && !approved && !pending;
   const canGenerate = hasMail && budget.ready && budgetLeft && !generating;
@@ -123,7 +127,9 @@ export function SummaryCard({
     : !hasMail
       ? "Needs mail with this contact."
       : !budgetLeft
-        ? `This month's AI budget is used up ($${budget.spentUsd.toFixed(2)} of $${budget.capUsd.toFixed(2)}).`
+        ? budget.summaries?.left === 0
+          ? `You've used this month's ${budget.summaries.allowed} free summaries.`
+          : `This month's AI budget is used up ($${budget.spentUsd.toFixed(2)} of $${budget.capUsd.toFixed(2)}).`
         : null;
 
   const generateButton = (
@@ -147,7 +153,10 @@ export function SummaryCard({
         <div className="flex flex-col items-end gap-1">
           {!asking && generateButton}
           <span className="text-[11px] font-medium text-ink-faint">
-            {whyNot ?? `AI budget: $${budget.spentUsd.toFixed(2)} of $${budget.capUsd.toFixed(2)} this month`}
+            {whyNot ??
+              (budget.summaries
+                ? allowanceLine(budget.summaries, "summary")
+                : `AI budget: $${budget.spentUsd.toFixed(2)} of $${budget.capUsd.toFixed(2)} this month`)}
           </span>
         </div>
       </div>

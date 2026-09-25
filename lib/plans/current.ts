@@ -13,12 +13,28 @@ import { planNamed, type Plan } from "./plans";
  *
  * Cached for one request: the shell, the page and its actions all ask.
  */
-export const currentPlan = cache(async (db: SupabaseClient, userId: string): Promise<Plan> => {
+export type Entitlement = {
+  plan: Plan;
+  /** When the paid month runs out; null on Free or a plan set by hand. */
+  currentPeriodEnd: string | null;
+  /** Whether Stripe knows this person, so the customer portal can open. */
+  hasStripeCustomer: boolean;
+};
+
+export const loadEntitlement = cache(async (db: SupabaseClient, userId: string): Promise<Entitlement> => {
   const { data, error } = await db
     .from("entitlements")
-    .select("plan")
+    .select("plan, current_period_end, stripe_customer_id")
     .eq("user_id", userId)
-    .maybeSingle<{ plan: string }>();
+    .maybeSingle<{ plan: string; current_period_end: string | null; stripe_customer_id: string | null }>();
   if (error) throw supabaseError(error, "Couldn't check what this account includes");
-  return planNamed(data?.plan);
+  return {
+    plan: planNamed(data?.plan),
+    currentPeriodEnd: data?.current_period_end ?? null,
+    hasStripeCustomer: Boolean(data?.stripe_customer_id),
+  };
 });
+
+export const currentPlan = cache(
+  async (db: SupabaseClient, userId: string): Promise<Plan> => (await loadEntitlement(db, userId)).plan,
+);

@@ -4,9 +4,12 @@ import { DisconnectGmailButton } from "@/app/disconnect-gmail-button";
 import { SignOutButton } from "@/app/sign-out-button";
 import { APP_NAME } from "@/lib/app-config";
 import { requireUser } from "@/lib/auth";
+import { loadEntitlement } from "@/lib/plans/current";
+import { usesThisMonth } from "@/lib/plans/usage";
 import { loadProfile } from "@/lib/profile/store";
 import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
+import { PlanCard } from "./plan-card";
 import { ProfileForm } from "./profile-form";
 
 export const metadata = { title: `Profile · ${APP_NAME}` };
@@ -21,9 +24,11 @@ export default async function ProfilePage() {
   const supabase = await createClient();
   const { updated_at, ...profile } = await loadProfile(supabase, user.id);
 
-  const [gmailResult, calendarResult] = await Promise.all([
+  const [gmailResult, calendarResult, entitlement, uses] = await Promise.all([
     supabase.from("google_accounts").select("email").eq("user_id", user.id).maybeSingle(),
     supabase.from("google_calendar").select("email").eq("user_id", user.id).maybeSingle(),
+    loadEntitlement(supabase, user.id),
+    usesThisMonth(supabase, user.id),
   ]);
   if (gmailResult.error) throw supabaseError(gmailResult.error, "Couldn't check the Gmail connection");
   if (calendarResult.error) {
@@ -34,6 +39,8 @@ export default async function ProfilePage() {
     <AppShell userEmail={user.email} active="profile" headerRight={<SignOutButton />}>
       <main className="flex flex-1 flex-col gap-[18px] px-4 pb-[30px] sm:px-[30px]">
         <ProfileForm initial={profile} savedAt={updated_at} email={user.email ?? ""} />
+
+        <PlanCard entitlement={entitlement} uses={uses} />
 
         {/* Slice 9b, Part 1: Disconnect Gmail used to sit in the header of
             Home, Contacts, Seen once and every contact page. On a phone it was

@@ -49,6 +49,24 @@ export const PLANS: Record<PlanName, Plan> = {
   premium: { name: "premium", label: "Premium", assistant: true, research: true, aiUsd: 5, assistantUsd: 10, allowance: null },
 };
 
+/** The price a month in kronor, VAT included (docs/slice-13-plan.md §2). */
+export const PRICE_SEK: Record<PlanName, number> = { free: 0, pro: 49, premium: 99 };
+
+/**
+ * What each plan includes, in the words the pricing page uses. Built from
+ * PLANS, so the page cannot promise what the limits above do not give.
+ */
+export function includes(plan: Plan): { text: string; yes: boolean }[] {
+  const a = plan.allowance;
+  return [
+    { text: "Sync, whose turn, warmth, next touch and the calendar", yes: true },
+    { text: a ? `${a.summary} summaries and ${a.draft} drafts a month` : "Summaries and drafts, no monthly count", yes: true },
+    { text: a ? `${a.promises} promise scans a month` : "Promise scans, no monthly count", yes: true },
+    { text: a ? `The Assistant, ${a.assistant} questions a month` : "The Assistant, no monthly count", yes: plan.assistant },
+    { text: "Research a contact on the public web", yes: plan.research },
+  ];
+}
+
 /** The two limits one AI request is held to. */
 export type SpendLimits = { capUsd: number; maxUses: number | null };
 
