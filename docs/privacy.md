@@ -156,6 +156,12 @@ Built in slice 7, at `/privacy` — reached from Profile.
 
 Both of the big deletions need the phrase typed out, because there is no undo.
 
+**Account deletion ends everything outside the app first, and deletes nothing if any of it
+is not confirmed** (since slice 13, commit 6b; `lib/privacy/delete-account.ts`): the Gmail
+permission at Google, then the Calendar permission (which it did not revoke before), then a
+paid plan at Stripe, ended at once with no refund for the rest of the month. "Already gone"
+counts as done, so pressing Delete again after a failure finishes the job.
+
 **Account deletion revokes at Google first, and deletes nothing if Google does not
 confirm.** Deleting the stored row would only make this app forget the token while Google
 went on honouring it. A failure leaves the account entirely intact and says to remove the

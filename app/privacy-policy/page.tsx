@@ -100,9 +100,9 @@ export default function PrivacyPolicyPage() {
             list, so a later sync does not add them again.
           </li>
           <li>
-            Deleting your account removes every row the app holds about you and your contacts, and withdraws the Gmail
-            permission at Google. Disconnect the calendar on the Calendar page first to withdraw its permission too,
-            and cancel a paid plan so Link stops charging.
+            Deleting your account removes every row the app holds about you and your contacts. Before it does, it
+            withdraws the Gmail and Calendar permissions at Google and ends a paid plan, and if any of those is not
+            confirmed, it deletes nothing.
           </li>
           <li>
             Payments: Link, as the seller, keeps its own records of what you paid for as long as the law requires it

@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { decrypt } from "@/lib/crypto";
 import { canReadCalendar } from "@/lib/google/scopes";
 import { supabaseError } from "@/lib/supabase/errors";
+import type { RevokeResult } from "@/lib/google/tokens";
 
 /**
  * The calendar's access token, and giving it back (slice 8a).
@@ -90,6 +91,45 @@ export async function getCalendarAccessToken(db: SupabaseClient, userId: string)
  * keeping them after it is withdrawn would be keeping data on a promise that no
  * longer holds.
  */
+/**
+ * Tell Google to drop the calendar's refresh token, and say whether it did
+ * (slice 13, commit 6b). For account deletion, which must not delete anything
+ * while Google still honours a token (app/privacy/actions.ts).
+ *
+ * The same rules as revokeGmailAccess (lib/google/tokens.ts), written again
+ * here rather than shared, for the reason at the top of this file. Stricter
+ * than disconnectCalendar below, which ignores a failed revoke: there the
+ * person is still signed in and can try again; after deletion nobody could.
+ *
+ *   revoked        Google said yes
+ *   already_gone   no calendar connected, or Google has never heard of the
+ *                  token: dead either way, which is what was wanted
+ *   failed         anything else, including Google being unreachable. Not
+ *                  knowing is a failure here
+ */
+export async function revokeCalendarAccess(db: SupabaseClient, userId: string): Promise<RevokeResult> {
+  const { data, error } = await db
+    .from("google_calendar")
+    .select("refresh_token_encrypted")
+    .eq("user_id", userId)
+    .maybeSingle<{ refresh_token_encrypted: string }>();
+  if (error) return "failed";
+  if (!data) return "already_gone";
+
+  let response: Response;
+  try {
+    response = await fetch("https://oauth2.googleapis.com/revoke", {
+      method: "POST",
+      body: new URLSearchParams({ token: decrypt(data.refresh_token_encrypted) }),
+    });
+  } catch {
+    return "failed";
+  }
+  if (response.ok) return "revoked";
+  const body: { error?: string } = await response.json().catch(() => ({}));
+  return response.status === 400 && body.error === "invalid_token" ? "already_gone" : "failed";
+}
+
 export async function disconnectCalendar(db: SupabaseClient, userId: string): Promise<void> {
   const { data, error } = await db
     .from("google_calendar")

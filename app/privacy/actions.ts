@@ -3,7 +3,11 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { revokeCalendarAccess } from "@/lib/google/calendar-tokens";
 import { revokeGmailAccess } from "@/lib/google/tokens";
+import { deleteEverything, stoppedMessage } from "@/lib/privacy/delete-account";
+import { stripeClient } from "@/lib/stripe/client";
+import { endSubscription } from "@/lib/stripe/end-subscription";
 import { supabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 
@@ -46,7 +50,9 @@ export async function deleteAllContacts(
 /**
  * Everything, and the login with it.
  *
- * Google is told first, and nothing is deleted if Google doesn't confirm.
+ * Google is told first, for Gmail and (since slice 13) the Calendar, and a
+ * paid plan is ended at Stripe; nothing is deleted if any of them doesn't
+ * confirm (lib/privacy/delete-account.ts).
  * Deleting our row would only make the app forget the token while Google went
  * on honouring it — so a failure here leaves the account entirely intact and
  * says what to do, rather than quietly doing half the job.
@@ -61,16 +67,18 @@ export async function deleteAccount(previous: DeleteState, formData: FormData): 
 
   const supabase = await createClient();
 
-  const revoked = await revokeGmailAccess(supabase, user.id);
-  if (revoked === "failed") {
-    return {
-      error:
-        "Google didn't confirm that the Gmail connection was removed, so nothing has been deleted. Try again — or remove this app at myaccount.google.com/permissions and then delete.",
-    };
-  }
-
-  const { error } = await supabase.rpc("delete_account", { p_user_id: user.id });
-  if (error) throw supabaseError(error, "Couldn't delete the account");
+  // Slice 13, commit 6b: the Calendar's token and a paid plan end too, and
+  // every outside step comes before any row goes (lib/privacy/delete-account.ts).
+  const outcome = await deleteEverything({
+    revokeGmail: () => revokeGmailAccess(supabase, user.id),
+    revokeCalendar: () => revokeCalendarAccess(supabase, user.id),
+    endSubscription: () => endSubscription(supabase, user.id, () => stripeClient().subscriptions),
+    deleteRows: async () => {
+      const { error } = await supabase.rpc("delete_account", { p_user_id: user.id });
+      if (error) throw supabaseError(error, "Couldn't delete the account");
+    },
+  });
+  if (!outcome.deleted) return { error: stoppedMessage(outcome) };
 
   // The session belongs to a user who no longer exists; clearing the cookie is
   // tidiness, and a failure here changes nothing that matters.

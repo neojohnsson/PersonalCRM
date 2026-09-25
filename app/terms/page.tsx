@@ -111,8 +111,8 @@ export default function TermsPage() {
           <Link href="/privacy" className="font-semibold underline underline-offset-2">
             Your data
           </Link>
-          . Deleting is real: the rows are removed, and the Gmail connection is withdrawn at Google. Cancel a paid plan
-          first, so Link stops charging.
+          . Deleting is real: the Gmail and Calendar permissions are withdrawn at Google, a paid plan ends at once
+          with no refund for the rest of the month, and then the rows are removed.
         </p>
       </Part>
 
