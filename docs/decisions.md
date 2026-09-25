@@ -29,7 +29,11 @@ _What was decided, and why. Revise when a decision turns out wrong — the histo
 | Google API client | Plain `fetch`, no `googleapis` | Every OAuth request is visible and understood, not hidden in a library |
 | Sync trigger | Scheduled, no button | A tool you have to remember to refresh is one you stop opening. Slice 1 uses a temporary button while the sync is built |
 | AI provider | OpenAI, `gpt-5.6-luna` by default, through one module with plain `fetch` | Cheapest capable model for short summaries (about half a cent each at most). One file knows OpenAI, so switching provider is one file |
-| AI spending | $2 a month per user, checked in the database before every request | Set before the first bill, not after. A reservation under a lock, so two clicks can't both slip under |
+| AI spending | $2 a month per user, checked in the database before every request | Set before the first bill, not after. A reservation under a lock, so two clicks can't both slip under. _Since slice 13: from the user's plan, with the environment's cap as an emergency brake above all of them_ |
+| Plans (slice 13) | Free, Pro 49 kr, Premium 99 kr a month, VAT included | A month of heavy use cost $0.39 in AI, so the AI is not what the price covers: Google's yearly assessment and running a business are. Free keeps everything but the AI, as the core premise says it must |
+| Trying the AI (slice 13) | A small free monthly allowance, counted in uses — no trial | A week's trial ends before the app shows its value, which is timing over weeks, and a trial that takes a card and charges by itself would be the one thing in the app that happens without a press. The allowance costs about $0.03 a user a month |
+| Who sells the plans (slice 13) | Stripe, through Link, with Managed Payments | Stripe calculates and pays VAT in every country, applies the right of withdrawal and handles disputes, for 3.5% on top of the card fee. For a sole trader selling to consumers anywhere in the EU, that hands over the parts most likely to go wrong |
+| Deleting an account (slice 13) | Every outside step first — Gmail, Calendar, the paid plan — and no row deleted until all of them are confirmed | A revoked token and a cancelled subscription cannot be undone, and a live token or a running charge after "delete everything" is the worst failure the app could have. No refund for the rest of the month; said before confirming |
 | When the AI runs | Only when you press Generate, one contact at a time | Cost, and sending mail to a third party should be a choice. A new contact asks; it doesn't run |
 | AI summary input | Last 20 emails, quotes and signatures cut, 2,000 characters each | Recent enough to be right, small enough to stay cheap, and nothing credited to the wrong email |
 | Drafting | The AI writes a reply into the app; you read, edit and press Save to Gmail drafts, then send from Gmail | `AGENTS.md`: nothing AI-generated goes straight into a Gmail draft. Two people are involved in every email that leaves — the AI writes, a human approves |
@@ -62,4 +66,5 @@ Chat with your inbox · mobile app · teams and shared workspaces · calendar, S
 
 - The name.
 - The larger model for drafting (`LLM_MODEL_GOOD`), in slice 5.
+- Whether to go live at all: `docs/release.md`, step 0 — Google's assessment quotes decide it.
 - Whether the two-tier import and whose-turn logic are worth reusing elsewhere.

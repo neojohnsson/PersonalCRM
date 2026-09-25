@@ -228,13 +228,18 @@ takes and why it comes where it does:
 
 ## Done when
 
-- [ ] A test user can go Free → Pro → cancel in Stripe test mode, and the app follows
+- [x] A test user can go Free → Pro → cancel in Stripe test mode, and the app follows
       each step through the webhook alone.
-- [ ] Nobody can change their own plan or budget through the API (two-user RLS test).
-- [ ] A forged webhook call changes nothing (test).
-- [ ] Every AI feature spends from the user's own plan: Free's monthly allowance, or the
+- [x] Nobody can change their own plan or budget through the API (two-user RLS test).
+- [x] A forged webhook call changes nothing (test).
+- [x] Every AI feature spends from the user's own plan: Free's monthly allowance, or the
       paid plan's budget.
-- [ ] The pricing, privacy-policy, terms and sub-processors pages exist and fit 390px.
-- [ ] `docs/release.md` lists part B with costs and the go-live switch, and the app is
+- [x] The pricing, privacy-policy, terms and sub-processors pages exist and fit 390px.
+- [x] `docs/release.md` lists part B with costs and the go-live switch, and the app is
       still in testing mode.
-- [ ] Every Checkout is sold through Managed Payments (Stripe is the seller).
+- [x] Every Checkout is sold through Managed Payments (Stripe is the seller).
+
+_All seven checked 2026-09-25. The Free → Pro → cancel run was twice: once through the
+API with Stripe's test card, once by the user on Stripe's own Checkout page (49 kr, of
+which 9.80 kr VAT, Managed Payments on), with the portal's cancellation running to the end
+of the paid month. 1048 tests pass._

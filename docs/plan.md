@@ -330,6 +330,14 @@ What letting strangers sign in with Gmail actually takes:
 - **GDPR as a processor** for every customer: a data processing agreement, sub-processor list (OpenAI, Supabase, Vercel, Google), a real privacy policy — slice 7's work, made public.
 - Pricing that covers AI cost per user (§5.4) with margin.
 
+_Built 2026-09-24/25 (`docs/slice-13-plan.md`), in Stripe's test mode: Free with a small
+monthly AI allowance, Pro 49 kr and Premium 99 kr; Stripe as the seller (Managed Payments),
+so VAT and the right of withdrawal are Stripe's; the public terms, privacy policy and
+sub-processors, marked as drafts; and a deletion that ends everything it started. What is
+left is not code — a business, a domain, a lawyer's read, Google's assessment, Stripe's live
+mode — and is `docs/release.md`, in order, with costs. The app stays in testing mode until
+it is done._
+
 ---
 
 ## 8. Still open

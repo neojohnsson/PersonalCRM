@@ -30,7 +30,7 @@ export const SUB_PROCESSORS: SubProcessor[] = [
     name: "Vercel",
     role: "Runs the app's pages and server code",
     gets: "Each request as it passes through: pages, your actions, and the text of a message while a summary or draft is being made. Nothing is stored there.",
-    where: "United States (Washington, D.C., Vercel's default); to be moved to Stockholm before launch",
+    where: "United States (Washington, D.C., Vercel's default); to be moved to Dublin, next to the database, before launch",
     hosts: ["vercel.app"],
   },
   {

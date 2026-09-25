@@ -58,5 +58,5 @@ launch, and sign each one's data processing agreement: OpenAI, Supabase, Vercel,
 
 - [ ] The business exists, and its details replace the brackets above.
 - [ ] Each sub-processor's own DPA is signed, and its transfer basis confirmed.
-- [ ] Vercel's functions are moved to Stockholm (`arn1`), so requests stay in the EU.
+- [ ] Vercel's functions are moved to Dublin (`dub1`), next to the database, so requests stay in the EU.
 - [ ] A person who knows Swedish and EU law has read this, the terms and the privacy policy.
