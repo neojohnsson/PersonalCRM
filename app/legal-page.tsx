@@ -25,7 +25,7 @@ export function LegalPage({ title, lead, children }: { title: string; lead: stri
           <div className="flex flex-col gap-2.5">
             <h1 className="text-[28px] leading-[1.15] font-bold tracking-[-0.035em] sm:text-[33px]">{title}</h1>
             <p className="text-[15.5px] leading-[1.55] text-ink-soft">{lead}</p>
-            <p className="text-[12.5px] text-ink-quiet">Last changed {LEGAL_UPDATED}</p>
+            <p className="text-[12.5px] text-ink-soft">Last changed {LEGAL_UPDATED}</p>
           </div>
         </div>
 
@@ -43,7 +43,7 @@ export function LegalPage({ title, lead, children }: { title: string; lead: stri
           {children}
         </article>
 
-        <nav className="flex flex-wrap gap-x-4 gap-y-1 px-1 text-[13px] text-ink-quiet" aria-label="Legal pages">
+        <nav className="flex flex-wrap gap-x-4 gap-y-1 px-1 text-[13px] text-ink-soft" aria-label="Legal pages">
           <Link href="/terms" className="underline underline-offset-2 hover:text-ink">
             Terms
           </Link>

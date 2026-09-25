@@ -30,7 +30,7 @@ export function Section({
 }) {
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-[11px] font-bold tracking-[0.09em] text-ink-faint uppercase">
+      <h2 className="text-[11px] font-bold tracking-[0.09em] text-ink-meta uppercase">
         {title}
       </h2>
       <ul className="flex flex-col gap-[9px]">{children}</ul>
@@ -41,7 +41,7 @@ export function Section({
 const TONES = {
   info: "text-info",
   affirm: "text-affirm",
-  muted: "text-ink-faint",
+  muted: "text-ink-soft",
 } as const;
 
 export function Item({

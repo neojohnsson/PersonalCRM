@@ -233,7 +233,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
       seenOnceCount={seenOnce}
       headerRight={
         <>
-          <span className="hidden text-[13px] text-ink-faint lg:inline">{gmail.email}</span>
+          <span className="hidden text-[13px] text-ink-soft lg:inline">{gmail.email}</span>
           <SignOutButton />
         </>
       }
@@ -254,7 +254,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
                 outside test pressed it. The order is chosen in the column
                 headings below. */}
             <span className="hidden items-center gap-1.5 self-center px-1 text-[12.5px] whitespace-nowrap lg:flex">
-              <span className="text-ink-faint">Sorted by</span>
+              <span className="text-ink-soft">Sorted by</span>
               <span className="font-semibold text-ink-soft">{sortLabel(sort)}</span>
             </span>
             {sync?.status === "needs_reconnect" ? (
@@ -300,7 +300,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
           {duplicates > 0 && (
             <Link
               href="/contacts/duplicates"
-              className="text-[12.5px] font-medium text-ink-muted underline decoration-line-strong underline-offset-2 hover:text-ink"
+              className="text-[12.5px] font-medium text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-ink"
             >
               {countOf(duplicates, "possible duplicate")} — look at{" "}
               {duplicates === 1 ? "it" : "them"}
@@ -346,7 +346,7 @@ function ListTabs({ contacts, seenOnce }: { contacts: number; seenOnce: number }
         className="flex items-center gap-[7px] rounded-full bg-white px-[15px] py-[7px] shadow-[0_1px_2px_rgba(20,20,25,.06)]"
       >
         <span className="text-[13px] font-semibold tracking-[-0.01em]">Contacts</span>
-        <span className="text-[11.5px] font-semibold text-ink-faint tabular-nums">
+        <span className="text-[11.5px] font-semibold text-ink-soft tabular-nums">
           {contacts.toLocaleString("en-GB")}
         </span>
       </span>
@@ -354,8 +354,9 @@ function ListTabs({ contacts, seenOnce }: { contacts: number; seenOnce: number }
         href="/seen-once"
         className="flex items-center gap-[7px] rounded-full px-[15px] py-[7px] transition-colors hover:bg-white/60"
       >
-        <span className="text-[13px] font-medium text-ink-soft">Seen once</span>
-        <span className="text-[11.5px] font-semibold text-ink-hush tabular-nums">
+        {/* ink-body, not ink-soft: soft is 4.05:1 on the grey track, under AA. */}
+        <span className="text-[13px] font-medium text-ink-body">Seen once</span>
+        <span className="text-[11.5px] font-semibold text-ink-body tabular-nums">
           {seenOnce.toLocaleString("en-GB")}
         </span>
       </Link>
@@ -382,13 +383,13 @@ function Chip({ href, active, label, count }: { href: string; active: boolean; l
 const WARMTH_TEXT: Record<Band, string> = {
   warm: "text-affirm",
   cooling: "text-cooling",
-  cold: "text-ink-quiet",
+  cold: "text-ink-soft",
 };
 
 const WARMTH_BAR: Record<Band, string> = {
   warm: "bg-affirm",
   cooling: "bg-cooling",
-  cold: "bg-ink-ghost",
+  cold: "bg-ink-soft",
 };
 
 function ContactTable({
@@ -405,7 +406,7 @@ function ContactTable({
   sortHref: (next: SortKey | null) => string;
   moreHref: string | null;
 }) {
-  const heading = "px-2 pt-[11px] pb-[9px] text-[10.5px] font-bold tracking-[0.07em] text-ink-ghost uppercase";
+  const heading = "px-2 pt-[11px] pb-[9px] text-[10.5px] font-bold tracking-[0.07em] text-ink-meta uppercase";
 
   return (
     <div className={`${CARD} overflow-hidden`}>
@@ -492,9 +493,9 @@ function ContactTable({
                 {/* One line, ending in "…" if it still doesn't fit; the full name on hover. */}
                 <td
                   title={contact.company ?? undefined}
-                  className="hidden truncate px-2 text-[12.5px] text-ink-muted lg:table-cell"
+                  className="hidden truncate px-2 text-[12.5px] text-ink-soft lg:table-cell"
                 >
-                  {contact.company ?? <span className="text-ink-hush">—</span>}
+                  {contact.company ?? <span className="text-ink-soft">—</span>}
                 </td>
                 {/* Slice 9a: the label is the bucket that counted the row, so a
                     row can never say YOUR TURN while its page says Nothing
@@ -513,18 +514,18 @@ function ContactTable({
                       </span>
                     </div>
                   ) : (
-                    <span className="text-[12px] text-ink-hush">—</span>
+                    <span className="text-[12px] text-ink-soft">—</span>
                   )}
                 </td>
                 <td
                   className={`pr-[22px] pl-2 text-right text-[12px] font-semibold tabular-nums ${
-                    turn.kind === "yours" ? "text-accent" : "text-ink-muted"
+                    turn.kind === "yours" ? "text-accent" : "text-ink-soft"
                   }`}
                 >
                   {contact.last_contact_at ? (
                     <time dateTime={contact.last_contact_at}>{daysAgo(contact.last_contact_at)}</time>
                   ) : (
-                    <span className="text-ink-hush">—</span>
+                    <span className="text-ink-soft">—</span>
                   )}
                 </td>
               </tr>
@@ -534,11 +535,11 @@ function ContactTable({
       </table>
 
       <div aria-live="polite" className="flex items-center justify-between border-t border-line-soft px-[22px] py-2.5">
-        <span className="text-[11.5px] font-medium text-ink-ghost">
+        <span className="text-[11.5px] font-medium text-ink-soft">
           Showing {items.length.toLocaleString("en-GB")} of {countOf(total, "contact")}
         </span>
         {moreHref && (
-          <Link href={moreHref} scroll={false} className="text-[11.5px] font-semibold text-ink-muted hover:text-ink">
+          <Link href={moreHref} scroll={false} className="text-[11.5px] font-semibold text-ink-soft hover:text-ink">
             Load more
           </Link>
         )}
@@ -602,12 +603,12 @@ const BUCKET_LABELS: Record<Exclude<ListFilter, "all">, { text: string; classNam
     text: "Your turn",
     className: "text-[10.5px] font-bold tracking-[0.06em] text-accent uppercase",
   },
-  theirs: { text: "Their turn", className: "text-[12px] font-medium text-ink-muted" },
+  theirs: { text: "Their turn", className: "text-[12px] font-medium text-ink-soft" },
   quiet: { text: "Going quiet", className: "text-[12px] font-medium text-cooling" },
-  closed: { text: "No open thread", className: "text-[12px] font-medium text-ink-hush" },
-  settled: { text: "Nothing owed", className: "text-[12px] font-medium text-ink-muted" },
+  closed: { text: "No open thread", className: "text-[12px] font-medium text-ink-soft" },
+  settled: { text: "Nothing owed", className: "text-[12px] font-medium text-ink-soft" },
   planned: { text: "Planned", className: "text-[12px] font-medium text-info-ink" },
-  muted: { text: "Just a contact", className: "text-[12px] font-medium text-ink-hush" },
+  muted: { text: "Just a contact", className: "text-[12px] font-medium text-ink-soft" },
 };
 
 function BucketLabel({ bucket }: { bucket: Exclude<ListFilter, "all"> }) {
@@ -647,14 +648,14 @@ function SortHeading({
   return (
     <th scope="col" aria-sort={active ? "other" : "none"} className={`${className} ${side}`}>
       {active ? (
-        <span className={`inline-flex items-center gap-1 ${align === "right" ? "flex-row-reverse" : ""} text-ink-muted`}>
+        <span className={`inline-flex items-center gap-1 ${align === "right" ? "flex-row-reverse" : ""} text-ink-soft`}>
           {children}
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" className="size-2">
             <path d="M6 9l6 6 6-6" />
           </svg>
         </span>
       ) : (
-        <Link href={href} className="transition-colors hover:text-ink-muted">
+        <Link href={href} className="transition-colors hover:text-ink-soft">
           {children}
         </Link>
       )}

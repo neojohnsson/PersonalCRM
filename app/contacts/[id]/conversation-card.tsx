@@ -84,7 +84,7 @@ export function ConversationCard({
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <div className="flex flex-col gap-0.5">
           <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Every touch</h2>
-          <span className="text-[11.5px] font-medium text-ink-faint">
+          <span className="text-[11.5px] font-medium text-ink-soft">
             {total === 1 ? "1 message on record" : `${total} messages on record`}
             {entries.length < total && ` · the last ${entries.length} below`}
           </span>
@@ -133,7 +133,7 @@ export function ConversationCard({
               <div className="flex min-w-0 flex-col gap-0.5">
                 <div className="flex flex-wrap items-baseline gap-x-2">
                   <span className="text-[13px] font-semibold tracking-[-0.01em]">{entry.who}</span>
-                  <span className="text-[11.5px] font-medium text-ink-faint">{dayMonth(entry.at)}</span>
+                  <span className="text-[11.5px] font-medium text-ink-soft">{dayMonth(entry.at)}</span>
                 </div>
                 {entry.subject && (
                   <span className="truncate text-[12.5px] font-medium text-ink-body">{entry.subject}</span>
@@ -171,7 +171,7 @@ export function ConversationCard({
 
       {/* Said once, at the bottom, because it is the same promise the privacy
           page makes: the lines above are not in this app's database. */}
-      <p className="mt-3 text-[11.5px] leading-[1.5] font-medium text-ink-faint">
+      <p className="mt-3 text-[11.5px] leading-[1.5] font-medium text-ink-soft">
         Who wrote and when is stored. The lines are read from Gmail as you look at this page and
         are not kept.
       </p>

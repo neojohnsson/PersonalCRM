@@ -23,7 +23,7 @@ import { discardResearchAction, keepResearchAction, removeFactAction, researchAc
  */
 
 const CARD = "rounded-[18px] bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
-const LABEL = "text-[10px] font-bold tracking-[0.07em] text-ink-ghost uppercase";
+const LABEL = "text-[10px] font-bold tracking-[0.07em] text-ink-meta uppercase";
 const GHOST =
   "rounded-full bg-line-soft px-[13px] py-1.5 text-[12px] font-semibold text-ink-body transition-colors hover:bg-chip-track disabled:cursor-default disabled:opacity-60";
 const SOLID =
@@ -189,7 +189,7 @@ function Waiting({ set }: { set: ResearchRow }) {
                   href={fact.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="truncate text-[11.5px] font-semibold text-ink-muted underline decoration-line-strong underline-offset-2 hover:text-ink"
+                  className="truncate text-[11.5px] font-semibold text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-ink"
                 >
                   {withHost(fact.title, fact.url)}
                 </a>
@@ -235,7 +235,7 @@ function KeptFact({
           href={fact.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="truncate text-[11.5px] font-medium text-ink-muted underline decoration-line-strong underline-offset-2 hover:text-ink"
+          className="truncate text-[11.5px] font-medium text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-ink"
         >
           {hostOf(fact.url)} · found {dateOf(foundAt)}
         </a>
@@ -245,7 +245,7 @@ function KeptFact({
         aria-label={`Remove: ${fact.text}`}
         disabled={busy}
         onClick={() => start(async () => void (await removeFactAction(researchId, index)))}
-        className="flex size-7 shrink-0 items-center justify-center rounded-full text-ink-faint transition hover:bg-paper hover:text-ink disabled:opacity-50"
+        className="flex size-7 shrink-0 items-center justify-center rounded-full text-ink-soft transition hover:bg-paper hover:text-ink disabled:opacity-50"
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="size-3.5">
           <path d="M6 6l12 12M18 6L6 18" />

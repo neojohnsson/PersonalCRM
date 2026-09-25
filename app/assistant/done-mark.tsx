@@ -9,7 +9,7 @@ export function DoneMark({ undone }: { undone: boolean }) {
       strokeWidth={2.2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={`size-[15px] shrink-0 ${undone ? "text-ink-ghost" : "text-affirm"}`}
+      className={`size-[15px] shrink-0 ${undone ? "text-ink-soft" : "text-affirm"}`}
     >
       <path d="M5 12.5l4.5 4.5L19 7.5" />
     </svg>

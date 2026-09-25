@@ -51,15 +51,24 @@ Architecture: `docs/architecture.md`. Decisions and their reasons: `docs/decisio
   "styled from" it.
 - Colours live as tokens in `app/globals.css`; add new ones there, taken
   from the design, rather than inventing values.
-  **Themes** (added 2026-09-24, by the user): Paper is the design. Night and
-  Studio are the user's own variations of it, switched from the header and
-  kept in the browser. Every colour is a `--theme-*` token, so a new colour
+  **Themes** (added 2026-09-24, by the user): Paper is the design. Night is
+  the user's own variation of it, switched from the header and kept in the
+  browser (Studio was removed 2026-09-25). Every colour is a `--theme-*` token, so a new colour
   gets a Paper value from the design and a value in each theme; nothing is
   written into a class as a hex. `tests/styles.test.ts` parses the stylesheet
   and checks the themes cover the colours that carry a meaning.
 - Differences only for honest reasons, each written in a comment where it
   happens: copy that would describe a feature the current slice doesn't
   have yet, real data instead of the mock names, and fitting phone widths.
+- **Accessibility and the UI scales override the design** (amended
+  2026-09-25, by the user, with the UI quality pass). The designs stay the
+  reference for layout and look, but where they fail WCAG 2.2 AA — text
+  contrast (4.5:1), focus indicators, target size, headings, announcements —
+  the app does not copy the failure. The pass also replaces the design's
+  values with shared scales: four text greys (`ink`, `ink-body`, `ink-soft`,
+  `ink-meta`, each clearing AA on white and on paper), one type scale, three
+  radii. Use the scales; a value taken from a design that is not on them is
+  mapped to the nearest step, not added.
 - A screen with no design yet: reuse the patterns of the nearest designed
   screen, and say so.
 

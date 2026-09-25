@@ -197,7 +197,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
                 changed" until today, which stopped being true the moment the
                 app could create one. It now says what the connection actually
                 allows, which depends on what Google granted. */}
-            <p className="text-[12.5px] font-medium text-ink-quiet">
+            <p className="text-[12.5px] font-medium text-ink-soft">
               {connection.email} &middot;{" "}
               {canWriteCalendar(connection.scopes)
                 ? "events you create here go on this calendar, never with guests"
@@ -291,7 +291,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
               it said "no event is ever created or changed", and events can be
               created now. Nothing is changed or deleted, which is still true
               and still worth saying. */}
-          <p className="px-1 text-[11.5px] leading-[1.55] font-medium text-ink-faint">
+          <p className="px-1 text-[11.5px] leading-[1.55] font-medium text-ink-soft">
             A meeting with a contact counts toward warmth, like an exchange does. Only the time,
             title and guest addresses are read &mdash; never the description. An event you create
             here is added with no guests; nothing already in your calendar is ever changed or
@@ -359,7 +359,7 @@ function Legend() {
       ].map((item) => (
         <span key={item.label} className="flex items-center gap-1.5">
           <span aria-hidden="true" className={`size-2.5 rounded-[3px] ${item.colour}`} />
-          <span className="text-[11.5px] font-medium text-ink-muted">{item.label}</span>
+          <span className="text-[11.5px] font-medium text-ink-soft">{item.label}</span>
         </span>
       ))}
     </div>
@@ -400,7 +400,7 @@ function WeekGrid({
             >
               <span
                 className={`text-[9.5px] font-bold tracking-[0.04em] uppercase sm:text-[10.5px] sm:tracking-[0.06em] ${
-                  day.isToday ? "text-ink" : "text-ink-ghost"
+                  day.isToday ? "text-ink" : "text-ink-meta"
                 }`}
               >
                 {day.weekday}
@@ -411,7 +411,7 @@ function WeekGrid({
                 </span>
               ) : (
                 <span
-                  className={`text-[13px] font-bold tracking-[-0.02em] sm:text-[15px] ${day.isWeekend ? "text-ink-faint" : ""}`}
+                  className={`text-[13px] font-bold tracking-[-0.02em] sm:text-[15px] ${day.isWeekend ? "text-ink-soft" : ""}`}
                 >
                   {day.dayOfMonth}
                 </span>
@@ -423,7 +423,7 @@ function WeekGrid({
         {/* Due: this app's own next touches, not anything from Google. */}
         <div className="flex h-9 shrink-0 items-stretch border-y border-line">
           <div className="flex w-8 shrink-0 items-center justify-end pr-1 sm:w-[52px] sm:pr-2">
-            <span className="text-[8.5px] font-bold tracking-[0.05em] text-ink-ghost uppercase sm:text-[9.5px]">Due</span>
+            <span className="text-[8.5px] font-bold tracking-[0.05em] text-ink-meta uppercase sm:text-[9.5px]">Due</span>
           </div>
           {week.days.map((day) => {
             const due = touches.filter((touch) => touch.due_on === day.date);
@@ -473,7 +473,7 @@ function WeekGrid({
             {week.hours.map((hour, index) => (
               <span
                 key={hour}
-                className="absolute w-6 -translate-y-1/2 text-right text-[9.5px] font-semibold text-ink-ghost sm:w-11 sm:text-[10.5px]"
+                className="absolute w-6 -translate-y-1/2 text-right text-[9.5px] font-semibold text-ink-soft sm:w-11 sm:text-[10.5px]"
                 style={{ top: `${(index / (week.hours.length - 1)) * 100}%` }}
               >
                 {String(hour).padStart(2, "0")}
@@ -518,7 +518,7 @@ function WeekGrid({
                       >
                         <span className="hidden sm:inline">{contact ? displayName(contact) : event.title}</span>
                       </span>
-                      <span className={`truncate text-[10.5px] leading-[1.3] ${contact ? "text-info" : "text-ink-faint"}`}>
+                      <span className={`truncate text-[10.5px] leading-[1.3] ${contact ? "text-info" : "text-ink-soft"}`}>
                         {event.when}
                       </span>
                     </div>
@@ -550,7 +550,7 @@ function NextWithContact({
     <section className={`${CARD} flex flex-col gap-3.5 px-5 py-[18px]`}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-2.5 gap-y-1">
         <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Next with a contact</h2>
-        <span className="text-[11.5px] font-semibold text-ink-faint">
+        <span className="text-[11.5px] font-semibold text-ink-soft">
           {dayMonth(event.startedAt)}, {clock(event.startedAt)}
         </span>
       </div>
@@ -565,13 +565,13 @@ function NextWithContact({
         </span>
         <div className="flex min-w-0 flex-col gap-px">
           <span className="truncate text-[14px] font-semibold tracking-[-0.01em]">{name}</span>
-          {contact.company && <span className="truncate text-[12px] text-ink-faint">{contact.company}</span>}
+          {contact.company && <span className="truncate text-[12px] text-ink-soft">{contact.company}</span>}
         </div>
       </div>
 
       {pill && (
         <span className="flex items-center gap-2 self-start rounded-full bg-chip px-3 py-1.5">
-          <span aria-hidden="true" className="size-[6px] rounded-full bg-ink-faint" />
+          <span aria-hidden="true" className="size-[6px] rounded-full bg-ink-soft" />
           <span className="text-[12px] font-bold whitespace-nowrap">{pill.text}</span>
         </span>
       )}

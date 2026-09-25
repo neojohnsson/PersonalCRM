@@ -52,7 +52,7 @@ import {
 const CARD =
   "rounded-[18px] bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
 
-const LABEL = "text-[10px] font-bold tracking-[0.07em] text-ink-ghost uppercase";
+const LABEL = "text-[10px] font-bold tracking-[0.07em] text-ink-meta uppercase";
 
 const GHOST =
   "rounded-full bg-line-soft px-[13px] py-1.5 text-[12px] font-semibold text-ink-body transition-colors hover:bg-chip-track disabled:cursor-default disabled:opacity-60";
@@ -152,7 +152,7 @@ export function SummaryCard({
         </div>
         <div className="flex flex-col items-end gap-1">
           {!asking && generateButton}
-          <span className="text-[11px] font-medium text-ink-faint">
+          <span className="text-[11px] font-medium text-ink-soft">
             {whyNot ??
               (budget.summaries
                 ? allowanceLine(budget.summaries, "summary")
@@ -224,7 +224,7 @@ export function SummaryCard({
 /** "As of 12 Sep · approved" / "· edited by you". */
 function Stamp({ summary }: { summary: SavedSummary }) {
   return (
-    <span className="text-[11.5px] font-medium text-ink-faint">
+    <span className="text-[11.5px] font-medium text-ink-soft">
       As of {shortDate(summary.as_of)} · {summary.edited ? "edited by you" : "approved"}
     </span>
   );
@@ -251,7 +251,7 @@ function Proposal({
       </span>
       <Parts summary={summary} gmailEmail={gmailEmail} />
       <Suggestions summary={summary} gmailEmail={gmailEmail} contact={contact} referrals={referrals} />
-      <p className="text-[11.5px] leading-[1.5] text-ink-muted">
+      <p className="text-[11.5px] leading-[1.5] text-ink-soft">
         Check it against the sources before approving — the AI can be wrong about people.
       </p>
       <form className="mt-auto flex flex-wrap gap-[7px]">
@@ -319,7 +319,7 @@ function ApprovedSummary({
               maxLength={MAX_PART_CHARS}
               defaultValue={hasErrors && state ? state.values[part] : (summary[part] ?? "")}
               aria-invalid={errors[part] ? true : undefined}
-              className="w-full resize-y rounded-[11px] border border-line-strong bg-white px-3 py-2 text-[13.5px] leading-[1.55] text-ink outline-none transition focus:border-ink-faint focus:ring-2 focus:ring-ink/10 aria-invalid:border-accent"
+              className="w-full resize-y rounded-[11px] border border-line-strong bg-white px-3 py-2 text-[13.5px] leading-[1.55] text-ink outline-none transition focus:border-ink-soft focus:ring-2 focus:ring-ink/10 aria-invalid:border-accent"
             />
             {errors[part] && (
               <p role="alert" className="text-[12px] font-medium text-accent">
@@ -329,7 +329,7 @@ function ApprovedSummary({
           </div>
         ))}
       </div>
-      <p className="text-[11.5px] text-ink-muted">
+      <p className="text-[11.5px] text-ink-soft">
         Saved summaries are marked &ldquo;edited by you&rdquo;. A new AI version never replaces them on its own.
       </p>
       <div className="flex flex-wrap gap-[7px]">
@@ -360,7 +360,7 @@ export function Parts({ summary, gmailEmail }: { summary: SavedSummary; gmailEma
               {text ? (
                 <span className="text-[13.5px] leading-[1.55] break-words whitespace-pre-line text-ink-body">{text}</span>
               ) : (
-                <span className="text-[13px] leading-[1.55] text-ink-hush">Not in these emails</span>
+                <span className="text-[13px] leading-[1.55] text-ink-soft">Not in these emails</span>
               )}
               {text && <Sources sources={sources} numbers={numbers} gmailEmail={gmailEmail} />}
             </dd>
@@ -416,12 +416,12 @@ function Suggestions({
             <li key={field} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
               <div className="flex min-w-0 flex-col gap-0.5">
                 <span className="text-[13px] text-ink-body">
-                  <span className="text-ink-muted">{label}:</span> {value}
+                  <span className="text-ink-soft">{label}:</span> {value}
                 </span>
                 <Sources sources={summary.sources[field] ?? []} numbers={numbers} gmailEmail={gmailEmail} />
               </div>
               {same ? (
-                <span className="text-[11.5px] font-medium text-ink-faint">Already on the contact</span>
+                <span className="text-[11.5px] font-medium text-ink-soft">Already on the contact</span>
               ) : (
                 <form>
                   <PendingButton
@@ -439,7 +439,7 @@ function Suggestions({
           <li key={person.name} className="flex flex-col gap-0.5">
             <ReferralLine name={person.name} status={person.status} />
             {person.plannedOn && (
-              <span className="text-[11.5px] text-ink-muted">
+              <span className="text-[11.5px] text-ink-soft">
                 You already have a next touch for {person.name} on {weekdayDate(person.plannedOn)}.
               </span>
             )}
@@ -449,11 +449,11 @@ function Suggestions({
           <li className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
             <div className="flex min-w-0 flex-col gap-0.5">
               <span className="text-[13px] text-ink-body">
-                <span className="text-ink-muted">Next touch:</span> {touchReason}
+                <span className="text-ink-soft">Next touch:</span> {touchReason}
                 {summary.suggested_touch_on ? ` · ${weekdayDate(summary.suggested_touch_on)}` : " · pick a date"}
               </span>
               {(summary.suggested_touch_why || summary.suggested_touch_rough) && (
-                <span className="text-[12px] leading-[1.45] text-ink-muted">
+                <span className="text-[12px] leading-[1.45] text-ink-soft">
                   {summary.suggested_touch_why}
                   {summary.suggested_touch_rough && (
                     <span className="text-cooling"> Rough guess — pick a better date.</span>
@@ -467,7 +467,7 @@ function Suggestions({
                 </span>
               )}
               {stillOpen.length > 0 && stillOpen.length < referred.length && (
-                <span className="text-[11.5px] text-ink-muted">
+                <span className="text-[11.5px] text-ink-soft">
                   Still to contact: {stillOpen.join(", ")}.
                 </span>
               )}
@@ -508,20 +508,20 @@ function ReferralLine({ name, status }: { name: string; status: ReferralStatus }
     case "open":
       return (
         <span className="text-[13px] text-ink-body">
-          <span className="text-ink-muted">Referral:</span> you haven&rsquo;t written to {link(status.contactId, name)}{" "}
+          <span className="text-ink-soft">Referral:</span> you haven&rsquo;t written to {link(status.contactId, name)}{" "}
           since.
         </span>
       );
     case "ambiguous":
       return (
-        <span className="text-[12.5px] text-ink-muted">
+        <span className="text-[12.5px] text-ink-soft">
           Referral to {name}: {status.count} different people in your mail have that name, so it can&rsquo;t tell
           whether you&rsquo;ve written to the right one.
         </span>
       );
     case "unknown":
       return (
-        <span className="text-[12.5px] text-ink-muted">
+        <span className="text-[12.5px] text-ink-soft">
           Referral to {name}: nobody by that name in your synced mail yet.
         </span>
       );
@@ -547,7 +547,7 @@ function Sources({
 }) {
   if (sources.length === 0) return null;
   return (
-    <span className="flex flex-wrap items-center gap-x-2 text-[11px] font-medium text-ink-faint">
+    <span className="flex flex-wrap items-center gap-x-2 text-[11px] font-medium text-ink-soft">
       Sources:
       {sources.map((source) =>
         "address" in source ? (
@@ -558,7 +558,7 @@ function Sources({
             href={gmailLink(source.messageId, gmailEmail)}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-semibold text-ink-muted underline decoration-line-strong underline-offset-2 hover:text-ink"
+            className="font-semibold text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-ink"
           >
             email {numbers.get(source.messageId) ?? "?"}
           </a>

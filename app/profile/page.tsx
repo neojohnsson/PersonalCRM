@@ -104,7 +104,7 @@ export default async function ProfilePage() {
           <span className="text-[12.5px] text-ink-soft">
             Everything stored, what leaves the app, export and delete
           </span>
-          <span className="ml-auto text-[12px] font-semibold text-ink-faint">Open</span>
+          <span className="ml-auto text-[12px] font-semibold text-ink-soft">Open</span>
         </Link>
       </main>
     </AppShell>

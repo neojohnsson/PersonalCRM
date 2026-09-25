@@ -68,7 +68,7 @@ export function SeenOnceQueue({
 
         <div className="flex flex-wrap items-center gap-[7px]">
           {filtered > 0 && (
-            <span className="mr-1.5 text-[11.5px] text-ink-faint">
+            <span className="mr-1.5 text-[11.5px] text-ink-soft">
               {countOf(filtered, "automated message")} filtered out — newsletters, no-reply,
               calendar invites
             </span>
@@ -105,14 +105,14 @@ export function SeenOnceQueue({
         </ul>
 
         <div className="flex items-center justify-between border-t border-line-soft px-[22px] py-[11px]">
-          <span className="text-[11.5px] font-medium text-ink-ghost">
+          <span className="text-[11.5px] font-medium text-ink-soft">
             Showing {people.length.toLocaleString("en-GB")} of {total.toLocaleString("en-GB")}
           </span>
           {moreHref && (
             <Link
               href={moreHref}
               scroll={false}
-              className="text-[11.5px] font-semibold text-ink-muted hover:text-ink"
+              className="text-[11.5px] font-semibold text-ink-soft hover:text-ink"
             >
               Load more
             </Link>
@@ -155,12 +155,12 @@ function Row({
 
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 lg:w-[236px] lg:flex-none">
         <span className="truncate text-[13.5px] font-semibold tracking-[-0.01em]">{label}</span>
-        <span className="truncate text-[12px] text-ink-muted">{person.email}</span>
+        <span className="truncate text-[12px] text-ink-soft">{person.email}</span>
       </div>
 
       <span
         className={`rounded-full px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap tabular-nums ${
-          person.fromThem > 0 ? "bg-info-tint text-info-ink" : "bg-line-soft text-ink-muted"
+          person.fromThem > 0 ? "bg-info-tint text-info-ink" : "bg-line-soft text-ink-soft"
         }`}
       >
         {person.fromThem} from them · {person.fromYou} from you
@@ -169,12 +169,12 @@ function Row({
       <div className="flex min-w-0 basis-full flex-col gap-0.5 lg:basis-auto lg:flex-1">
         <span
           className={`truncate text-[11.5px] font-semibold ${
-            person.subject ? "text-ink-body" : "text-ink-hush"
+            person.subject ? "text-ink-body" : "text-ink-soft"
           }`}
         >
           {person.subject ?? "No subject"}
         </span>
-        <span className="truncate text-[11.5px] text-ink-muted">
+        <span className="truncate text-[11.5px] text-ink-soft">
           {[person.day, domain].filter(Boolean).join(" · ")}
         </span>
       </div>

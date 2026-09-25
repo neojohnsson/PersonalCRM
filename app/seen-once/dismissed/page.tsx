@@ -84,7 +84,7 @@ export default async function DismissedPage() {
                     <span className="truncate text-[13.5px] font-semibold tracking-[-0.01em]">
                       {dismissal.email}
                     </span>
-                    <span className="truncate text-[12px] text-ink-muted">
+                    <span className="truncate text-[12px] text-ink-soft">
                       Dismissed {dayMonth(dismissal.dismissedAt)}
                     </span>
                   </div>

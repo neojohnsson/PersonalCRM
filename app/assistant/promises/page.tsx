@@ -101,7 +101,7 @@ export default async function PromisesPage() {
           </EmptyCard>
         )}
 
-        <p className="max-w-3xl px-1 text-[11.5px] leading-[1.55] font-medium text-ink-faint">
+        <p className="max-w-3xl px-1 text-[11.5px] leading-[1.55] font-medium text-ink-soft">
           The message under each one is read from Gmail as this page opens and is never stored.
           The line above it is written by the AI, so read the words before you accept it &mdash; a
           negation turns a promise into its opposite.

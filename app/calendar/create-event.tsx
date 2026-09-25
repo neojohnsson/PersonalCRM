@@ -178,7 +178,7 @@ export function CreateEvent({
         </button>
       </div>
 
-      <p className="text-[11.5px] leading-[1.45] font-medium text-ink-faint">
+      <p className="text-[11.5px] leading-[1.45] font-medium text-ink-soft">
         It goes on your own calendar, with <strong className="font-semibold">no guests</strong> — a
         guest list would make Google email an invitation, and this app never causes mail to reach
         anybody. Add people in Google Calendar yourself.
@@ -189,9 +189,9 @@ export function CreateEvent({
 
 const PILL =
   "flex items-center gap-[7px] rounded-full bg-ink-deep px-4 py-[9px] text-[12.5px] font-semibold text-white transition hover:bg-ink/85";
-const LABEL = "text-[10.5px] font-bold tracking-[0.07em] text-ink-ghost uppercase";
+const LABEL = "text-[10.5px] font-bold tracking-[0.07em] text-ink-meta uppercase";
 const INPUT =
-  "w-full rounded-[11px] border border-line-strong bg-white px-3 py-2 text-[13.5px] text-ink outline-none transition placeholder:text-ink-hush focus:border-ink-faint focus:ring-2 focus:ring-ink/10 aria-invalid:border-accent";
+  "w-full rounded-[11px] border border-line-strong bg-white px-3 py-2 text-[13.5px] text-ink outline-none transition placeholder:text-ink-soft focus:border-ink-soft focus:ring-2 focus:ring-ink/10 aria-invalid:border-accent";
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;

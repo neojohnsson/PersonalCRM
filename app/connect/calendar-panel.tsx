@@ -32,7 +32,7 @@ export function CalendarPanel({
     <div className="flex flex-col gap-3 rounded-[14px] bg-white px-[18px] py-4 shadow-[0_1px_2px_rgba(20,20,25,.05)]">
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
         <span className="text-[13.5px] font-semibold tracking-[-0.01em]">Calendar connected</span>
-        <span className="text-[12.5px] text-ink-faint">{email}</span>
+        <span className="text-[12.5px] text-ink-soft">{email}</span>
       </div>
 
       <p className="text-[12.5px] leading-[1.5] text-ink-soft">
@@ -46,7 +46,7 @@ export function CalendarPanel({
       {state && (
         <p
           role="status"
-          className={`text-[12px] leading-[1.5] font-medium ${state.tone === "problem" ? "text-accent" : "text-ink-quiet"}`}
+          className={`text-[12px] leading-[1.5] font-medium ${state.tone === "problem" ? "text-accent" : "text-ink-soft"}`}
         >
           {state.message}
         </p>
@@ -61,7 +61,7 @@ export function CalendarPanel({
         </form>
       </div>
 
-      <p className="text-[11.5px] leading-[1.5] text-ink-faint">
+      <p className="text-[11.5px] leading-[1.5] text-ink-soft">
         Disconnecting gives the permission back to Google and deletes the meetings it was used
         to read. Nothing in your calendar is ever changed either way.
       </p>

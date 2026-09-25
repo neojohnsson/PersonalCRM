@@ -27,7 +27,7 @@ export function PlanCard({ entitlement, uses }: { entitlement: Entitlement; uses
         <span className="rounded-full bg-info-tint px-2 py-0.5 text-[10.5px] font-semibold text-info-ink">
           {plan.label}
         </span>
-        <Link href="/pricing" className="ml-auto text-[12px] font-semibold text-ink-faint hover:text-ink">
+        <Link href="/pricing" className="ml-auto text-[12px] font-semibold text-ink-soft hover:text-ink">
           See plans
         </Link>
       </div>

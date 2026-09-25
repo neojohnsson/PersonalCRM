@@ -160,7 +160,7 @@ export function ContactForm({
                 className={`${INPUT} min-w-0 flex-1`}
               />
               {index === 0 ? (
-                emails.length > 1 && <span className="text-[11.5px] font-semibold text-ink-faint">Primary</span>
+                emails.length > 1 && <span className="text-[11.5px] font-semibold text-ink-soft">Primary</span>
               ) : (
                 <SmallButton onClick={() => makePrimary(index)}>Make primary</SmallButton>
               )}
@@ -209,7 +209,7 @@ export function ContactForm({
           {errors.tags ? (
             <FieldError id="tags-error" message={errors.tags} />
           ) : (
-            <p id="tags-hint" className="text-[12px] text-ink-faint">
+            <p id="tags-hint" className="text-[12px] text-ink-soft">
               Separate tags with commas.
             </p>
           )}
@@ -245,10 +245,10 @@ export function ContactForm({
   );
 }
 
-const LABEL = "text-[10.5px] font-bold tracking-[0.07em] text-ink-ghost uppercase";
+const LABEL = "text-[10.5px] font-bold tracking-[0.07em] text-ink-meta uppercase";
 
 const INPUT =
-  "w-full rounded-[11px] border border-line-strong bg-white px-3 py-2.5 text-[14px] text-ink outline-none transition placeholder:text-ink-hush focus:border-ink-faint focus:ring-2 focus:ring-ink/10 aria-invalid:border-accent";
+  "w-full rounded-[11px] border border-line-strong bg-white px-3 py-2.5 text-[14px] text-ink outline-none transition placeholder:text-ink-soft focus:border-ink-soft focus:ring-2 focus:ring-ink/10 aria-invalid:border-accent";
 
 function Section({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
   return (

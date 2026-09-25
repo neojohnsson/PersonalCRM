@@ -486,10 +486,10 @@ function NamesCard({ names, onSettled }: { names: NameGuess[]; onSettled: Settle
           >
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="text-[13px]">
-                <span className={row.state === "renamed" ? "text-ink-faint line-through" : "text-ink-body"}>
+                <span className={row.state === "renamed" ? "text-ink-soft line-through" : "text-ink-body"}>
                   {row.now}
                 </span>
-                <span aria-hidden="true" className="px-1.5 text-ink-faint">→</span>
+                <span aria-hidden="true" className="px-1.5 text-ink-soft">→</span>
                 <span className="sr-only"> to </span>
                 <strong className="font-semibold">{row.suggested}</strong>
               </span>
@@ -577,13 +577,13 @@ function EditCard({
             <span className="w-full shrink-0 text-[12px] font-semibold text-ink-soft sm:w-[130px]">
               {FIELD_LABELS[change.field]}
             </span>
-            <span className={stage === "saved" ? "text-ink-faint line-through" : "text-ink-body"}>
-              {change.before ?? <em className="text-ink-faint">empty</em>}
+            <span className={stage === "saved" ? "text-ink-soft line-through" : "text-ink-body"}>
+              {change.before ?? <em className="text-ink-soft">empty</em>}
             </span>
-            <span aria-hidden="true" className="text-ink-faint">→</span>
+            <span aria-hidden="true" className="text-ink-soft">→</span>
             <span className="sr-only"> to </span>
             <strong className="font-semibold">
-              {change.after ?? <em className="font-normal text-ink-faint">empty</em>}
+              {change.after ?? <em className="font-normal text-ink-soft">empty</em>}
             </strong>
           </div>
         ))}
@@ -731,7 +731,7 @@ function SummaryReviewCard({
       small="Check it against the emails before you approve it — the AI can be wrong about people. Its suggestions for the contact are on their page."
       error={null}
     >
-      <span className="text-[11.5px] font-medium text-ink-faint">
+      <span className="text-[11.5px] font-medium text-ink-soft">
         As of {asOf} · written by the AI, {stage === "approved" ? "approved by you" : "not approved yet"}
       </span>
       {stage !== "discarded" && (

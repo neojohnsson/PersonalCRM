@@ -12,7 +12,7 @@ const DOT: Record<SyncLine["tone"], string> = {
   ok: "bg-affirm",
   busy: "bg-info animate-pulse",
   problem: "bg-accent",
-  idle: "bg-ink-faint",
+  idle: "bg-ink-soft",
 };
 
 /** "Last synced 4 minutes ago · 312 messages · 18 contacts", with its coloured dot. */
@@ -20,7 +20,7 @@ export function StatusLine({ line }: { line: SyncLine }) {
   return (
     <div className="flex items-center gap-[9px]">
       <span aria-hidden="true" className={`size-1.5 shrink-0 rounded-full ${DOT[line.tone]}`} />
-      <p role="status" className="text-[12.5px] font-medium text-ink-quiet">
+      <p role="status" className="text-[12.5px] font-medium text-ink-soft">
         {line.text}
       </p>
     </div>

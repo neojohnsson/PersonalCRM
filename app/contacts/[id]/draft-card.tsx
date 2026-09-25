@@ -31,7 +31,7 @@ import {
 
 const CARD =
   "rounded-[18px] bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
-const LABEL = "text-[10px] font-bold tracking-[0.07em] text-ink-ghost uppercase";
+const LABEL = "text-[10px] font-bold tracking-[0.07em] text-ink-meta uppercase";
 const GHOST =
   "rounded-full bg-line-soft px-[13px] py-1.5 text-[12px] font-semibold text-ink-body transition-colors hover:bg-chip-track disabled:cursor-default disabled:opacity-60";
 const SOLID =
@@ -116,7 +116,7 @@ export function DraftCard({
             <span className="rounded-full bg-info-tint px-2 py-0.5 text-[10.5px] font-semibold text-info-ink">AI</span>
           </div>
           {lastSaved?.saved_at && !draft && (
-            <span className="text-[11.5px] font-medium text-ink-faint">
+            <span className="text-[11.5px] font-medium text-ink-soft">
               Saved to Gmail drafts {timeAgo(lastSaved.saved_at)}
             </span>
           )}
@@ -130,10 +130,10 @@ export function DraftCard({
             </form>
           )}
           {whyNot ? (
-            <span className="text-[11px] font-medium text-ink-faint">{whyNot}</span>
+            <span className="text-[11px] font-medium text-ink-soft">{whyNot}</span>
           ) : (
             !draft && (
-              <span className="text-[11px] font-medium text-ink-faint">
+              <span className="text-[11px] font-medium text-ink-soft">
                 Reads your latest thread · costs about a cent
               </span>
             )
@@ -170,7 +170,7 @@ export function DraftCard({
         <div className="flex flex-col gap-3 rounded-[14px] bg-info-tint/60 px-4 py-3.5">
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
             <span className={`${LABEL} text-info-ink`}>Waiting for you · not in Gmail yet</span>
-            <span className="text-[11.5px] font-medium text-ink-muted">
+            <span className="text-[11.5px] font-medium text-ink-soft">
               {[draft.language, TONE_LABELS[draft.tone]].filter(Boolean).join(" · ")}
             </span>
           </div>
@@ -192,9 +192,9 @@ export function DraftCard({
                 value={body}
                 maxLength={MAX_BODY_CHARS}
                 onChange={(event) => setBody(event.currentTarget.value)}
-                className="w-full resize-y rounded-[11px] border border-line-strong bg-white px-3 py-2.5 text-[13.5px] leading-[1.6] text-ink outline-none transition focus:border-ink-faint focus:ring-2 focus:ring-ink/10"
+                className="w-full resize-y rounded-[11px] border border-line-strong bg-white px-3 py-2.5 text-[13.5px] leading-[1.6] text-ink outline-none transition focus:border-ink-soft focus:ring-2 focus:ring-ink/10"
               />
-              <div className="flex justify-end text-[11.5px] tabular-nums text-ink-faint" aria-live="polite">
+              <div className="flex justify-end text-[11.5px] tabular-nums text-ink-soft" aria-live="polite">
                 {body.length.toLocaleString("en-GB")} / {MAX_BODY_CHARS.toLocaleString("en-GB")}
               </div>
             </div>
@@ -206,7 +206,7 @@ export function DraftCard({
               </p>
             )}
 
-            <p className="text-[11.5px] leading-[1.45] text-ink-muted">
+            <p className="text-[11.5px] leading-[1.45] text-ink-soft">
               Read it before saving — the AI can be wrong about people and about what was promised. It
               replies to {draft.subject ? "this thread" : "the latest thread"} and to this contact only;
               anyone else on the thread isn&rsquo;t added.
@@ -227,7 +227,7 @@ export function DraftCard({
           </form>
 
           <form action={regenerate} className="flex flex-wrap items-center gap-[7px] border-t border-line pt-3">
-            <span className="text-[11.5px] font-medium text-ink-muted">Rewrite it as:</span>
+            <span className="text-[11.5px] font-medium text-ink-soft">Rewrite it as:</span>
             {TONES.map((tone) => (
               <button
                 key={tone}

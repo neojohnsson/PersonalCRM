@@ -34,10 +34,10 @@ import {
 const CARD =
   "rounded-[18px] bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
 
-const LABEL = "text-[10.5px] font-bold tracking-[0.07em] text-ink-ghost uppercase";
+const LABEL = "text-[10.5px] font-bold tracking-[0.07em] text-ink-meta uppercase";
 
 const INPUT =
-  "w-full rounded-[11px] border border-line-strong bg-white px-3 py-2 text-[13.5px] text-ink outline-none transition placeholder:text-ink-hush focus:border-ink-faint focus:ring-2 focus:ring-ink/10 aria-invalid:border-accent";
+  "w-full rounded-[11px] border border-line-strong bg-white px-3 py-2 text-[13.5px] text-ink outline-none transition placeholder:text-ink-soft focus:border-ink-soft focus:ring-2 focus:ring-ink/10 aria-invalid:border-accent";
 
 export function NextTouchCard({
   contactId,
@@ -93,7 +93,7 @@ export function NextTouchCard({
                   &ldquo;{touch.reason}&rdquo;
                 </span>
               ) : (
-                <span className="text-[12.5px] leading-[1.45] text-ink-hush">No reason written down</span>
+                <span className="text-[12.5px] leading-[1.45] text-ink-soft">No reason written down</span>
               )}
               <Due dueOn={touch.due_on} today={today} />
             </div>
@@ -138,7 +138,7 @@ export function NextTouchCard({
                 setFromSuggestion(false);
                 setOpenedAt(saves);
               }}
-              className="rounded-full px-[11px] py-1.5 text-[12px] font-semibold text-ink-muted transition-colors hover:text-ink"
+              className="rounded-full px-[11px] py-1.5 text-[12px] font-semibold text-ink-soft transition-colors hover:text-ink"
             >
               Change
             </button>
@@ -240,7 +240,7 @@ function Badge({ isoDate }: { isoDate: string }) {
   return (
     <div className="flex shrink-0 flex-col items-center rounded-[11px] bg-chip px-[11px] py-1.5">
       <span className="text-[15px] leading-[1.1] font-bold">{day}</span>
-      <span className="text-[9.5px] font-semibold tracking-[0.05em] text-ink-quiet uppercase">{month}</span>
+      <span className="text-[9.5px] font-semibold tracking-[0.05em] text-ink-meta uppercase">{month}</span>
     </div>
   );
 }
@@ -248,7 +248,7 @@ function Badge({ isoDate }: { isoDate: string }) {
 function Due({ dueOn, today }: { dueOn: string; today: string }) {
   const { text, overdue } = dueText(dueOn, today);
   return (
-    <span className={`text-[11.5px] font-medium ${overdue ? "text-accent" : "text-ink-faint"}`}>
+    <span className={`text-[11.5px] font-medium ${overdue ? "text-accent" : "text-ink-soft"}`}>
       {overdue ? text : `Due ${text}`}
     </span>
   );

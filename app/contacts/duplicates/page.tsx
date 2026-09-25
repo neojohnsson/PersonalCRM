@@ -41,7 +41,7 @@ export default async function DuplicatesPage() {
 
         {pairs.length > 0 ? (
           <>
-            <p className="text-[12.5px] font-medium text-ink-quiet">
+            <p className="text-[12.5px] font-medium text-ink-soft">
               {countOf(pairs.length, "pair")} to look at
             </p>
             <ul className="flex flex-col gap-4">

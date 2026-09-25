@@ -285,7 +285,7 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
           <div className="flex min-w-0 flex-1 flex-col gap-[9px] pt-0.5">
             <div className="flex flex-col gap-[3px]">
               <h1 className="text-[27px] leading-[1.1] font-bold tracking-[-0.035em] break-words">{name}</h1>
-              {workLine && <p className="text-[14px] font-medium text-ink-muted">{workLine}</p>}
+              {workLine && <p className="text-[14px] font-medium text-ink-soft">{workLine}</p>}
               {contact.one_liner && (
                 <p className="mt-1 max-w-[640px] text-[13.5px] leading-[1.5] text-ink-soft">{contact.one_liner}</p>
               )}
@@ -297,7 +297,7 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
 
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
               {emails.map((email) => (
-                <a key={email} href={`mailto:${email}`} className="flex min-w-0 items-center gap-[7px] text-[12.5px] text-ink-muted hover:text-ink">
+                <a key={email} href={`mailto:${email}`} className="flex min-w-0 items-center gap-[7px] text-[12.5px] text-ink-soft hover:text-ink">
                   <MetaIcon>
                     <rect x="3" y="5.5" width="18" height="13" rx="2.5" />
                     <path d="m3.8 7.2 7.3 5.3a1.5 1.5 0 0 0 1.8 0l7.3-5.3" />
@@ -306,7 +306,7 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
                 </a>
               ))}
               {contact.phone && (
-                <a href={`tel:${contact.phone.replace(/[^\d+]/g, "")}`} className="flex items-center gap-[7px] text-[12.5px] text-ink-muted hover:text-ink">
+                <a href={`tel:${contact.phone.replace(/[^\d+]/g, "")}`} className="flex items-center gap-[7px] text-[12.5px] text-ink-soft hover:text-ink">
                   <MetaIcon>
                     <path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2z" />
                   </MetaIcon>
@@ -414,7 +414,7 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
                   itself, so it is only shown when there is a note to have
                   edited, and it says which record it is about. */}
               {contact.notes && (
-                <span className="text-[11.5px] font-semibold text-ink-faint">
+                <span className="text-[11.5px] font-semibold text-ink-soft">
                   Contact {edited ? "edited" : "added"} {dayMonth(contact.updated_at)}
                 </span>
               )}
@@ -423,23 +423,23 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
             {contact.notes ? (
               <p className="text-[13.5px] leading-[1.6] whitespace-pre-line text-ink-body">{contact.notes}</p>
             ) : (
-              <p className="text-[13.5px] leading-[1.6] text-ink-hush">No notes yet.</p>
+              <p className="text-[13.5px] leading-[1.6] text-ink-soft">No notes yet.</p>
             )}
 
             {contact.how_known && (
               <div className="flex flex-col gap-1 border-t border-line-soft pt-3">
-                <h3 className="text-[10px] font-bold tracking-[0.07em] text-ink-ghost uppercase">How you know them</h3>
+                <h3 className="text-[10px] font-bold tracking-[0.07em] text-ink-meta uppercase">How you know them</h3>
                 <p className="text-[13.5px] leading-[1.6] whitespace-pre-line text-ink-body">{contact.how_known}</p>
               </div>
             )}
 
             <div className="mt-auto flex flex-wrap items-center gap-2 pt-1.5">
               <Link href={`/contacts/${id}/edit#notes`} className={GHOST_PILL}>
-                <PencilIcon className="size-[13px] text-ink-muted" />
+                <PencilIcon className="size-[13px] text-ink-soft" />
                 Edit note
               </Link>
               <Link href={`/contacts/${id}/edit#tags`} className={GHOST_PILL}>
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="size-[13px] text-ink-muted">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="size-[13px] text-ink-soft">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
                 Add tag
@@ -478,13 +478,13 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
                     <span className="text-[13px] font-semibold tracking-[-0.01em] break-words">
                       {thread.subject ?? "No subject"}
                     </span>
-                    <span className="text-[12px] leading-[1.45] text-ink-muted">
+                    <span className="text-[12px] leading-[1.45] text-ink-soft">
                       {countOf(thread.messageCount, "message")} · {thread.lastFrom === "you" ? "you" : "they"} wrote
                       last on {dayMonth(thread.lastAt)}
                     </span>
                   </div>
                   <a href={gmailLink} target="_blank" rel="noopener noreferrer" className={`${GHOST_PILL} mt-auto`}>
-                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" className="size-[13px] text-ink-muted">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" className="size-[13px] text-ink-soft">
                       <path d="M14 4h6v6" />
                       <path d="M20 4 11 13" />
                       <path d="M18 14v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" />
@@ -575,11 +575,11 @@ async function latestThread(
 const PILL: Record<TurnPill["tone"], { box: string; dot: string }> = {
   yours: { box: "bg-accent-tint text-accent", dot: "bg-accent" },
   quiet: { box: "bg-chip text-cooling", dot: "bg-cooling" },
-  theirs: { box: "bg-chip text-ink-soft", dot: "bg-ink-faint" },
-  closed: { box: "bg-chip text-ink-muted", dot: "bg-ink-ghost" },
+  theirs: { box: "bg-chip text-ink-soft", dot: "bg-ink-soft" },
+  closed: { box: "bg-chip text-ink-soft", dot: "bg-ink-soft" },
   // Slice 6c: a day you chose, and the two things you can say about a contact.
   planned: { box: "bg-info-tint text-info-ink", dot: "bg-info" },
-  said: { box: "bg-chip text-ink-muted", dot: "bg-ink-faint" },
+  said: { box: "bg-chip text-ink-soft", dot: "bg-ink-soft" },
 };
 
 function TurnPillBadge({ pill }: { pill: TurnPill }) {
@@ -595,18 +595,18 @@ function TurnPillBadge({ pill }: { pill: TurnPill }) {
 const WARMTH_TEXT: Record<Band, string> = {
   warm: "text-affirm",
   cooling: "text-cooling",
-  cold: "text-ink-quiet",
+  cold: "text-ink-soft",
 };
 
 const WARMTH_BAR: Record<Band, string> = {
   warm: "bg-affirm",
   cooling: "bg-cooling",
-  cold: "bg-ink-ghost",
+  cold: "bg-ink-soft",
 };
 
 const STAT =
   "flex min-w-0 flex-col gap-[7px] rounded-2xl bg-white px-[17px] pt-[15px] pb-3.5 shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
-const STAT_LABEL = "text-[10px] font-bold tracking-[0.07em] text-ink-ghost uppercase";
+const STAT_LABEL = "text-[10px] font-bold tracking-[0.07em] text-ink-meta uppercase";
 const STAT_VALUE = "text-[21px] leading-none font-bold tracking-[-0.03em]";
 
 /**
@@ -619,7 +619,7 @@ function StatStrip({ relationship, hasEmails }: { relationship: Relationship; ha
 
   if (!warmth) {
     return (
-      <p className="pl-0.5 text-[12.5px] font-medium text-ink-faint">
+      <p className="pl-0.5 text-[12.5px] font-medium text-ink-soft">
         {hasEmails
           ? "No warmth yet: it's counted from the mail between you, and there's none in the synced window."
           : "No warmth yet: it's counted from email, and this contact has no address."}
@@ -678,7 +678,7 @@ function StatStrip({ relationship, hasEmails }: { relationship: Relationship; ha
           />
         )}
       </div>
-      <p className="pl-0.5 text-[11.5px] font-medium text-ink-faint">
+      <p className="pl-0.5 text-[11.5px] font-medium text-ink-soft">
         The {warmth.score} is these numbers and nothing else &mdash; no AI opinion about how the
         relationship is going.
         {meetings.count > 0 && " A meeting counts as contact, and as two exchanges."}
@@ -692,14 +692,14 @@ function Stat({ label, value, caption }: { label: string; value: string; caption
     <div className={STAT}>
       <span className={STAT_LABEL}>{label}</span>
       <span className={STAT_VALUE}>{value}</span>
-      <span className="text-[11.5px] font-medium text-ink-faint">{caption}</span>
+      <span className="text-[11.5px] font-medium text-ink-soft">{caption}</span>
     </div>
   );
 }
 
 function MetaIcon({ children }: { children: React.ReactNode }) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="size-3.5 shrink-0 text-ink-ghost">
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="size-3.5 shrink-0 text-ink-soft">
       {children}
     </svg>
   );

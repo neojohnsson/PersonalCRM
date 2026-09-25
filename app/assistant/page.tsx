@@ -520,7 +520,7 @@ function SpendStrip({
         <div className="flex min-w-0 basis-full flex-wrap items-center gap-x-[9px] gap-y-1 sm:basis-0 sm:flex-1">
           <DoneMark undone={latest.undoneAt !== null} />
           <span
-            className={`min-w-0 text-[12.5px] ${latest.undoneAt ? "text-ink-faint line-through" : "text-ink-body"}`}
+            className={`min-w-0 text-[12.5px] ${latest.undoneAt ? "text-ink-soft line-through" : "text-ink-body"}`}
           >
             {latest.summary}
           </span>

@@ -11,6 +11,22 @@
 /*
  * Palette lifted from the design canvas in design/. Kept as tokens so the
  * screens the design agent produces and the screens built here stay in step.
+ *
+ * The text greys are the exception (UI quality pass, milestone 1, 2026-09-25).
+ * The design had eight, and five of them failed WCAG AA (4.5:1) on white while
+ * carrying real content: calendar hours, form labels, table headers, the sync
+ * line. Darkened until they passed, six greys all landed near #737579, which
+ * nobody can tell apart -- the ramp itself was the bug. So there are four text
+ * greys, each clearing AA on white AND on paper (#f6f6f4, the real background
+ * of most screens), and two greys for things that are not text:
+ *
+ *   ink        #1a1b1e  17.22 / 15.91   primary
+ *   ink-body   #4a4c52   8.58 /  7.93   secondary, body copy
+ *   ink-soft   #6f7177   4.88 /  4.51   tertiary: meta, captions, placeholders
+ *   ink-meta   #6b6d73   5.17 /  4.78   the smallest text, 10 to 11px labels
+ *   line, line-strong                   borders, dividers -- never text
+ *
+ * #6b6d73 is the floor: anything lighter fails on paper.
  */
 :root {
   --background: #ffffff;
@@ -25,11 +41,7 @@
   --theme-ink-deep: #17181a;
   --theme-ink-body: #4a4c52;
   --theme-ink-soft: #6f7177;
-  --theme-ink-faint: #9c9ea4;
-  --theme-ink-quiet: #8a8c92;
-  --theme-ink-muted: #82848a;
-  --theme-ink-ghost: #b0b2b8;
-  --theme-ink-hush: #b9bbc0;
+  --theme-ink-meta: #6b6d73;
   --theme-line: #ecece9;
   --theme-line-soft: #f4f4f2;
   --theme-line-strong: #d8d8d4;
@@ -61,7 +73,10 @@
   --avatar-6-bg: #faf0e4;
   --avatar-6-ink: #8a5a1e;
   --theme-affirm: #15803d;
-  --theme-cooling: #a5811f;
+  /* The design's #a5811f was 3.65:1 on white: "Going quiet" and a warmth of
+     50 are text, so the amber is darkened to pass AA on white, paper and chips
+     (5.22 / 4.83 / 4.62) and still reads as the same amber. */
+  --theme-cooling: #876814;
   --theme-radio-ring: #c5c7cc;
   --theme-switch-off: #e4e4e1;
   --theme-danger: #b42318;
@@ -118,7 +133,9 @@ html {
 
   --color-ink: var(--theme-ink);
   --color-ink-soft: var(--theme-ink-soft);
-  --color-ink-faint: var(--theme-ink-faint);
+  /* The smallest text: 10 to 11px labels. Slightly darker than ink-soft,
+     because small type needs more contrast to be read, not less. */
+  --color-ink-meta: var(--theme-ink-meta);
   --color-paper: var(--theme-paper);
   --color-line: var(--theme-line);
   --color-accent: var(--theme-accent);
@@ -129,12 +146,6 @@ html {
 
   /* The near-black of the sidebar and the dark pill buttons. */
   --color-ink-deep: var(--theme-ink-deep);
-  /* Secondary text steps from ContactList / Main: status line, cells, headings. */
-  --color-ink-quiet: var(--theme-ink-quiet);
-  --color-ink-muted: var(--theme-ink-muted);
-  --color-ink-ghost: var(--theme-ink-ghost);
-  /* The faint count on an inactive tab, and the search placeholder. */
-  --color-ink-hush: var(--theme-ink-hush);
   /* The grey track behind ContactList's Contacts / Seen once tabs. */
   --color-chip-track: var(--theme-chip-track);
 
@@ -214,12 +225,12 @@ html {
   --theme-line-strong: #34363b;
   --theme-ink: #ececec;
   --theme-ink-body: #c8c8cc;
+  /* The same four text roles. Meta is measured on the RAISED tone, not the
+     card: the month on a date tile sits on #28292d, where the audit's
+     #87888d was 4.11:1. #909196 clears 4.5 on every Night surface (lowest,
+     the chip: 4.62). */
   --theme-ink-soft: #a0a1a6;
-  --theme-ink-faint: #85868c;
-  --theme-ink-quiet: #909197;
-  --theme-ink-muted: #97989d;
-  --theme-ink-ghost: #75767c;
-  --theme-ink-hush: #6b6c72;
+  --theme-ink-meta: #909196;
   /* The dark pill buttons: raised grey with white words, not a hole. */
   --theme-ink-deep: #33343a;
   --theme-rail: #111112;
@@ -258,28 +269,6 @@ html {
   --avatar-5-ink: #8fcfc9;
   --avatar-6-bg: #32291d;
   --avatar-6-ink: #e2bd84;
-}
-
-:root[data-theme="studio"] {
-  --theme-paper: #f4f8f5;
-  --theme-paper-tint: #edf5f0;
-  --theme-chip: #e6f0eb;
-  --theme-chip-track: #dcebe3;
-  --theme-accent: #d44f69;
-  --theme-accent-dark: #a9334c;
-  --theme-accent-tint: #fff0f3;
-  --theme-accent-soft: #ed7690;
-  --theme-info: #376fc5;
-  --theme-info-ink: #2d5da8;
-  --theme-info-tint: #eaf1ff;
-  --theme-rail-active: #253e39;
-  --theme-rail-icon: #78918a;
-  --theme-rail-avatar: #4c7569;
-}
-
-:root[data-theme="studio"] .assistant-composer {
-  border-color: #cfe3d7;
-  box-shadow: 0 1px 2px rgb(20 20 25 / 0.04), 0 8px 24px rgb(212 79 105 / 0.12);
 }
 
 /* Night's surfaces: every white card and paper strip takes Night's tones. */

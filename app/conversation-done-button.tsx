@@ -72,7 +72,7 @@ export function ConversationDoneButton({
         }
         className={`rounded-full px-3.5 py-[13px] text-[12px] font-semibold transition disabled:cursor-default sm:py-2 ${
           done
-            ? "bg-line-soft text-ink-faint"
+            ? "bg-line-soft text-ink-soft"
             : "bg-line-soft text-ink-body hover:bg-chip-track disabled:opacity-50"
         }`}
       >

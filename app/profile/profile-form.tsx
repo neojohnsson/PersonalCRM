@@ -38,9 +38,9 @@ import { saveProfileAction, type ProfileState } from "./actions";
 
 const CARD =
   "flex flex-col gap-3.5 rounded-[18px] bg-white px-[22px] pt-[18px] pb-5 shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
-const FIELD_LABEL = "text-[11.5px] font-semibold text-ink-muted";
+const FIELD_LABEL = "text-[11.5px] font-semibold text-ink-soft";
 const INPUT =
-  "w-full rounded-[11px] border border-line bg-paper-tint px-3 py-[9px] text-[13.5px] leading-[1.5] text-ink outline-none transition placeholder:text-ink-hush focus:border-ink-faint focus:bg-white focus:ring-2 focus:ring-ink/10 aria-invalid:border-accent";
+  "w-full rounded-[11px] border border-line bg-paper-tint px-3 py-[9px] text-[13.5px] leading-[1.5] text-ink outline-none transition placeholder:text-ink-soft focus:border-ink-soft focus:bg-white focus:ring-2 focus:ring-ink/10 aria-invalid:border-accent";
 
 const TONE_OPTIONS: { value: Tone; name: string; description: string; example: string }[] = [
   {
@@ -109,7 +109,7 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
       ? { dot: "bg-accent", text: "Not saved — see the marked fields" }
       : state.savedAt
         ? { dot: "bg-affirm", text: `Saved ${timeAgo(state.savedAt)}` }
-        : { dot: "bg-ink-faint", text: "Not saved yet" };
+        : { dot: "bg-ink-soft", text: "Not saved yet" };
 
   const textField = (name: ProfileTextField, label: string, options: { rows?: number; placeholder?: string } = {}) => {
     const common = {
@@ -175,13 +175,13 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
           <h1 className="text-[27px] leading-[1.1] font-bold tracking-[-0.035em] break-words">
             {displayName.trim() || "Your profile"}
           </h1>
-          <p className="text-[14px] font-medium text-ink-muted">
+          <p className="text-[14px] font-medium text-ink-soft">
             What your drafts know about you. Nothing here goes to the AI until you ask for a draft.
           </p>
         </div>
         <div role="status" className="flex shrink-0 items-center gap-2">
           <span aria-hidden="true" className={`size-1.5 rounded-full ${status.dot}`} />
-          <span className="text-[12.5px] font-medium text-ink-quiet">{status.text}</span>
+          <span className="text-[12.5px] font-medium text-ink-soft">{status.text}</span>
         </div>
       </div>
 
@@ -210,7 +210,7 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
                     saveSoon();
                   }}
                 />
-                <span className="text-[11.5px] leading-[1.45] text-ink-faint">
+                <span className="text-[11.5px] leading-[1.45] text-ink-soft">
                   A draft is written in the language of the thread it answers.
                 </span>
                 <FieldError message={errors.languages} />
@@ -255,7 +255,7 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
                       <span className="text-[13.5px] font-semibold tracking-[-0.01em]">{option.name}</span>
                     </span>
                     <span className="text-[12px] leading-[1.4] text-ink-soft">{option.description}</span>
-                    <span className="text-[12px] leading-[1.45] text-ink-faint">{option.example}</span>
+                    <span className="text-[12px] leading-[1.45] text-ink-soft">{option.example}</span>
                   </button>
                 );
               })}
@@ -331,7 +331,7 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
               />
               {COMMON_AI_PHRASES.some((phrase) => !neverWrite.includes(phrase)) && (
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-[11.5px] text-ink-faint">Common AI phrases:</span>
+                  <span className="text-[11.5px] text-ink-soft">Common AI phrases:</span>
                   {COMMON_AI_PHRASES.filter((phrase) => !neverWrite.includes(phrase)).map((phrase) => (
                     <button
                       key={phrase}
@@ -340,7 +340,7 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
                         setNeverWrite([...neverWrite, phrase]);
                         saveSoon();
                       }}
-                      className="rounded-full px-[11px] py-[5px] text-[12px] font-medium text-ink-muted shadow-[inset_0_0_0_1px_var(--color-line)] hover:text-ink"
+                      className="rounded-full px-[11px] py-[5px] text-[12px] font-medium text-ink-soft shadow-[inset_0_0_0_1px_var(--color-line)] hover:text-ink"
                     >
                       + “{phrase}”
                     </button>
@@ -362,7 +362,7 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
               onBlurField={save}
             />
             <FieldError message={errors.links} />
-            <p className="text-[11.5px] leading-[1.5] font-medium text-ink-faint">
+            <p className="text-[11.5px] leading-[1.5] font-medium text-ink-soft">
               The AI only sees the address. The app never opens these pages &mdash; LinkedIn is not
               read or scraped. If you want what is on your LinkedIn profile to reach a draft, put
               it in &ldquo;What you do&rdquo; and &ldquo;What you&rsquo;re looking for&rdquo;
@@ -379,7 +379,7 @@ function CardHeading({ title, caption }: { title: string; caption: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
       <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">{title}</h2>
-      <span className="text-[11.5px] font-semibold text-ink-faint">{caption}</span>
+      <span className="text-[11.5px] font-semibold text-ink-soft">{caption}</span>
     </div>
   );
 }
@@ -418,7 +418,7 @@ function Segmented<T extends string>({
             className={`rounded-full px-[13px] py-[5px] text-[11.5px] transition-colors ${
               on
                 ? "bg-white font-semibold text-ink shadow-[0_1px_2px_rgba(20,20,25,.06)]"
-                : "font-medium text-ink-faint hover:text-ink-soft"
+                : "font-medium text-ink-soft hover:text-ink-soft"
             }`}
           >
             {option.label}
@@ -466,7 +466,7 @@ function ChipList({
             type="button"
             onClick={() => onChange(items.filter((other) => other !== item))}
             aria-label={`Remove ${item}`}
-            className="text-ink-faint hover:text-ink"
+            className="text-ink-soft hover:text-ink"
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" className="size-3">
               <path d="M7 7l10 10M17 7 7 17" />
@@ -496,7 +496,7 @@ function ChipList({
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="flex items-center gap-[5px] rounded-full px-[11px] py-[5px] text-[12px] font-semibold text-ink-muted shadow-[inset_0_0_0_1px_var(--color-line)] hover:text-ink"
+          className="flex items-center gap-[5px] rounded-full px-[11px] py-[5px] text-[12px] font-semibold text-ink-soft shadow-[inset_0_0_0_1px_var(--color-line)] hover:text-ink"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" className="size-[11px]">
             <path d="M12 5v14M5 12h14" />
@@ -528,7 +528,7 @@ function LinkList({
     );
 
   const plainInput =
-    "w-full min-w-0 rounded-md border border-transparent bg-transparent px-1 -mx-1 outline-none hover:border-line focus:border-ink-faint focus:bg-white";
+    "w-full min-w-0 rounded-md border border-transparent bg-transparent px-1 -mx-1 outline-none hover:border-line focus:border-ink-soft focus:bg-white";
 
   return (
     <div className="flex flex-col">
@@ -551,7 +551,7 @@ function LinkList({
               maxLength={PROFILE_LIMITS.link_label}
               onChange={(event) => update(index, { label: event.currentTarget.value }, false)}
               onBlur={onBlurField}
-              className={`${plainInput} text-[13px] font-semibold tracking-[-0.01em] placeholder:font-medium placeholder:text-ink-hush`}
+              className={`${plainInput} text-[13px] font-semibold tracking-[-0.01em] placeholder:font-medium placeholder:text-ink-soft`}
             />
             <input
               name="link_url"
@@ -561,7 +561,7 @@ function LinkList({
               maxLength={PROFILE_LIMITS.link_url}
               onChange={(event) => update(index, { url: event.currentTarget.value }, false)}
               onBlur={onBlurField}
-              className={`${plainInput} truncate text-[12px] text-ink-muted placeholder:text-ink-hush`}
+              className={`${plainInput} truncate text-[12px] text-ink-soft placeholder:text-ink-soft`}
             />
           </div>
           <button
@@ -585,7 +585,7 @@ function LinkList({
             type="button"
             onClick={() => onChange(links.filter((_, i) => i !== index), true)}
             aria-label={`Remove ${link.label || "this link"}`}
-            className="text-ink-faint hover:text-ink"
+            className="text-ink-soft hover:text-ink"
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" className="size-3.5">
               <path d="M7 7l10 10M17 7 7 17" />
@@ -600,7 +600,7 @@ function LinkList({
             onClick={() => onChange([...links, { label: "", url: "", in_signature: false }], false)}
             className="flex items-center gap-1.5 rounded-full bg-line-soft px-[13px] py-[7px] text-[12px] font-semibold text-ink-body transition-colors hover:bg-chip-track"
           >
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" className="size-3 text-ink-muted">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" className="size-3 text-ink-soft">
               <path d="M12 5v14M5 12h14" />
             </svg>
             Add link

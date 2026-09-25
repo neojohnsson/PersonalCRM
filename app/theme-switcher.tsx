@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 
-export type Theme = "paper" | "night" | "studio";
+// Studio was removed 2026-09-25 (UI quality pass): it was Paper with another
+// accent. Someone who had chosen it is back on Paper.
+export type Theme = "paper" | "night";
 
 const THEMES: { value: Theme; label: string; description: string }[] = [
   { value: "paper", label: "Paper", description: "Warm and focused" },
   { value: "night", label: "Night", description: "Dark graphite and coral" },
-  { value: "studio", label: "Studio", description: "Brighter colors and softer surfaces" },
 ];
 
 const STORAGE_KEY = "personal-crm-theme";
@@ -43,7 +44,7 @@ export function ThemeSwitcher() {
       </button>
       {open && (
         <div role="menu" className="absolute right-0 top-11 z-50 w-56 rounded-[14px] border border-line bg-white p-1.5 shadow-[0_8px_24px_rgba(20,20,25,.14)]">
-          <p className="px-3 pb-1.5 pt-2 text-[10.5px] font-bold tracking-[0.07em] text-ink-ghost uppercase">Appearance</p>
+          <p className="px-3 pb-1.5 pt-2 text-[10.5px] font-bold tracking-[0.07em] text-ink-meta uppercase">Appearance</p>
           {THEMES.map((option) => (
             <button
               key={option.value}
@@ -69,7 +70,7 @@ export function ThemeSwitcher() {
 function storedTheme(): Theme {
   if (typeof window === "undefined") return "paper";
   const saved = window.localStorage.getItem(STORAGE_KEY);
-  return saved === "paper" || saved === "night" || saved === "studio" ? saved : "paper";
+  return saved === "night" ? "night" : "paper";
 }
 
 function applyTheme(theme: Theme) {

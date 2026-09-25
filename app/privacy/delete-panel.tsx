@@ -91,14 +91,14 @@ function Danger({
           <p className="text-[12.5px] leading-[1.55] text-ink-body">{what}</p>
           <form action={run} className="flex flex-wrap items-center gap-[7px]">
             <label className="flex min-w-0 flex-1 basis-60 flex-col gap-1.5">
-              <span className="text-[11.5px] font-semibold text-ink-muted">
+              <span className="text-[11.5px] font-semibold text-ink-soft">
                 Type <span className="text-ink">{phrase}</span> to confirm
               </span>
               <input
                 name="confirm"
                 autoComplete="off"
                 spellCheck={false}
-                className="w-full rounded-[11px] border border-line bg-white px-3 py-[9px] text-[13.5px] text-ink outline-none transition focus:border-ink-faint focus:ring-2 focus:ring-ink/10"
+                className="w-full rounded-[11px] border border-line bg-white px-3 py-[9px] text-[13.5px] text-ink outline-none transition focus:border-ink-soft focus:ring-2 focus:ring-ink/10"
               />
             </label>
             <div className="flex gap-[7px] pt-5">

@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { transform } from "lightningcss";
 import { describe, expect, it } from "vitest";
 
@@ -60,6 +61,46 @@ describe("the themes", () => {
     for (const file of ["app/assistant/chat.tsx", "app/contacts/contact-form.tsx", "app/intro-screen.tsx"]) {
       expect(readFileSync(file, "utf8"), file).not.toMatch(/(?:bg|text|border)-\[#[0-9a-fA-F]{3,8}\]/);
     }
+  });
+
+  it("have four text greys, each clearing WCAG AA where text actually sits", () => {
+    // UI quality pass, milestone 1 (2026-09-25): five of the design's eight
+    // greys failed AA on white while carrying calendar hours, form labels and
+    // table headers. Each text grey must clear 4.5:1 on the card AND on the
+    // page behind it, in both themes.
+    const luminance = (hex: string) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+      const f = (v: number) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+      return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+    };
+    const ratio = (a: string, b: string) => {
+      const [x, y] = [luminance(a), luminance(b)].sort((m, n) => n - m);
+      return (x + 0.05) / (y + 0.05);
+    };
+    for (const selector of [":root", ':root[data-theme="night"]']) {
+      const theme = block(selector);
+      const value = (name: string) => theme.match(new RegExp(`--theme-${name}: (#[0-9a-f]{6});`))![1];
+      for (const text of ["ink", "ink-body", "ink-soft", "ink-meta"]) {
+        for (const surface of ["white", "paper"]) {
+          expect(ratio(value(text), value(surface)), `${selector} ${text} on ${surface}`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+      // The smallest text also sits on raised tiles: the month on a date badge.
+      expect(ratio(value("ink-meta"), value("chip")), `${selector} ink-meta on chip`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it("have no deleted grey left in a class, and no Studio", () => {
+    const files = (dir: string): string[] =>
+      readdirSync(dir).flatMap((name) => {
+        const path = join(dir, name);
+        return statSync(path).isDirectory() ? files(path) : /\.(ts|tsx)$/.test(name) ? [path] : [];
+      });
+    for (const file of [...files("app"), ...files("lib")]) {
+      expect(readFileSync(file, "utf8"), file).not.toMatch(/ink-(muted|quiet|faint|ghost|hush)\b/);
+    }
+    expect(css).not.toMatch(/ink-(muted|quiet|faint|ghost|hush)\b/);
+    expect(css).not.toContain('data-theme="studio"');
   });
 
   it("keep the sidebar's logo white in every theme", () => {

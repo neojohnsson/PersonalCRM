@@ -150,7 +150,7 @@ export default async function Home() {
       seenOnceCount={seenOnce}
       headerRight={
         <>
-          <span className="hidden text-[13px] text-ink-faint lg:inline">{gmail.email}</span>
+          <span className="hidden text-[13px] text-ink-soft lg:inline">{gmail.email}</span>
           <SignOutButton />
         </>
       }
@@ -162,7 +162,7 @@ export default async function Home() {
             <StatusLine line={describeSync(sync, contacts.length, now)} />
           </div>
           <div className="flex items-center gap-3 pb-1">
-            <p className="text-[13px] font-medium text-ink-faint">{weekdayDayMonth(now)}</p>
+            <p className="text-[13px] font-medium text-ink-soft">{weekdayDayMonth(now)}</p>
             {sync?.status === "needs_reconnect" ? (
               <Link
                 href="/connect"
@@ -202,13 +202,13 @@ export default async function Home() {
 
             <PeopleCard
               title="Going quiet"
-              dot="bg-ink-faint"
+              dot="bg-ink-soft"
               subtitle="You spoke last and nothing came back"
               empty="Nothing yet. A thread shows up here when you wrote last and two weeks pass without an answer."
               rows={quiet.slice(0, GOING_QUIET_ROWS).map((person) => ({
                 person,
                 line: quietLine(person),
-                daysClass: "text-ink-faint",
+                daysClass: "text-ink-soft",
               }))}
               more={
                 quiet.length > GOING_QUIET_ROWS
@@ -294,7 +294,7 @@ function PeopleCard({
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 px-[22px] pt-[17px] pb-[13px]">
         <span aria-hidden="true" className={`size-[7px] rounded-full ${dot}`} />
         <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">{title}</h2>
-        <span className="text-[12px] font-semibold text-ink-faint">{subtitle}</span>
+        <span className="text-[12px] font-semibold text-ink-soft">{subtitle}</span>
       </div>
 
       {rows.length > 0 ? (
@@ -309,7 +309,7 @@ function PeopleCard({
 
       {more && (
         <div className="border-t border-line-soft px-[22px] py-2.5">
-          <Link href={more.href} className="text-[11.5px] font-semibold text-ink-muted hover:text-ink">
+          <Link href={more.href} className="text-[11.5px] font-semibold text-ink-soft hover:text-ink">
             {more.text}
           </Link>
         </div>
@@ -345,7 +345,7 @@ function PersonRow({ person, line, daysClass, draftHref }: Row) {
           </Link>
           {contact.company && (
             // One line, ending in "…"; the full name on hover.
-            <span title={contact.company} className="hidden min-w-0 truncate text-[12.5px] text-ink-faint sm:inline">
+            <span title={contact.company} className="hidden min-w-0 truncate text-[12.5px] text-ink-soft sm:inline">
               {contact.company}
             </span>
           )}
@@ -416,7 +416,7 @@ function ComingUpCard({ touches }: { touches: ComingUp<ContactRow>[] }) {
                   <span className="text-[14px] leading-[1.1] font-bold">{day.padStart(2, "0")}</span>
                   <span
                     className={`text-[9.5px] font-semibold tracking-[0.05em] uppercase ${
-                      due ? "text-accent" : "text-ink-quiet"
+                      due ? "text-accent" : "text-ink-meta"
                     }`}
                   >
                     {month}
@@ -440,7 +440,7 @@ function ComingUpCard({ touches }: { touches: ComingUp<ContactRow>[] }) {
                       &ldquo;{touch.reason}&rdquo;
                     </span>
                   ) : (
-                    <span className="text-[12px] leading-[1.4] text-ink-hush">No reason written down</span>
+                    <span className="text-[12px] leading-[1.4] text-ink-soft">No reason written down</span>
                   )}
                 </div>
               </li>
@@ -454,7 +454,7 @@ function ComingUpCard({ touches }: { touches: ComingUp<ContactRow>[] }) {
         // the days you have planned are the contact list's "Planned" filter.
         <Link
           href="/contacts?filter=planned"
-          className="text-[11.5px] font-medium text-ink-faint transition-colors hover:text-ink"
+          className="text-[11.5px] font-medium text-ink-soft transition-colors hover:text-ink"
         >
           and {touches.length - shown.length} more later
         </Link>

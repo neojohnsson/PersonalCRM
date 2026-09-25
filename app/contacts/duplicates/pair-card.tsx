@@ -56,7 +56,7 @@ export function DuplicatePairCard({ pair }: { pair: DuplicateSuggestion }) {
         <Side contact={pair.other} action={mergeIntoRight} busy={busy} />
       </div>
 
-      <p className="text-[11.5px] leading-[1.5] text-ink-muted">
+      <p className="text-[11.5px] leading-[1.5] text-ink-soft">
         Keeping one moves the other&rsquo;s addresses and mail history onto it, fills anything it
         doesn&rsquo;t have, and deletes the other. What you wrote is never overwritten. There is no
         undo.
@@ -94,11 +94,11 @@ function Side({
           >
             {name}
           </Link>
-          {contact.company && <span className="truncate text-[12px] text-ink-muted">{contact.company}</span>}
+          {contact.company && <span className="truncate text-[12px] text-ink-soft">{contact.company}</span>}
         </div>
       </div>
 
-      <dl className="flex flex-col gap-1 text-[12px] text-ink-muted">
+      <dl className="flex flex-col gap-1 text-[12px] text-ink-soft">
         <div className="flex gap-2">
           <dt className="shrink-0">Addresses:</dt>
           <dd className="min-w-0 break-words text-ink-body">{contact.emails.join(", ") || "none"}</dd>

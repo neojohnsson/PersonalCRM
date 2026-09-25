@@ -66,7 +66,7 @@ export function PromiseCard({
               {promise.name}
             </Link>
             {promise.company && (
-              <span className="min-w-0 truncate text-[12px] text-ink-muted">{promise.company}</span>
+              <span className="min-w-0 truncate text-[12px] text-ink-soft">{promise.company}</span>
             )}
           </div>
           <span className="text-[12.5px] leading-[1.45] text-ink-soft">{promise.reason}</span>
@@ -87,14 +87,14 @@ export function PromiseCard({
           {promise.text}
         </blockquote>
       ) : (
-        <p className="rounded-[12px] bg-paper-tint px-[15px] py-3 text-[12.5px] leading-[1.55] text-ink-faint">
+        <p className="rounded-[12px] bg-paper-tint px-[15px] py-3 text-[12.5px] leading-[1.55] text-ink-soft">
           This message isn&rsquo;t in Gmail any more, so there is nothing to check it against.
         </p>
       )}
 
       <div className="flex flex-wrap items-center gap-x-[7px] gap-y-2">
         <form action={accept} className="flex flex-wrap items-center gap-[7px]">
-          <label className="flex items-center gap-2 text-[11.5px] font-medium text-ink-quiet">
+          <label className="flex items-center gap-2 text-[11.5px] font-medium text-ink-soft">
             Follow up
             <input
               type="date"
@@ -122,12 +122,12 @@ export function PromiseCard({
           href={`https://mail.google.com/mail/u/0/#all/${promise.threadId}`}
           target="_blank"
           rel="noreferrer"
-          className="rounded-full px-3 py-2 text-[12px] font-semibold text-ink-muted hover:text-ink"
+          className="rounded-full px-3 py-2 text-[12px] font-semibold text-ink-soft hover:text-ink"
         >
           Open in Gmail
         </a>
 
-        <span className="ml-auto text-[11.5px] font-medium text-ink-ghost">
+        <span className="ml-auto text-[11.5px] font-medium text-ink-soft">
           {promise.plannedOn
             ? `moves their next touch from ${dayMonth(promise.plannedOn)}`
             : `suggested ${dayMonth(promise.dueOn)}`}

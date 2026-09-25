@@ -77,7 +77,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           </Section>
         </div>
 
-        <p className="px-1 text-[13px] leading-[1.55] text-ink-quiet">
+        <p className="px-1 text-[13px] leading-[1.55] text-ink-soft">
           Invite only for now. Google keeps the app in testing mode, so your
           Google account has to be added as a tester first.
         </p>

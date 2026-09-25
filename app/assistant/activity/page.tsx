@@ -65,11 +65,11 @@ export default async function AssistantActivityPage() {
                   <DoneMark undone={action.undoneAt !== null} />
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span
-                      className={`text-[13.5px] tracking-[-0.01em] ${action.undoneAt ? "text-ink-faint line-through" : "font-medium"}`}
+                      className={`text-[13.5px] tracking-[-0.01em] ${action.undoneAt ? "text-ink-soft line-through" : "font-medium"}`}
                     >
                       {action.summary}
                     </span>
-                    <span className="text-[12px] text-ink-muted">
+                    <span className="text-[12px] text-ink-soft">
                       {dayMonth(action.createdAt)}, {timeAgo(action.createdAt, now)}
                       {action.undoneAt && ` · undone ${timeAgo(action.undoneAt, now)}`}
                       {" · "}

@@ -119,7 +119,7 @@ export function Composer({ onAsk, onStop, busy, full, placeholder }: Props) {
         event.preventDefault();
         send(box.current?.value ?? "");
       }}
-      className="assistant-composer relative flex h-14 items-center gap-1 rounded-full border border-line bg-white py-2 pr-2 pl-2 shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] focus-within:border-ink-faint"
+      className="assistant-composer relative flex h-14 items-center gap-1 rounded-full border border-line bg-white py-2 pr-2 pl-2 shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] focus-within:border-ink-soft"
     >
       <div ref={menu} className="relative shrink-0">
         <button
@@ -141,7 +141,7 @@ export function Composer({ onAsk, onStop, busy, full, placeholder }: Props) {
             role="menu"
             className="absolute bottom-12 left-0 z-20 flex w-64 flex-col rounded-[14px] border border-line bg-white p-1.5 shadow-[0_8px_24px_rgba(20,20,25,.12)]"
           >
-            <span className="px-3 pb-1.5 pt-2 text-[10.5px] font-bold tracking-[0.07em] text-ink-ghost uppercase">
+            <span className="px-3 pb-1.5 pt-2 text-[10.5px] font-bold tracking-[0.07em] text-ink-meta uppercase">
               Try asking
             </span>
             {STARTERS.map((starter) => (
@@ -179,7 +179,7 @@ export function Composer({ onAsk, onStop, busy, full, placeholder }: Props) {
         disabled={busy || full}
         maxLength={4000}
         placeholder={placeholder}
-        className="max-h-32 min-h-10 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1 py-2.5 text-[14px] leading-normal text-ink outline-none placeholder:text-ink-faint disabled:opacity-60"
+        className="max-h-32 min-h-10 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1 py-2.5 text-[14px] leading-normal text-ink outline-none placeholder:text-ink-soft disabled:opacity-60"
       />
 
       {dictation.supported && (
@@ -215,7 +215,7 @@ export function Composer({ onAsk, onStop, busy, full, placeholder }: Props) {
         <button
           type="submit"
           disabled={full || !hasText}
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-info text-white transition hover:bg-info-ink disabled:cursor-default disabled:bg-chip-track disabled:text-ink-faint"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-info text-white transition hover:bg-info-ink disabled:cursor-default disabled:bg-chip-track disabled:text-ink-soft"
         >
           {/* "Ask", not "Send": this app has a rule against send buttons,
               and nothing here sends anything to anybody. */}

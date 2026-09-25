@@ -78,7 +78,7 @@ export default async function SeenOncePage({ searchParams }: PageProps<"/seen-on
       headerRight={
         <>
           {gmailResult.data && (
-            <span className="hidden text-[13px] text-ink-faint lg:inline">
+            <span className="hidden text-[13px] text-ink-soft lg:inline">
               {gmailResult.data.email}
             </span>
           )}
@@ -116,11 +116,11 @@ export default async function SeenOncePage({ searchParams }: PageProps<"/seen-on
                 strokeWidth={1.9}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="size-[15px] text-ink-faint"
+                className="size-[15px] text-ink-soft"
               >
                 <path d="M5 6h14M8 12h8M10.5 18h3" />
               </svg>
-              <span className="text-[12.5px] text-ink-faint">Newest first</span>
+              <span className="text-[12.5px] text-ink-soft">Newest first</span>
             </div>
           </div>
         </div>
@@ -141,7 +141,7 @@ export default async function SeenOncePage({ searchParams }: PageProps<"/seen-on
                 : "Connect Gmail, and people who wrote to you once — or you wrote to once — show up here."}
             </p>
             {filtered > 0 && (
-              <p className="mt-2 text-[12.5px] text-ink-faint">
+              <p className="mt-2 text-[12.5px] text-ink-soft">
                 {countOf(filtered, "automated message")} were filtered out — newsletters, no-reply,
                 calendar invites.
               </p>

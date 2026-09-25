@@ -80,7 +80,7 @@ export default async function PrivacyPage() {
               what="The text of a conversation is sent when you ask for a summary, a draft or a promise scan — never on its own, never on sync."
               keeps="Nothing. Requests are made with storage switched off, so the text is not kept after the answer comes back."
             />
-            <p className="text-[12px] leading-[1.5] text-ink-faint">
+            <p className="text-[12px] leading-[1.5] text-ink-soft">
               Message bodies are never written to this app&rsquo;s database. They are read when
               something needs them and thrown away when the request ends &mdash; which is why
               there is no retention period here to set.
@@ -130,7 +130,7 @@ export default async function PrivacyPage() {
               person</strong> gives you the copy, and <strong>Dismiss</strong> deletes them and
               their mail from here.
             </p>
-            <p className="text-[12px] leading-[1.5] text-ink-faint">
+            <p className="text-[12px] leading-[1.5] text-ink-soft">
               This page is the whole answer. It is counted from the database each time you open
               it, so it cannot fall out of date the way a written policy does.
             </p>
@@ -178,7 +178,7 @@ function Away({ who, what, keeps }: { who: string; what: string; keeps: string }
     <div className="flex flex-col gap-1 border-t border-line-soft py-3 first:border-t-0 first:pt-0">
       <span className="text-[13px] font-semibold tracking-[-0.01em]">{who}</span>
       <span className="text-[12.5px] leading-[1.5] text-ink-soft">{what}</span>
-      <span className="text-[12.5px] leading-[1.5] text-ink-muted">
+      <span className="text-[12.5px] leading-[1.5] text-ink-soft">
         <span className="font-semibold">They keep:</span> {keeps}
       </span>
     </div>
@@ -189,7 +189,7 @@ function CardHeading({ title, caption }: { title: string; caption: string }) {
   return (
     <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
       <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">{title}</h2>
-      <span className="text-[12px] font-semibold text-ink-faint">{caption}</span>
+      <span className="text-[12px] font-semibold text-ink-soft">{caption}</span>
     </div>
   );
 }

@@ -70,7 +70,7 @@ export default async function PricingPage({ searchParams }: PageProps<"/pricing"
           ))}
         </div>
 
-        <p className="px-1 text-[13px] leading-[1.55] text-ink-quiet">
+        <p className="px-1 text-[13px] leading-[1.55] text-ink-soft">
           {mine ? (
             <>
               You&rsquo;re on {mine.label}.{" "}
@@ -90,13 +90,13 @@ export default async function PricingPage({ searchParams }: PageProps<"/pricing"
 
         {/* Managed Payments (lib/stripe/checkout.ts): the person should know
             who they are buying from before the card page says so. */}
-        <p className="px-1 text-[12.5px] leading-[1.55] text-ink-quiet">
+        <p className="px-1 text-[12.5px] leading-[1.55] text-ink-soft">
           Plans are sold through Link, Stripe&rsquo;s reseller: Link takes the payment, handles VAT and receipts, and
           your right to withdraw from the purchase under EU consumer law. Cancelling or changing plan is always on the
           Manage or cancel button in your profile.
         </p>
 
-        <nav className="flex flex-wrap gap-x-4 gap-y-1 px-1 text-[13px] text-ink-quiet" aria-label="Legal pages">
+        <nav className="flex flex-wrap gap-x-4 gap-y-1 px-1 text-[13px] text-ink-soft" aria-label="Legal pages">
           <Link href="/terms" className="underline underline-offset-2 hover:text-ink">
             Terms
           </Link>
@@ -141,7 +141,7 @@ function PlanCard(props: ButtonProps) {
       <ul className="flex flex-col gap-[9px]">
         {includes(plan).map((line) => (
           <Item key={line.text} icon={line.yes ? "check" : "cross"} tone={line.yes ? "info" : "muted"}>
-            <span className={line.yes ? "" : "text-ink-faint"}>{line.text}</span>
+            <span className={line.yes ? "" : "text-ink-soft"}>{line.text}</span>
           </Item>
         ))}
       </ul>

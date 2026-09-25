@@ -31,7 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             the page is simply Paper. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(() => { try { const saved = localStorage.getItem("personal-crm-theme"); if (saved === "paper" || saved === "night" || saved === "studio") document.documentElement.dataset.theme = saved; } catch {} })()`,
+            __html: `(() => { try { const saved = localStorage.getItem("personal-crm-theme"); if (saved === "paper" || saved === "night") document.documentElement.dataset.theme = saved; } catch {} })()`,
           }}
         />
       </head>
