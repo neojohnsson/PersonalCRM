@@ -176,10 +176,11 @@ async function gmailPost<T>(accessToken: string, path: string, body: unknown): P
  */
 export async function createDraft(
   accessToken: string,
-  draft: { raw: string; threadId: string },
+  draft: { raw: string; threadId?: string | null },
 ): Promise<{ id: string; message?: { id: string; threadId: string } }> {
+  const message = draft.threadId ? { raw: draft.raw, threadId: draft.threadId } : { raw: draft.raw };
   return gmailPost(accessToken, "/drafts", {
-    message: { raw: draft.raw, threadId: draft.threadId },
+    message,
   });
 }
 

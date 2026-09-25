@@ -5,6 +5,7 @@ import { useState, useTransition, type ReactNode } from "react";
 import {
   addProposedContact,
   runProposedScan,
+  saveNewDraftToGmail,
   saveProposedEdit,
   writeProposedDraft,
   writeProposedSummary,
@@ -56,6 +57,8 @@ export function NeedsYouCard({ proposal, onSettled }: { proposal: Proposal; onSe
   switch (proposal.kind) {
     case "draft":
       return <DraftCard proposal={proposal} onSettled={onSettled} />;
+    case "new_draft":
+      return <NewDraftCard proposal={proposal} onSettled={onSettled} />;
     case "event":
       return <EventCard proposal={proposal} onSettled={onSettled} />;
     case "summary":
@@ -79,6 +82,54 @@ export function NeedsYouCard({ proposal, onSettled }: { proposal: Proposal; onSe
     case "research":
       return <ResearchOfferCard proposal={proposal} onSettled={onSettled} />;
   }
+}
+
+function NewDraftCard({ proposal, onSettled }: { proposal: Extract<Proposal, { kind: "new_draft" }>; onSettled: Settle }) {
+  const [body, setBody] = useState(proposal.body);
+  const [stage, setStage] = useState<"editing" | "saved" | "gone">("editing");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+
+  function save() {
+    setError(null);
+    start(async () => {
+      const result = await saveNewDraftToGmail(proposal.contactId, proposal.to, proposal.subject, body);
+      if (!result.ok) return setError(result.error);
+      setStage("saved");
+      onSettled(`The person saved a new email to ${proposal.name} in Gmail drafts. It is not sent.`);
+    });
+  }
+
+  return (
+    <Card
+      title={`A new email to ${proposal.name.split(" ")[0]}`}
+      state={stage === "saved" ? "done" : stage === "gone" ? "no" : "needs"}
+      small="This is a new email, not a reply. It will be saved as a Gmail draft only."
+      error={error}
+    >
+      {stage === "editing" && (
+        <>
+          <div className="flex flex-col gap-1 text-[12.5px] text-ink-body">
+            <span><strong>To:</strong> {proposal.to}</span>
+            <span><strong>Subject:</strong> {proposal.subject}</span>
+          </div>
+          <textarea
+            aria-label={`New email to ${proposal.name}`}
+            value={body}
+            onChange={(event) => setBody(event.target.value)}
+            rows={8}
+            className="w-full resize-y rounded-[10px] border border-line-strong bg-white px-3 py-2 text-[12.5px] leading-[1.55] text-ink"
+          />
+          <Buttons>
+            <Primary onClick={save} disabled={pending || !body.trim()}>{pending ? "Saving…" : "Save to Gmail drafts"}</Primary>
+            <Quiet onClick={() => { setStage("gone"); onSettled(`The person discarded the new email to ${proposal.name}.`); }} disabled={pending}>Discard</Quiet>
+          </Buttons>
+        </>
+      )}
+      {stage === "saved" && <p className="text-[12.5px] text-ink-body">Saved in Gmail drafts. Open Gmail to review and send it yourself.</p>}
+      {stage === "gone" && <p className="text-[12.5px] text-ink-soft">Discarded. Nothing was sent.</p>}
+    </Card>
+  );
 }
 
 // ── A draft ────────────────────────────────────────────────────────────────

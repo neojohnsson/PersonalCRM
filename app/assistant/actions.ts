@@ -23,6 +23,10 @@ import { requireUser } from "@/lib/auth";
 import { isUuid } from "@/lib/contacts/contact-form";
 import { ContactNotFound } from "@/lib/relationship/settle";
 import { createClient } from "@/lib/supabase/server";
+import { buildReplyMessage } from "@/lib/google/message";
+import { createDraft } from "@/lib/google/gmail";
+import { canDraft } from "@/lib/google/scopes";
+import { getAccessToken } from "@/lib/google/tokens";
 
 /**
  * Undo, for something the Assistant did on its own (slice 11;
@@ -71,6 +75,46 @@ export async function undoAssistantAction(actionId: string): Promise<{ error: st
 export type WrittenDraft =
   | { ok: true; draft: { id: string; subject: string | null; body: string }; costUsd: number | null }
   | { ok: false; error: string };
+
+export async function saveNewDraftToGmail(
+  contactId: string,
+  to: string,
+  subject: string,
+  body: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const user = await requireUser();
+  if (!isUuid(contactId)) notFound();
+  const text = body.trim();
+  if (!text) return { ok: false, error: "The draft is empty." };
+  if (text.length > 20_000) return { ok: false, error: "That draft is too long." };
+
+  const supabase = await createClient();
+  if (!(await hasAssistant(supabase, user.id))) notFound();
+  const { data: email, error } = await supabase
+    .from("contact_emails")
+    .select("email")
+    .eq("user_id", user.id)
+    .eq("contact_id", contactId)
+    .eq("email", to.trim().toLowerCase())
+    .maybeSingle();
+  if (error) throw error;
+  if (!email) return { ok: false, error: "That address is no longer attached to this contact." };
+
+  const { data: account, error: accountError } = await supabase
+    .from("google_accounts")
+    .select("scopes")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (accountError) throw accountError;
+  if (!canDraft((account?.scopes as string[] | undefined) ?? [])) {
+    return { ok: false, error: "Reconnect Gmail to allow drafts." };
+  }
+
+  const token = await getAccessToken(supabase, user.id);
+  const raw = buildReplyMessage({ to: email.email as string, subject: subject.trim(), body: text, inReplyTo: null, references: null });
+  await createDraft(token, { raw });
+  return { ok: true };
+}
 
 /** "Write it": a pending draft, shown on the card. Nothing reaches Gmail until "Save to Gmail". */
 export async function writeProposedDraft(contactId: string, tone: Tone | null): Promise<WrittenDraft> {

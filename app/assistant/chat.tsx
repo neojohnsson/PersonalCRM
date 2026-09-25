@@ -246,10 +246,10 @@ export function AssistantChat() {
         <section
           ref={conversation}
           aria-label="Conversation"
-          // No height of its own and no scrollbar (2026-09-24, as ChatGPT
-          // does it): the conversation is part of the page, the page scrolls,
-          // and the bar below stays pinned to the bottom of the window.
-          className="flex flex-col gap-[13px] rounded-[18px] bg-white px-5 py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]"
+          // No card round it (2026-09-24, as ChatGPT does it): it sits
+          // straight on the page, so the last message can read as running on
+          // under the bar rather than stopping at a boxed edge above it.
+          className="flex flex-col gap-[13px]"
         >
           {entries.map((entry, index) => (
             <EntryView
@@ -274,21 +274,31 @@ export function AssistantChat() {
           request. What the design said around the box stays, in one quiet
           line under it: that nothing is kept, what it has cost, and what it
           may do without asking. */}
-      <div className="sticky bottom-[74px] z-10 -mx-1 flex flex-col gap-2 bg-paper/95 px-1 pt-1 pb-1 backdrop-blur-sm sm:bottom-0">
+      <div className="sticky bottom-[74px] z-10 -mx-1 px-1 sm:bottom-0">
+        {/* Only while scrolled away from the latest message: at the bottom,
+            the last line already ends right above the bar and nothing is
+            hidden below it. Away from it, this is what is meant to read as
+            the conversation running on under the bar -- a fade instead of a
+            hard edge, so it looks covered rather than cut off. */}
+        {awayFromBottom && (
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-full h-10 bg-gradient-to-t from-paper to-transparent" />
+        )}
         {awayFromBottom && (
           // You scrolled up to read: nothing moves under you. This brings you
-          // back to the latest and follows again.
+          // back to the latest and follows again, sitting in the fade above
+          // the bar rather than pinned to its very top edge.
           <button
             type="button"
             onClick={jumpToLatest}
             aria-label="Scroll to the latest"
-            className="absolute -top-12 left-1/2 flex size-9 -translate-x-1/2 items-center justify-center rounded-full border border-line bg-white text-ink-body shadow-[0_2px_8px_rgba(20,20,25,.12)] transition hover:bg-paper"
+            className="absolute -top-[52px] left-1/2 flex size-9 -translate-x-1/2 items-center justify-center rounded-full border border-line bg-white text-ink-body shadow-[0_2px_8px_rgba(20,20,25,.12)] transition hover:bg-paper"
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="size-[18px]">
               <path d="M12 5v14M6 13l6 6 6-6" />
             </svg>
           </button>
         )}
+        <div className="flex flex-col gap-2 bg-paper/95 pt-1 pb-1 backdrop-blur-sm">
         <Composer
           onAsk={(text) => void ask(text)}
           onStop={stop}
@@ -320,6 +330,7 @@ export function AssistantChat() {
             )}
           </p>
         )}
+        </div>
       </div>
     </div>
   );
@@ -357,7 +368,9 @@ function EntryView({
       return (
         <div className="flex max-w-[900px] items-start gap-[11px]">
           <Spark />
-          <p className="text-[13.5px] leading-[1.55] whitespace-pre-wrap">{entry.text}</p>
+          <p className="text-[13.5px] leading-[1.55] whitespace-pre-wrap">
+            <AssistantText text={entry.text} />
+          </p>
         </div>
       );
     case "done":
@@ -396,6 +409,15 @@ function EntryView({
         </p>
       );
   }
+}
+
+function AssistantText({ text }: { text: string }) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+
+  return parts.map((part, index) => {
+    const match = part.match(/^\*\*(.+)\*\*$/);
+    return match ? <strong key={index}>{match[1]}</strong> : <span key={index}>{part}</span>;
+  });
 }
 
 function DoneRow({

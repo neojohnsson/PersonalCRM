@@ -15,6 +15,7 @@ import {
 } from "@/lib/relationship/next-touch";
 import { ContactNotFound, reopenThreadRow, setNeverChaseRow, settleThreadRow, settledAt } from "@/lib/relationship/settle";
 import { supabaseError } from "@/lib/supabase/errors";
+import { addContact, type NewContact } from "@/lib/contacts/edit-fields";
 
 /**
  * The five things the Assistant may do on its own (AGENTS.md, amended
@@ -41,7 +42,7 @@ import { supabaseError } from "@/lib/supabase/errors";
  * missing by accident; they have no function to call.
  */
 
-export type ActionKind = "note" | "tags" | "next_touch" | "conversation_done" | "reminders";
+export type ActionKind = "note" | "tags" | "next_touch" | "conversation_done" | "reminders" | "contact_creation";
 
 type TouchState = { id: string; dueOn: string; reason: string | null; kind: string | null } | null;
 
@@ -51,7 +52,18 @@ export type ActionState =
   | { kind: "tags"; tags: string[] }
   | { kind: "next_touch"; touch: TouchState }
   | { kind: "conversation_done"; threadId: string; settledAt: string | null }
-  | { kind: "reminders"; neverChase: boolean };
+  | { kind: "reminders"; neverChase: boolean }
+  | { kind: "contact_creation"; snapshot: ContactCreationSnapshot | null };
+
+export type ContactCreationSnapshot = {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  company: string | null;
+  role: string | null;
+  createdAt: string;
+};
 
 export type LoggedAction = {
   id: string;
@@ -245,6 +257,48 @@ export async function setReminders(ctx: ActContext, contactId: string, on: boole
   );
 }
 
+export async function createContact(ctx: ActContext, values: NewContact): Promise<LoggedAction> {
+  const result = await addContact(ctx.db, ctx.userId, values);
+  if (!result.ok) throw new ActionRefused(result.error);
+
+  const { data, error } = await ctx.db
+    .from("contacts")
+    .select("id, first_name, last_name, company, role, created_at")
+    .eq("user_id", ctx.userId)
+    .eq("id", result.id)
+    .maybeSingle();
+  if (error) throw supabaseError(error, "Couldn't verify the created contact");
+  if (!data) throw new ContactNotFound();
+  const { data: email, error: emailError } = await ctx.db
+    .from("contact_emails")
+    .select("email")
+    .eq("user_id", ctx.userId)
+    .eq("contact_id", result.id)
+    .order("is_primary", { ascending: false })
+    .order("email")
+    .limit(1)
+    .maybeSingle();
+  if (emailError) throw supabaseError(emailError, "Couldn't verify the created address");
+
+  const snapshot: ContactCreationSnapshot = {
+    id: result.id,
+    firstName: data.first_name,
+    lastName: data.last_name,
+    email: (email?.email as string | undefined) ?? null,
+    company: data.company,
+    role: data.role,
+    createdAt: data.created_at,
+  };
+  const name = displayName({ first_name: data.first_name, last_name: data.last_name, primary_email: snapshot.email });
+  return record(
+    ctx,
+    result.id,
+    `Created a new contact: ${name}`,
+    { kind: "contact_creation", snapshot: null },
+    { kind: "contact_creation", snapshot },
+  );
+}
+
 // ── Undo ──────────────────────────────────────────────────────────────────
 
 /**
@@ -305,6 +359,28 @@ async function stillAsLeft(ctx: ActContext, action: LoggedAction): Promise<boole
       const now = await settledAt(ctx.db, ctx.userId, action.contactId, after.threadId);
       return now !== null && new Date(now).getTime() === new Date(after.settledAt!).getTime();
     }
+    case "contact_creation": {
+      if (!after.snapshot) return false;
+      const { data, error } = await ctx.db
+        .from("contacts")
+        .select("id, first_name, last_name, company, role, created_at")
+        .eq("user_id", ctx.userId)
+        .eq("id", after.snapshot.id)
+        .maybeSingle();
+      if (error || !data) return false;
+      const { data: email } = await ctx.db
+        .from("contact_emails")
+        .select("email")
+        .eq("user_id", ctx.userId)
+        .eq("contact_id", after.snapshot.id)
+        .order("is_primary", { ascending: false })
+        .order("email")
+        .limit(1)
+        .maybeSingle();
+      return data.first_name === after.snapshot.firstName && data.last_name === after.snapshot.lastName &&
+        data.company === after.snapshot.company && data.role === after.snapshot.role &&
+        data.created_at === after.snapshot.createdAt && ((email?.email as string | undefined) ?? null) === after.snapshot.email;
+    }
   }
 }
 
@@ -340,6 +416,15 @@ async function putBack(ctx: ActContext, contactId: string, before: ActionState, 
       });
       return;
     }
+    case "contact_creation":
+      if (!after || after.kind !== "contact_creation" || !after.snapshot) {
+        throw new ActionRefused("That contact creation cannot be undone.");
+      }
+      {
+        const { error } = await ctx.db.from("contacts").delete().eq("user_id", ctx.userId).eq("id", after.snapshot.id);
+        if (error) throw supabaseError(error, "Couldn't undo the contact creation");
+      }
+      return;
   }
 }
 

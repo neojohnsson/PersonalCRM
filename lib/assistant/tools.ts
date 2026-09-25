@@ -30,6 +30,7 @@ import {
   addNote,
   changeTags,
   clearTouch,
+  createContact,
   markDone,
   setReminders,
   setTouch,
@@ -92,6 +93,7 @@ export type Proposal =
   | { kind: "promises"; promises: PendingPromise[] }
   | { kind: "seen_once"; people: SeenOncePerson[] }
   | { kind: "sync"; lastSyncedAt: string | null }
+  | { kind: "new_draft"; contactId: string; name: string; to: string; subject: string; body: string }
   | { kind: "research"; contactId: string; name: string; typicalUsd: number | null };
 
 /** One person in the Seen once queue. Name and subject are from mail headers. */
@@ -573,6 +575,30 @@ const TOOLS: Tool[] = [
     parameters: object({ contact_id: contactId, on: { type: "boolean", description: "true for on, false for off." } }),
     run: (ctx, args) => act(() => setReminders(ctx, contactIdOf(args), args.on === true)),
   },
+  {
+    name: "create_contact",
+    tier: "act",
+    description:
+      "Create a new contact from explicit details the person provided. It is logged and can be undone if unchanged. Never invent details from mail or research.",
+    parameters: object({
+      first_name: nullableText("First name, or null."),
+      last_name: nullableText("Last name, or null."),
+      email: nullableText("Email address, or null."),
+      company: nullableText("Company, or null."),
+      role: nullableText("Role, or null."),
+    }),
+    run: async (ctx, args) => {
+      const clean = (value: unknown) => (typeof value === "string" && value.trim() ? value.trim() : null);
+      const action = await createContact(ctx, {
+        first_name: clean(args.first_name),
+        last_name: clean(args.last_name),
+        email: clean(args.email)?.toLowerCase() ?? null,
+        company: clean(args.company),
+        role: clean(args.role),
+      });
+      return { tier: "act", result: "Created a new contact. It can be undone from the page.", action };
+    },
+  },
 
   // ── propose: nothing happens until the person presses ───────────────────
   {
@@ -594,6 +620,38 @@ const TOOLS: Tool[] = [
         tier: "propose",
         result: "Shown to the person as a card.",
         proposal: { kind: "draft", contactId: id, name, tone, typicalUsd: await typicalCostUsd(ctx.db, ctx.userId, "draft") },
+      };
+    },
+  },
+  {
+    name: "propose_new_draft",
+    tier: "propose",
+    description:
+      "Offer a brand-new email draft to an existing contact. Nothing is saved until the person edits or reviews it and presses Save to Gmail drafts. Never send it.",
+    parameters: object({
+      contact_id: contactId,
+      to: text("The contact's email address returned by get_contact or search_contacts."),
+      subject: text("The new email subject."),
+      body: text("The proposed email body, written for the person to edit."),
+    }),
+    run: async (ctx, args) => {
+      const id = contactIdOf(args);
+      const name = await contactName(ctx, id);
+      if (!name) return notFound("propose");
+      const to = str(args.to).trim().toLowerCase();
+      const { data: email, error } = await ctx.db
+        .from("contact_emails")
+        .select("email")
+        .eq("user_id", ctx.userId)
+        .eq("contact_id", id)
+        .eq("email", to)
+        .maybeSingle();
+      if (error) throw supabaseError(error, "Couldn't check the contact's address");
+      if (!email) return { tier: "propose", refused: "That address is not attached to this contact." };
+      return {
+        tier: "propose",
+        result: "Shown as an editable card. Nothing is saved or sent until the person presses Save to Gmail drafts.",
+        proposal: { kind: "new_draft", contactId: id, name, to, subject: str(args.subject), body: str(args.body) },
       };
     },
   },
