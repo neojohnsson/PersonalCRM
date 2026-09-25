@@ -14,8 +14,8 @@ export const metadata = { title: `Not found · ${APP_NAME}` };
  * be found" — no navigation, no way back, and nothing saying which app you
  * were in. The first outside test found it by typing a contact id wrong.
  *
- * It keeps the app shell, so the rail, the bottom bar and the page switcher
- * are all still there: the point of a 404 is to get you somewhere real.
+ * It keeps the app shell, so the rail and the bottom bar are both still
+ * there: the point of a 404 is to get you somewhere real.
  *
  * `requireUser` is deliberately not used. It redirects to /login, and sending
  * a signed-out visitor from a mistyped address to a sign-in page tells them

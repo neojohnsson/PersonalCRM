@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
+import { RowLink } from "@/app/nav-pending";
 import { ConversationDoneButton } from "@/app/conversation-done-button";
 import { CARD, EmptyCard, StatusLine } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
@@ -46,8 +47,8 @@ export const metadata = { title: `Who needs you today · ${APP_NAME}` };
  *     (lib/sync/describe.ts has the same reason).
  *   - The temporary Sync now pill sits beside the date (slice-1-plan.md,
  *     decision 5). The header's search and bell are left out as on the other
- *     pages; its centred page switcher arrived in slice 9b
- *     (app/app-shell.tsx).
+ *     pages; its centred page switcher arrived in slice 9b and left again
+ *     in the UI quality pass, milestone 3 (app/app-shell.tsx).
  */
 
 const YOUR_TURN_ROWS = 8;
@@ -336,13 +337,13 @@ function PersonRow({ person, line, daysClass, draftHref }: Row) {
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <div className="flex min-w-0 items-baseline gap-2">
-          {/* The link stretches over the whole row (after:inset-0). */}
-          <Link
+          {/* The name stretches over the whole row, and the row fades while the contact opens (RowLink). */}
+          <RowLink
             href={`/contacts/${contact.id}`}
-            className="stretched-link truncate text-[14px] font-semibold tracking-[-0.01em]"
+            className="truncate text-[14px] font-semibold tracking-[-0.01em]"
           >
             {name}
-          </Link>
+          </RowLink>
           {contact.company && (
             // One line, ending in "…"; the full name on hover.
             <span title={contact.company} className="hidden min-w-0 truncate text-[12.5px] text-ink-soft sm:inline">
@@ -423,12 +424,12 @@ function ComingUpCard({ touches }: { touches: ComingUp<ContactRow>[] }) {
                   </span>
                 </div>
                 <div className="flex min-w-0 flex-col gap-0.5">
-                  <Link
+                  <RowLink
                     href={`/contacts/${touch.contact.id}`}
-                    className="stretched-link truncate text-[13.5px] font-semibold tracking-[-0.01em] hover:text-ink-soft"
+                    className="truncate text-[13.5px] font-semibold tracking-[-0.01em] link-action"
                   >
                     {displayName(touch.contact)}
-                  </Link>
+                  </RowLink>
                   {/* Slice 9a: a reminder to check is not a thing to do. */}
                   {isWaitingKind(touch.kind) && (
                     <span className="text-[11px] font-semibold tracking-[0.04em] text-info-ink uppercase">

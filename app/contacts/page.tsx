@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
+import { RowLink } from "@/app/nav-pending";
 import { EmptyCard, StatusLine } from "@/app/page-parts";
 import { SearchBox } from "@/app/contacts/search-box";
 import { SignOutButton } from "@/app/sign-out-button";
@@ -300,7 +301,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
           {duplicates > 0 && (
             <Link
               href="/contacts/duplicates"
-              className="text-[12.5px] font-medium text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-ink"
+              className="text-[12.5px] font-medium text-ink-soft link-inline decoration-line-strong"
             >
               {countOf(duplicates, "possible duplicate")} — look at{" "}
               {duplicates === 1 ? "it" : "them"}
@@ -482,12 +483,12 @@ function ContactTable({
                     >
                       {initials(hasName ? name : null, contact.primary_email ?? contact.first_name ?? "?")}
                     </span>
-                    <Link
+                    <RowLink
                       href={`/contacts/${contact.id}`}
-                      className="stretched-link truncate text-[13.5px] font-semibold tracking-[-0.01em]"
+                      className="truncate text-[13.5px] font-semibold tracking-[-0.01em]"
                     >
                       {name}
-                    </Link>
+                    </RowLink>
                   </div>
                 </td>
                 {/* One line, ending in "…" if it still doesn't fit; the full name on hover. */}

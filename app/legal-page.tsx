@@ -44,16 +44,16 @@ export function LegalPage({ title, lead, children }: { title: string; lead: stri
         </article>
 
         <nav className="flex flex-wrap gap-x-4 gap-y-1 px-1 text-[13px] text-ink-soft" aria-label="Legal pages">
-          <Link href="/terms" className="underline underline-offset-2 hover:text-ink">
+          <Link href="/terms" className="link-inline">
             Terms
           </Link>
-          <Link href="/privacy-policy" className="underline underline-offset-2 hover:text-ink">
+          <Link href="/privacy-policy" className="link-inline">
             Privacy policy
           </Link>
-          <Link href="/sub-processors" className="underline underline-offset-2 hover:text-ink">
+          <Link href="/sub-processors" className="link-inline">
             Sub-processors
           </Link>
-          <Link href="/pricing" className="underline underline-offset-2 hover:text-ink">
+          <Link href="/pricing" className="link-inline">
             Plans
           </Link>
         </nav>
@@ -81,7 +81,7 @@ export function Operator() {
     return (
       <>
         {OPERATOR.name}, {OPERATOR.country}.{" "}
-        <a href={`mailto:${OPERATOR.email}`} className="font-semibold underline underline-offset-2">
+        <a href={`mailto:${OPERATOR.email}`} className="font-semibold link-inline">
           {OPERATOR.email}
         </a>
       </>

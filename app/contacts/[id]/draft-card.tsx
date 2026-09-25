@@ -159,7 +159,7 @@ export function DraftCard({
                 href={gmailDraftsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-ink-body underline decoration-line-strong underline-offset-2 hover:text-ink"
+                className="font-semibold text-ink-body link-inline decoration-line-strong"
               >
                 Open Gmail drafts
               </a>

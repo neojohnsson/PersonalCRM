@@ -25,8 +25,11 @@ import { NavPending } from "@/app/nav-pending";
  *     what they do.
  *   - The Assistant (slice 11) sits second, and only for an account that
  *     includes it (`entitlements`, migration 0025). Everybody else gets the
- *     four; the rail, the bottom bar and the switcher all read the same
- *     filtered list, so none of them can show it when the others don't.
+ *     four; the rail and the bottom bar both read the same filtered list,
+ *     so neither can show it when the other doesn't.
+ *   - The rail is 72px, not the design's 56, and puts a word under each
+ *     icon (UI quality pass, milestone 3): the header's page switcher, which
+ *     carried the words before, is gone, so the rail has to carry them.
  *   - The header's search and notification icons are left out — nothing
  *     behind them yet. The right side holds what the design has no place
  *     for: the connected Gmail address and Sign out.
@@ -147,10 +150,11 @@ export async function AppShell({
           {userEmail && (
             // Opens Profile, as in design/Profile.dc.html, which also shows its
             // active state: a lighter tile behind the avatar with a white ring.
+            // The rail's white focus ring, as on NavItem.
             <Link
               href="/profile"
               aria-current={active === "profile" ? "page" : undefined}
-              className={`group relative mt-1.5 flex size-9 items-center justify-center rounded-[11px] transition-colors ${
+              className={`group relative mt-1.5 flex size-9 items-center justify-center rounded-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-rail ${
                 active === "profile" ? "bg-rail-active" : "hover:bg-rail-active"
               }`}
             >
@@ -165,6 +169,10 @@ export async function AppShell({
                 <span className="sr-only">Profile</span>
               </span>
               <HoverLabel>{`Profile · ${userEmail}`}</HoverLabel>
+              {/* Under the tile, not across the avatar: there is no word to sit
+                  under. White, as the bar is drawn in the text's colour and
+                  this link has none of its own on the dark rail. */}
+              <NavPending className="-bottom-1.5 text-white" />
             </Link>
           )}
         </aside>
@@ -274,9 +282,11 @@ function BottomItem({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`relative flex min-h-[58px] flex-1 flex-col items-center justify-center gap-1 focus-visible:z-10 focus-visible:ring-inset ${
- active ?"text-ink":"text-ink-soft"
- }`}
+      // The shared focus ring, drawn inside: the bar sits on the screen's
+      // bottom edge, where a ring 2px outside would be cut off.
+      className={`relative flex min-h-[58px] flex-1 flex-col items-center justify-center gap-1 focus-visible:-outline-offset-2 ${
+        active ? "text-ink" : "text-ink-soft"
+      }`}
     >
       {active && (
         <span
@@ -305,6 +315,7 @@ function BottomItem({
         )}
       </span>
       <span className={`text-[10px] ${active ? "font-bold" : "font-semibold"}`}>{label}</span>
+      <NavPending />
     </Link>
   );
 }

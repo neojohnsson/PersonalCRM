@@ -76,7 +76,7 @@ export default function PrivacyPolicyPage() {
           ))}
         </Points>
         <p>
-          <Link href="/sub-processors" className="font-semibold underline underline-offset-2">
+          <Link href="/sub-processors" className="font-semibold link-inline">
             Sub-processors, in full
           </Link>
         </p>
@@ -123,7 +123,7 @@ export default function PrivacyPolicyPage() {
         <p>
           You can see everything held, correct it, take it with you, have it deleted, or object to how it is used. Most
           of that you can do yourself, straight away, on{" "}
-          <Link href="/privacy" className="font-semibold underline underline-offset-2">
+          <Link href="/privacy" className="font-semibold link-inline">
             Your data
           </Link>
           : a full export as a file, a contact list for a spreadsheet, and real deletion of one person, all contacts, or

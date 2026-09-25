@@ -490,7 +490,7 @@ function Suggestions({
 function ReferralLine({ name, status }: { name: string; status: ReferralStatus }) {
   const link = (contactId: string | null, text: string) =>
     contactId ? (
-      <Link href={`/contacts/${contactId}`} className="font-semibold text-ink-body underline decoration-line-strong underline-offset-2 hover:text-ink">
+      <Link href={`/contacts/${contactId}`} className="font-semibold text-ink-body link-inline decoration-line-strong">
         {text}
       </Link>
     ) : (
@@ -558,7 +558,7 @@ function Sources({
             href={gmailLink(source.messageId, gmailEmail)}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-semibold text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-ink"
+            className="font-semibold text-ink-soft link-inline decoration-line-strong"
           >
             email {numbers.get(source.messageId) ?? "?"}
           </a>

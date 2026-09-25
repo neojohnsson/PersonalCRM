@@ -3,16 +3,16 @@
  * them.
  *
  * It is a list of plain data, away from the shell that draws it, for two
- * reasons. The rail, the bottom bar on a phone and the header's page switcher
- * all read this one list, so a page can never appear in one and be missing
- * from another — which is exactly how the phone ended up with no navigation at
+ * reasons. The rail and the bottom bar on a phone both read this one list
+ * (the header's page switcher did too, until the UI quality pass removed it),
+ * so a page can never appear in one and be missing from the other — which is exactly how the phone ended up with no navigation at
  * all until slice 9b. And a list is something tests/navigation.test.ts can
  * read: it checks that every entry here has a page behind it, because
  * "a nav item that goes nowhere would be a lie" (app/app-shell.tsx).
  *
- * `label` is the word on the bottom bar, the page switcher and the rail's
- * hover label. `title` is the longer name where there is room for it — Home is
- * the only one where they differ, because the page is called "Who needs you
+ * `label` is the word under each icon, on the rail and on the bottom bar.
+ * `title` is the longer name, for the rail's hover label and a screen reader,
+ * where there is room for it — Home is the only one where they differ, because the page is called "Who needs you
  * today" and no bottom bar has room for four words.
  *
  * Profile is not here: it sits apart at the foot of the rail, as in

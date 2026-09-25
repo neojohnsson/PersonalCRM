@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/app/app-shell";
+import { RowLink } from "@/app/nav-pending";
 import { CARD } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
 import { AssistantChat } from "./chat";
@@ -268,12 +269,12 @@ function WhoNeedsYou({ entries }: { entries: BriefEntry<ContactRow>[] }) {
               <Avatar contact={entry.contact} />
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <div className="flex min-w-0 items-baseline gap-2">
-                  <Link
+                  <RowLink
                     href={`/contacts/${entry.contact.id}`}
-                    className="stretched-link truncate text-[14px] font-semibold tracking-[-0.01em]"
+                    className="truncate text-[14px] font-semibold tracking-[-0.01em]"
                   >
                     {displayName(entry.contact)}
-                  </Link>
+                  </RowLink>
                   {entry.contact.company && (
                     <span className="hidden min-w-0 truncate text-[12.5px] text-ink-soft sm:inline">
                       {entry.contact.company}
@@ -380,12 +381,12 @@ function ThisWeek({
               >
                 <MeetingBadge startedAt={meeting.started_at} isToday={isToday} />
                 <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
-                  <Link
+                  <RowLink
                     href={`/contacts/${contact.id}`}
-                    className="stretched-link truncate text-[13.5px] font-semibold tracking-[-0.01em]"
+                    className="truncate text-[13.5px] font-semibold tracking-[-0.01em]"
                   >
                     {displayName(contact)}
-                  </Link>
+                  </RowLink>
                   <span className="text-[12px] leading-[1.45] text-ink-soft">
                     {pill ? pill.text : "Nothing open with them."}
                   </span>
@@ -537,7 +538,7 @@ function SpendStrip({
         </span>
       )}
       {latest && (
-        <Link href="/assistant/activity" className="shrink-0 text-[12.5px] font-semibold">
+        <Link href="/assistant/activity" className="link-action shrink-0 text-[12.5px] font-semibold">
           Everything it did
         </Link>
       )}

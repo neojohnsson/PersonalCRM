@@ -74,13 +74,13 @@ export default async function PricingPage({ searchParams }: PageProps<"/pricing"
           {mine ? (
             <>
               You&rsquo;re on {mine.label}.{" "}
-              <Link href="/profile" className="font-semibold text-ink-soft underline underline-offset-2">
+              <Link href="/profile" className="font-semibold text-ink-soft link-inline">
                 See what you&rsquo;ve used this month
               </Link>
             </>
           ) : (
             <>
-              <Link href="/login" className="font-semibold text-ink-soft underline underline-offset-2">
+              <Link href="/login" className="font-semibold text-ink-soft link-inline">
                 Sign in
               </Link>{" "}
               to start on Free. Invite only for now: Google keeps the app in testing mode.
@@ -97,13 +97,13 @@ export default async function PricingPage({ searchParams }: PageProps<"/pricing"
         </p>
 
         <nav className="flex flex-wrap gap-x-4 gap-y-1 px-1 text-[13px] text-ink-soft" aria-label="Legal pages">
-          <Link href="/terms" className="underline underline-offset-2 hover:text-ink">
+          <Link href="/terms" className="link-inline">
             Terms
           </Link>
-          <Link href="/privacy-policy" className="underline underline-offset-2 hover:text-ink">
+          <Link href="/privacy-policy" className="link-inline">
             Privacy policy
           </Link>
-          <Link href="/sub-processors" className="underline underline-offset-2 hover:text-ink">
+          <Link href="/sub-processors" className="link-inline">
             Sub-processors
           </Link>
         </nav>

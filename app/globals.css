@@ -348,34 +348,71 @@ body {
 }
 
 /*
- * A link that makes its whole row clickable (a contact in a list): the link
- * itself draws no ring, its ::after covers the row and draws the shared one,
- * just inside the row so a neighbour does not cover it.
+ * "Going there", from the press until the page changes (UI quality pass,
+ * milestone 3; app/nav-pending.tsx). Before, a press changed nothing on
+ * screen until the new page arrived. Both wait 100ms before showing, so a
+ * fast navigation does not flash them.
+ *
+ *   nav-pending  a short bar under a navigation item's word, pulsing
+ *   row-pending  a row that opens a contact fades a little
+ *
+ * In the components layer, so a Tailwind class on the element can still move
+ * it: an unlayered rule beats every utility, whatever the order.
  */
-/*
- * The pending hint on a navigation item (app/nav-pending.tsx): a short bar
- * under the word, shown only if the page takes longer than 100ms to change.
- */
-.nav-pending {
-  position: absolute;
-  bottom: 3px;
-  left: 50%;
-  width: 18px;
-  height: 2px;
-  margin-left: -9px;
-  border-radius: 999px;
-  background: currentColor;
-  opacity: 0;
-  pointer-events: none;
+@layer components {
+  .nav-pending {
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    width: 18px;
+    height: 2px;
+    margin-left: -9px;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .nav-pending.is-pending {
+    animation: nav-pending 0.9s ease-in-out 0.1s infinite;
+  }
+
+  /* Covers the row: the link is not positioned, so the row is what it fills. */
+  .row-pending {
+    position: absolute;
+    inset: 0;
+    background: var(--theme-white);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .row-pending.is-pending {
+    animation: row-pending 0.2s ease-out 0.1s forwards;
+  }
+
+  /* Asked for less motion: a steady bar, after the same wait, not a pulse. */
+  @media (prefers-reduced-motion: reduce) {
+    .nav-pending.is-pending {
+      animation: nav-pending-steady 0s linear 0.1s forwards;
+    }
+  }
 }
-.nav-pending.is-pending {
-  animation: nav-pending 0.9s ease-in-out 0.1s infinite;
-}
+
 @keyframes nav-pending {
   0%, 100% { opacity: 0.25; }
   50% { opacity: 0.9; }
 }
+@keyframes nav-pending-steady {
+  to { opacity: 0.7; }
+}
+@keyframes row-pending {
+  to { opacity: 0.55; }
+}
 
+/*
+ * A link that makes its whole row clickable (a contact in a list; RowLink in
+ * app/nav-pending.tsx is the way to use it). The link itself draws no ring:
+ * its ::after covers the row and draws the shared one, just inside the row so
+ * a neighbour does not cover it. The row has to be `relative`.
+ */
 @utility stretched-link {
   outline: none;
   &::after {
@@ -387,5 +424,39 @@ body {
   &:focus-visible::after {
     outline: 2px solid var(--color-accent);
     outline-offset: -2px;
+  }
+}
+
+/*
+ * Hover, one rule per kind of link (UI quality pass, milestone 3). Buttons
+ * and rows already answered the pointer; these were the links that did not.
+ * Only on a device that can hover, as Tailwind's own hover: is, so a tap on a
+ * phone does not leave a link stuck underlined.
+ *
+ * link-action: a word or two that does something, in a card ("Open
+ * contact"). The colour says it is a link; hovering underlines it.
+ */
+@utility link-action {
+  text-underline-offset: 2px;
+  @media (hover: hover) {
+    &:hover {
+      text-decoration-line: underline;
+    }
+  }
+}
+
+/*
+ * link-inline: a link inside a sentence. Always underlined, because colour
+ * alone does not mark a link in running text (WCAG 1.4.1), and darker on
+ * hover. The underline's colour is left to the caller: cards use
+ * decoration-line-strong, the legal pages the text's own.
+ */
+@utility link-inline {
+  text-decoration-line: underline;
+  text-underline-offset: 2px;
+  @media (hover: hover) {
+    &:hover {
+      color: var(--color-ink);
+    }
   }
 }

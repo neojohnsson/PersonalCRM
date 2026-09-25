@@ -279,7 +279,7 @@ function EventCard({ proposal, onSettled }: { proposal: Extract<Proposal, { kind
 
       {stage.at === "created" &&
         (stage.link ? (
-          <a href={stage.link} target="_blank" rel="noreferrer" className="self-start text-[12.5px] font-semibold text-info-ink">
+          <a href={stage.link} target="_blank" rel="noreferrer" className="link-action self-start text-[12.5px] font-semibold text-info-ink">
             Open it in Google Calendar
           </a>
         ) : (
@@ -338,7 +338,7 @@ function SummaryCard({ proposal, onSettled }: { proposal: Extract<Proposal, { ki
       )}
       {stage.at === "written" && (
         <>
-          <Link href={`/contacts/${proposal.contactId}`} className="self-start text-[12.5px] font-semibold text-info-ink">
+          <Link href={`/contacts/${proposal.contactId}`} className="link-action self-start text-[12.5px] font-semibold text-info-ink">
             Check it on {proposal.name.split(" ")[0]}&rsquo;s page
           </Link>
           <Cost usd={stage.costUsd} what="Writing it" />
@@ -396,7 +396,7 @@ function ScanCard({ proposal, onSettled }: { proposal: Extract<Proposal, { kind:
       {stage.at === "read" && (
         <>
           <p className="text-[12.5px] leading-[1.5] text-ink-body">{stage.message}</p>
-          <Link href="/assistant/promises" className="self-start text-[12.5px] font-semibold text-info-ink">
+          <Link href="/assistant/promises" className="link-action self-start text-[12.5px] font-semibold text-info-ink">
             Decide on them
           </Link>
           <Cost usd={stage.costUsd} what="Reading" />
@@ -609,7 +609,7 @@ function EditCard({
       )}
       {stage === "saved" && (
         <Buttons>
-          <Link href={`/contacts/${proposal.contactId}`} className="text-[12.5px] font-semibold text-info-ink">
+          <Link href={`/contacts/${proposal.contactId}`} className="link-action text-[12.5px] font-semibold text-info-ink">
             Open {proposal.name}
           </Link>
           <Quiet
@@ -684,7 +684,7 @@ function NewContactCard({ values, onSettled }: { values: NewContact; onSettled: 
         </Buttons>
       )}
       {stage.at === "added" && (
-        <Link href={`/contacts/${stage.id}`} className="self-start text-[12.5px] font-semibold text-info-ink">
+        <Link href={`/contacts/${stage.id}`} className="link-action self-start text-[12.5px] font-semibold text-info-ink">
           Open {name}
         </Link>
       )}
@@ -747,13 +747,13 @@ function SummaryReviewCard({
           <Quiet onClick={() => decide("discarded")} disabled={pending}>
             Discard
           </Quiet>
-          <Link href={`/contacts/${summary.contact_id}`} className="text-[12.5px] font-semibold text-info-ink">
+          <Link href={`/contacts/${summary.contact_id}`} className="link-action text-[12.5px] font-semibold text-info-ink">
             Edit it on their page
           </Link>
         </Buttons>
       )}
       {stage === "approved" && (
-        <Link href={`/contacts/${summary.contact_id}`} className="self-start text-[12.5px] font-semibold text-info-ink">
+        <Link href={`/contacts/${summary.contact_id}`} className="link-action self-start text-[12.5px] font-semibold text-info-ink">
           Open {name}
         </Link>
       )}
@@ -892,7 +892,7 @@ function SeenOnceCard({ people, onSettled }: { people: SeenOncePerson[]; onSettl
         </Buttons>
       )}
       {Object.values(decided).includes("dismissed") && (
-        <Link href="/seen-once/dismissed" className="self-start text-[12.5px] font-semibold text-info-ink">
+        <Link href="/seen-once/dismissed" className="link-action self-start text-[12.5px] font-semibold text-info-ink">
           The Dismissed page
         </Link>
       )}
@@ -1007,7 +1007,7 @@ function ResearchOfferCard({
         </>
       )}
       {stage.at === "found" && (
-        <Link href={`/contacts/${proposal.contactId}`} className="self-start text-[12.5px] font-semibold text-info-ink">
+        <Link href={`/contacts/${proposal.contactId}`} className="link-action self-start text-[12.5px] font-semibold text-info-ink">
           {stage.count === 1 ? "1 fact waits" : `${stage.count} facts wait`} on {first}&rsquo;s page — tick what to keep
         </Link>
       )}

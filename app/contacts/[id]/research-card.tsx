@@ -189,7 +189,7 @@ function Waiting({ set }: { set: ResearchRow }) {
                   href={fact.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="truncate text-[11.5px] font-semibold text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-ink"
+                  className="truncate text-[11.5px] font-semibold text-ink-soft link-inline decoration-line-strong"
                 >
                   {withHost(fact.title, fact.url)}
                 </a>
@@ -235,7 +235,7 @@ function KeptFact({
           href={fact.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="truncate text-[11.5px] font-medium text-ink-soft underline decoration-line-strong underline-offset-2 hover:text-ink"
+          className="truncate text-[11.5px] font-medium text-ink-soft link-inline decoration-line-strong"
         >
           {hostOf(fact.url)} · found {dateOf(foundAt)}
         </a>

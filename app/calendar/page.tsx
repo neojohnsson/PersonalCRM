@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
+import { RowLink } from "@/app/nav-pending";
 import { CalendarPanel } from "@/app/connect/calendar-panel";
 import { CARD, EmptyCard } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
@@ -264,12 +265,12 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
                         {initials(name, contact.primary_email ?? name)}
                       </span>
                       <div className="flex min-w-0 flex-col gap-0.5">
-                        <Link
+                        <RowLink
                           href={`/contacts/${contact.id}`}
-                          className="stretched-link truncate text-[13.5px] font-semibold tracking-[-0.01em] hover:text-ink-soft"
+                          className="truncate text-[13.5px] font-semibold tracking-[-0.01em] link-action"
                         >
                           {name}
-                        </Link>
+                        </RowLink>
                         <span className="text-[12px] leading-[1.45] text-ink-soft">
                           Met {dayMonth(meeting.started_at)}. Nothing sent since.
                         </span>
@@ -443,7 +444,10 @@ function WeekGrid({
                       href={`/contacts/${touch.contact_id}`}
                       title={touch.reason ? `${name}: ${touch.reason}` : name}
                       aria-label={name}
-                      className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[7px] bg-accent-tint px-1 py-1 sm:justify-start sm:px-2"
+                      // Hover deepens the tint (UI quality pass, milestone 3):
+                      // the accent at 15% is a step darker than the tint on
+                      // Paper and a step lighter on Night, a raise in both.
+                      className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[7px] bg-accent-tint px-1 py-1 transition-colors hover:bg-accent/15 sm:justify-start sm:px-2"
                     >
                       <span aria-hidden="true" className="hidden size-[5px] shrink-0 rounded-full bg-accent sm:block" />
                       <span aria-hidden="true" className="text-[10.5px] font-bold text-accent-dark sm:hidden">
