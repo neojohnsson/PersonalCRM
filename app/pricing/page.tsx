@@ -95,6 +95,18 @@ export default async function PricingPage({ searchParams }: PageProps<"/pricing"
           your right to withdraw from the purchase under EU consumer law. Cancelling or changing plan is always on the
           Manage or cancel button in your profile.
         </p>
+
+        <nav className="flex flex-wrap gap-x-4 gap-y-1 px-1 text-[13px] text-ink-quiet" aria-label="Legal pages">
+          <Link href="/terms" className="underline underline-offset-2 hover:text-ink">
+            Terms
+          </Link>
+          <Link href="/privacy-policy" className="underline underline-offset-2 hover:text-ink">
+            Privacy policy
+          </Link>
+          <Link href="/sub-processors" className="underline underline-offset-2 hover:text-ink">
+            Sub-processors
+          </Link>
+        </nav>
       </div>
     </main>
   );

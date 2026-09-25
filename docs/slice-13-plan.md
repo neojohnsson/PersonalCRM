@@ -219,6 +219,11 @@ takes and why it comes where it does:
    cancelling returns to Free and deletes nothing; an unknown price is refused; a live key
    outside production is refused.
 6. The public pages, the sub-processor list and the DPA draft.
+6b. Deleting an account ends everything it started, found while writing the privacy
+   policy (2026-09-25): today it revokes Gmail at Google but not the Calendar
+   permission, and a paid subscription keeps charging at Stripe. Delete everything
+   cancels the subscription and revokes the calendar first, and deletes nothing if
+   either fails, as it already does for Gmail.
 7. `docs/release.md` (part B), privacy.md brought up to date, the plan's boxes ticked.
 
 ## Done when
