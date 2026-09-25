@@ -58,17 +58,17 @@ export function SeenOnceQueue({
 
   return (
     <form className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] bg-white px-[22px] py-[11px] shadow-[0_1px_2px_rgba(20,20,25,.04)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-[22px] py-[11px] shadow-[0_1px_2px_rgba(20,20,25,.04)]">
         <label className="flex cursor-pointer items-center gap-[13px]">
           <Checkbox checked={allSelected} onChange={toggleAll} label="Select everyone shown" />
-          <span className="text-[12.5px] font-semibold">
+          <span className="text-sm font-semibold">
             {selected.length > 0 ? `${selected.length} selected` : "Select all"}
           </span>
         </label>
 
         <div className="flex flex-wrap items-center gap-[7px]">
           {filtered > 0 && (
-            <span className="mr-1.5 text-[11.5px] text-ink-soft">
+            <span className="mr-1.5 text-xs text-ink-soft">
               {countOf(filtered, "automated message")} filtered out — newsletters, no-reply,
               calendar invites
             </span>
@@ -92,7 +92,7 @@ export function SeenOnceQueue({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-[18px] bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]">
+      <div className="overflow-hidden rounded-xl bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]">
         <ul>
           {people.map((person) => (
             <Row
@@ -105,14 +105,14 @@ export function SeenOnceQueue({
         </ul>
 
         <div className="flex items-center justify-between border-t border-line-soft px-[22px] py-[11px]">
-          <span className="text-[11.5px] font-medium text-ink-soft">
+          <span className="text-xs font-normal text-ink-soft">
             Showing {people.length.toLocaleString("en-GB")} of {total.toLocaleString("en-GB")}
           </span>
           {moreHref && (
             <Link
               href={moreHref}
               scroll={false}
-              className="text-[11.5px] font-semibold text-ink-soft hover:text-ink"
+              className="text-xs font-semibold text-ink-soft hover:text-ink"
             >
               Load more
             </Link>
@@ -148,18 +148,18 @@ function Row({
       <span
         aria-hidden="true"
         style={avatarColors(person.email)}
-        className="flex size-9 shrink-0 items-center justify-center rounded-full text-[12px] font-bold"
+        className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold"
       >
         {initials(person.name, person.email)}
       </span>
 
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 lg:w-[236px] lg:flex-none">
-        <span className="truncate text-[13.5px] font-semibold tracking-[-0.01em]">{label}</span>
-        <span className="truncate text-[12px] text-ink-soft">{person.email}</span>
+        <span className="truncate text-sm font-semibold tracking-[-0.01em]">{label}</span>
+        <span className="truncate text-xs text-ink-soft">{person.email}</span>
       </div>
 
       <span
-        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap tabular-nums ${
+        className={`rounded-full px-2.5 py-1 text-2xs font-semibold whitespace-nowrap tabular-nums ${
           person.fromThem > 0 ? "bg-info-tint text-info-ink" : "bg-line-soft text-ink-soft"
         }`}
       >
@@ -168,13 +168,13 @@ function Row({
 
       <div className="flex min-w-0 basis-full flex-col gap-0.5 lg:basis-auto lg:flex-1">
         <span
-          className={`truncate text-[11.5px] font-semibold ${
+          className={`truncate text-xs font-semibold ${
             person.subject ? "text-ink-body" : "text-ink-soft"
           }`}
         >
           {person.subject ?? "No subject"}
         </span>
-        <span className="truncate text-[11.5px] text-ink-soft">
+        <span className="truncate text-xs text-ink-soft">
           {[person.day, domain].filter(Boolean).join(" · ")}
         </span>
       </div>
@@ -214,7 +214,7 @@ function Checkbox({
         checked={checked}
         onChange={onChange}
         aria-label={label}
-        className="peer size-5 cursor-pointer appearance-none rounded-[5px] border-[1.5px] border-line-strong bg-white transition-colors checked:border-ink-deep checked:bg-ink-deep"
+        className="peer size-5 cursor-pointer appearance-none rounded-lg border-[1.5px] border-line-strong bg-white transition-colors checked:border-ink-deep checked:bg-ink-deep"
       />
       <svg
         aria-hidden="true"
@@ -261,7 +261,7 @@ function SubmitButton({
       type="submit"
       formAction={action}
       disabled={disabled || pending}
-      className={`shrink-0 rounded-full px-[14px] py-2 text-[12px] font-semibold whitespace-nowrap transition-colors disabled:cursor-default disabled:opacity-50 ${BUTTON[variant]}`}
+      className={`shrink-0 rounded-full px-[14px] py-2 text-xs font-semibold whitespace-nowrap transition-colors disabled:cursor-default disabled:opacity-50 ${BUTTON[variant]}`}
     >
       {children}
     </button>

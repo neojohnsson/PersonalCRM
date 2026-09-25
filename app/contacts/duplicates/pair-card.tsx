@@ -18,11 +18,11 @@ import { dismissPairAction, mergeContactsAction, type MergeState } from "./actio
  */
 
 const CARD =
-  "rounded-[18px] bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
+  "rounded-xl bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
 const GHOST =
-  "rounded-full bg-line-soft px-[13px] py-1.5 text-[12px] font-semibold text-ink-body transition-colors hover:bg-chip-track disabled:opacity-60";
+  "rounded-full bg-line-soft px-[13px] py-1.5 text-xs font-semibold text-ink-body transition-colors hover:bg-chip-track disabled:opacity-60";
 const SOLID =
-  "rounded-full bg-ink-deep px-[15px] py-1.5 text-[12px] font-semibold text-white transition hover:bg-ink/85 disabled:opacity-60";
+  "rounded-full bg-ink-deep px-[15px] py-1.5 text-xs font-semibold text-white transition hover:bg-ink/85 disabled:opacity-60";
 
 export function DuplicatePairCard({ pair }: { pair: DuplicateSuggestion }) {
   const [keepLeft, mergeIntoLeft, keepingLeft] = useActionState<MergeState>(
@@ -39,14 +39,14 @@ export function DuplicatePairCard({ pair }: { pair: DuplicateSuggestion }) {
   return (
     <section className={`${CARD} flex flex-col gap-3.5 px-[22px] py-[18px]`}>
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <span className="text-[13px] font-semibold tracking-[-0.01em]">{pair.because}</span>
+        <span className="text-sm font-semibold tracking-[-0.01em]">{pair.because}</span>
         <form action={dismissPairAction.bind(null, pair.keep.id, pair.other.id)}>
           <DismissButton />
         </form>
       </div>
 
       {error && (
-        <p role="alert" className="rounded-[12px] bg-accent-tint px-4 py-2.5 text-[12.5px] text-accent-dark">
+        <p role="alert" className="rounded-xl bg-accent-tint px-4 py-2.5 text-sm text-accent-dark">
           {error}
         </p>
       )}
@@ -56,7 +56,7 @@ export function DuplicatePairCard({ pair }: { pair: DuplicateSuggestion }) {
         <Side contact={pair.other} action={mergeIntoRight} busy={busy} />
       </div>
 
-      <p className="text-[11.5px] leading-[1.5] text-ink-soft">
+      <p className="text-xs text-ink-soft">
         Keeping one moves the other&rsquo;s addresses and mail history onto it, fills anything it
         doesn&rsquo;t have, and deletes the other. What you wrote is never overwritten. There is no
         undo.
@@ -78,27 +78,27 @@ function Side({
   const hasName = Boolean(contact.first_name?.trim() || contact.last_name?.trim());
 
   return (
-    <div className="flex flex-col gap-3 rounded-[14px] border border-line px-4 py-3.5">
+    <div className="flex flex-col gap-3 rounded-xl border border-line px-4 py-3.5">
       <div className="flex min-w-0 items-center gap-3">
         <span
           aria-hidden="true"
           style={avatarColors(contact.primary_email ?? contact.id)}
-          className="flex size-9 shrink-0 items-center justify-center rounded-full text-[12px] font-bold"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold"
         >
           {initials(hasName ? name : null, contact.primary_email ?? name)}
         </span>
         <div className="flex min-w-0 flex-col">
           <Link
             href={`/contacts/${contact.id}`}
-            className="truncate text-[13.5px] font-semibold tracking-[-0.01em] hover:text-ink-soft"
+            className="truncate text-sm font-semibold tracking-[-0.01em] hover:text-ink-soft"
           >
             {name}
           </Link>
-          {contact.company && <span className="truncate text-[12px] text-ink-soft">{contact.company}</span>}
+          {contact.company && <span className="truncate text-xs text-ink-soft">{contact.company}</span>}
         </div>
       </div>
 
-      <dl className="flex flex-col gap-1 text-[12px] text-ink-soft">
+      <dl className="flex flex-col gap-1 text-xs text-ink-soft">
         <div className="flex gap-2">
           <dt className="shrink-0">Addresses:</dt>
           <dd className="min-w-0 break-words text-ink-body">{contact.emails.join(", ") || "none"}</dd>

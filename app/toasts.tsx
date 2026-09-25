@@ -126,9 +126,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toast && (
           <div
             key={toast.id}
-            className="pointer-events-auto flex max-w-[min(520px,100%)] items-center gap-3 rounded-[14px] bg-ink-deep px-[18px] py-3 shadow-[0_4px_16px_rgba(20,20,25,.22)]"
+            className="pointer-events-auto flex max-w-[min(520px,100%)] items-center gap-3 rounded-xl bg-ink-deep px-[18px] py-3 shadow-[0_4px_16px_rgba(20,20,25,.22)]"
           >
-            <span className="text-[13px] font-medium text-white">
+            <span className="text-sm font-normal text-white">
               {toast.state === "undone" ? "Undone." : (toast.error ?? toast.message)}
             </span>
 
@@ -137,7 +137,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 type="button"
                 onClick={runAction}
                 disabled={toast.state === "running"}
-                className="shrink-0 rounded-full border border-white/25 px-[13px] py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-white/10 disabled:opacity-60"
+                className="shrink-0 rounded-full border border-white/25 px-[13px] py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/10 disabled:opacity-60"
               >
                 {toast.state === "running" ? "Undoing…" : toast.error ? "Try again" : toast.action.label}
               </button>

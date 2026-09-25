@@ -42,11 +42,11 @@ export default async function AssistantActivityPage() {
     <AppShell userEmail={user.email} active="assistant" headerRight={<SignOutButton />}>
       <main className="flex flex-1 flex-col gap-4 px-4 pt-2.5 pb-7 sm:px-[30px]">
         <div className="flex flex-col gap-2">
-          <Link href="/assistant" className="text-[12.5px] font-medium text-ink-soft hover:text-ink">
+          <Link href="/assistant" className="text-sm font-normal text-ink-soft hover:text-ink">
             ← Assistant
           </Link>
-          <h1 className="text-[28px] leading-[1.1] font-bold tracking-[-0.035em]">Everything it did</h1>
-          <p className="max-w-[640px] text-[13.5px] leading-[1.5] text-ink-soft">
+          <h1 className="text-xl font-bold tracking-[-0.035em]">Everything it did</h1>
+          <p className="max-w-[640px] text-sm text-ink-soft">
             What the Assistant did on its own, newest first. Undo puts back exactly what was there
             before — unless you&rsquo;ve changed the same thing yourself since, and then it says so
             and leaves yours alone. Drafts and events aren&rsquo;t here: those only ever happen when
@@ -65,11 +65,11 @@ export default async function AssistantActivityPage() {
                   <DoneMark undone={action.undoneAt !== null} />
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span
-                      className={`text-[13.5px] tracking-[-0.01em] ${action.undoneAt ? "text-ink-soft line-through" : "font-medium"}`}
+                      className={`text-sm tracking-[-0.01em] ${action.undoneAt ? "text-ink-soft line-through" : "font-normal"}`}
                     >
                       {action.summary}
                     </span>
-                    <span className="text-[12px] text-ink-soft">
+                    <span className="text-xs text-ink-soft">
                       {dayMonth(action.createdAt)}, {timeAgo(action.createdAt, now)}
                       {action.undoneAt && ` · undone ${timeAgo(action.undoneAt, now)}`}
                       {" · "}
@@ -79,7 +79,7 @@ export default async function AssistantActivityPage() {
                     </span>
                   </div>
                   {action.undoneAt ? (
-                    <span className="shrink-0 text-[12px] font-semibold text-ink-soft">Undone</span>
+                    <span className="shrink-0 text-xs font-semibold text-ink-soft">Undone</span>
                   ) : (
                     <UndoButton actionId={action.id} label={action.summary} />
                   )}
@@ -87,15 +87,15 @@ export default async function AssistantActivityPage() {
               ))}
             </ul>
             {actions.length === ACTIVITY_LIMIT && (
-              <p className="border-t border-line-soft px-[22px] py-3 text-[12px] text-ink-soft">
+              <p className="border-t border-line-soft px-[22px] py-3 text-xs text-ink-soft">
                 The latest {ACTIVITY_LIMIT}. Older ones are still kept, and in your export on Privacy.
               </p>
             )}
           </div>
         ) : (
           <section className={`${CARD} flex max-w-xl flex-col px-[22px] py-6 sm:px-8`}>
-            <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Nothing yet</h2>
-            <p className="mt-2 text-[13.5px] leading-[1.55] text-ink-soft">
+            <h2 className="text-base font-bold tracking-[-0.015em]">Nothing yet</h2>
+            <p className="mt-2 text-sm text-ink-soft">
               When you ask the Assistant to add a note, change tags, move a next touch, mark a
               conversation done or turn reminders off, it shows up here with Undo.
             </p>

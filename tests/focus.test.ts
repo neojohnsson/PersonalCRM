@@ -41,7 +41,7 @@ function strings(): { file: string; value: string }[] {
 const EXCUSED = [
   {
     file: "app/contacts/search-box.tsx",
-    mark: "w-full min-w-0 bg-transparent text-[12.5px]",
+    mark: "w-full min-w-0 bg-transparent text-sm",
     // The pill around the input draws the ring (focus-within), so the ring
     // goes round the whole search box, not the bare text inside it.
     instead: "focus-within:outline-accent",

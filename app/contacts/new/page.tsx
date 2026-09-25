@@ -16,11 +16,11 @@ export default async function NewContactPage() {
     <AppShell userEmail={user.email} headerRight={<SignOutButton />}>
       <main className="flex flex-1 flex-col gap-4 px-4 pt-2.5 pb-7 sm:px-[30px]">
         <div className="flex flex-col gap-2">
-          <Link href="/contacts" className="text-[12.5px] font-medium text-ink-soft hover:text-ink">
+          <Link href="/contacts" className="text-sm font-normal text-ink-soft hover:text-ink">
             ← Contacts
           </Link>
-          <h1 className="text-[28px] leading-[1.1] font-bold tracking-[-0.035em]">New contact</h1>
-          <p className="max-w-[640px] text-[13.5px] leading-[1.5] text-ink-soft">
+          <h1 className="text-xl font-bold tracking-[-0.035em]">New contact</h1>
+          <p className="max-w-[640px] text-sm text-ink-soft">
             For someone you haven&rsquo;t emailed from this account — met at an event, a phone
             call, a referral. Everything here can be changed later.
           </p>

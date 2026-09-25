@@ -53,7 +53,7 @@ export function HeaderDraftButton({ contactId, hasDraft }: { contactId: string; 
       {/* The panel below is where a draft's errors belong, but an error from
           this button would otherwise vanish with no explanation at all. */}
       {state?.error && (
-        <p role="status" className="max-w-[260px] text-right text-[11.5px] leading-[1.45] font-medium text-accent">
+        <p role="status" className="max-w-[260px] text-right text-xs font-normal text-accent">
           {state.error}
         </p>
       )}
@@ -62,7 +62,7 @@ export function HeaderDraftButton({ contactId, hasDraft }: { contactId: string; 
 }
 
 const PILL =
-  "flex items-center gap-2 rounded-full bg-ink-deep px-[18px] py-2.5 text-[13px] font-semibold text-white transition hover:bg-ink/85 disabled:cursor-default";
+  "flex items-center gap-2 rounded-full bg-ink-deep px-[18px] py-2.5 text-sm font-semibold text-white transition hover:bg-ink/85 disabled:cursor-default";
 
 function PencilIcon() {
   return (

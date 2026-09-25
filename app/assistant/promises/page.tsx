@@ -52,11 +52,11 @@ export default async function PromisesPage() {
     <AppShell userEmail={user.email} active="assistant" headerRight={<SignOutButton />}>
       <main className="flex flex-1 flex-col gap-[18px] px-4 pt-2 pb-[30px] sm:px-[30px]">
         <div className="flex flex-col gap-2">
-          <Link href="/assistant" className="text-[12.5px] font-medium text-ink-soft hover:text-ink">
+          <Link href="/assistant" className="text-sm font-normal text-ink-soft hover:text-ink">
             ← Assistant
           </Link>
-          <h1 className="text-[28px] leading-[1.1] font-bold tracking-[-0.035em]">Promises</h1>
-          <p className="max-w-[640px] text-[13.5px] leading-[1.5] text-ink-soft">
+          <h1 className="text-xl font-bold tracking-[-0.035em]">Promises</h1>
+          <p className="max-w-[640px] text-sm text-ink-soft">
             Where somebody said they would do something &mdash; you or them. Each one is read out
             of your mail and waits here until you decide: accepting it sets a next touch, and
             nothing else happens on its own.
@@ -64,14 +64,14 @@ export default async function PromisesPage() {
         </div>
 
         <div
-          className={`flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-[14px] bg-white px-[22px] py-[11px] shadow-[0_1px_2px_rgba(20,20,25,.04)]`}
+          className={`flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-xl bg-white px-[22px] py-[11px] shadow-[0_1px_2px_rgba(20,20,25,.04)]`}
         >
-          <span className="text-[12.5px] font-semibold">
+          <span className="text-sm font-semibold">
             {promises.length > 0
               ? `${countOf(promises.length, "promise")} to decide`
               : "Nothing waiting"}
           </span>
-          <Link href="/assistant" className="text-[12.5px] font-semibold text-ink-soft hover:text-ink">
+          <Link href="/assistant" className="text-sm font-semibold text-ink-soft hover:text-ink">
             Ask the Assistant to look for more
           </Link>
         </div>
@@ -94,14 +94,14 @@ export default async function PromisesPage() {
             </p>
             <Link
               href="/assistant"
-              className="mt-5 self-start rounded-full bg-line-soft px-[15px] py-2 text-[12px] font-semibold text-ink-body transition hover:bg-chip-track"
+              className="mt-5 self-start rounded-full bg-line-soft px-[15px] py-2 text-xs font-semibold text-ink-body transition hover:bg-chip-track"
             >
               Back to the Assistant
             </Link>
           </EmptyCard>
         )}
 
-        <p className="max-w-3xl px-1 text-[11.5px] leading-[1.55] font-medium text-ink-soft">
+        <p className="max-w-3xl px-1 text-xs font-normal text-ink-soft">
           The message under each one is read from Gmail as this page opens and is never stored.
           The line above it is written by the AI, so read the words before you accept it &mdash; a
           negation turns a promise into its opposite.

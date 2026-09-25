@@ -50,13 +50,13 @@ export default async function ProfilePage() {
 
             No design covers this card. It reuses the "Your data" card below
             and the Connect screen's rows. */}
-        <section className="flex max-w-[680px] flex-col gap-[13px] rounded-[18px] bg-white px-[22px] py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]">
-          <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Connections</h2>
+        <section className="flex max-w-[680px] flex-col gap-[13px] rounded-xl bg-white px-[22px] py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]">
+          <h2 className="text-base font-bold tracking-[-0.015em]">Connections</h2>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5 border-t border-line-soft pt-[13px]">
             <div className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-[13.5px] font-semibold tracking-[-0.01em]">Gmail</span>
-              <span className="truncate text-[12.5px] text-ink-soft">
+              <span className="text-sm font-semibold tracking-[-0.01em]">Gmail</span>
+              <span className="truncate text-sm text-ink-soft">
                 {gmailResult.data ? gmailResult.data.email : "Not connected"}
               </span>
             </div>
@@ -66,7 +66,7 @@ export default async function ProfilePage() {
               ) : (
                 <Link
                   href="/connect"
-                  className="rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] font-medium text-ink-soft transition hover:bg-paper hover:text-ink"
+                  className="rounded-lg border border-line bg-white px-3 py-1.5 text-sm font-normal text-ink-soft transition hover:bg-paper hover:text-ink"
                 >
                   Connect Gmail
                 </Link>
@@ -76,8 +76,8 @@ export default async function ProfilePage() {
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5 border-t border-line-soft pt-[13px]">
             <div className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-[13.5px] font-semibold tracking-[-0.01em]">Calendar</span>
-              <span className="truncate text-[12.5px] text-ink-soft">
+              <span className="text-sm font-semibold tracking-[-0.01em]">Calendar</span>
+              <span className="truncate text-sm text-ink-soft">
                 {calendarResult.data ? calendarResult.data.email : "Not connected"}
               </span>
             </div>
@@ -86,7 +86,7 @@ export default async function ProfilePage() {
                 (slice 8b). One place for it, not two. */}
             <Link
               href="/calendar"
-              className="ml-auto rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] font-medium text-ink-soft transition hover:bg-paper hover:text-ink"
+              className="ml-auto rounded-lg border border-line bg-white px-3 py-1.5 text-sm font-normal text-ink-soft transition hover:bg-paper hover:text-ink"
             >
               {calendarResult.data ? "Manage on Calendar" : "Connect on Calendar"}
             </Link>
@@ -98,13 +98,13 @@ export default async function ProfilePage() {
             your settings, not in the sidebar with the daily screens. */}
         <Link
           href="/privacy"
-          className="flex max-w-[680px] flex-wrap items-center gap-x-3 gap-y-1 rounded-[18px] bg-white px-[22px] py-[17px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] transition-colors hover:bg-paper-tint"
+          className="flex max-w-[680px] flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-white px-[22px] py-[17px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] transition-colors hover:bg-paper-tint"
         >
-          <span className="text-[14.5px] font-bold tracking-[-0.015em]">Your data</span>
-          <span className="text-[12.5px] text-ink-soft">
+          <span className="text-base font-bold tracking-[-0.015em]">Your data</span>
+          <span className="text-sm text-ink-soft">
             Everything stored, what leaves the app, export and delete
           </span>
-          <span className="ml-auto text-[12px] font-semibold text-ink-soft">Open</span>
+          <span className="ml-auto text-xs font-semibold text-ink-soft">Open</span>
         </Link>
       </main>
     </AppShell>

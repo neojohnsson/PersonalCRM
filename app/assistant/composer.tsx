@@ -129,7 +129,7 @@ export function Composer({ onAsk, onStop, busy, full, placeholder }: Props) {
           aria-haspopup="menu"
           disabled={busy || full}
           onClick={() => setMenuOpen((open) => !open)}
-          className="flex h-10 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold text-ink-body transition hover:bg-paper disabled:opacity-50"
+          className="flex h-10 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-ink-body transition hover:bg-paper disabled:opacity-50"
         >
           <span>Examples</span>
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
@@ -139,9 +139,9 @@ export function Composer({ onAsk, onStop, busy, full, placeholder }: Props) {
         {menuOpen && (
           <div
             role="menu"
-            className="absolute bottom-12 left-0 z-20 flex w-64 flex-col rounded-[14px] border border-line bg-white p-1.5 shadow-[0_8px_24px_rgba(20,20,25,.12)]"
+            className="absolute bottom-12 left-0 z-20 flex w-64 flex-col rounded-xl border border-line bg-white p-1.5 shadow-[0_8px_24px_rgba(20,20,25,.12)]"
           >
-            <span className="px-3 pb-1.5 pt-2 text-[10.5px] font-bold tracking-[0.07em] text-ink-meta uppercase">
+            <span className="px-3 pb-1.5 pt-2 text-2xs font-bold tracking-[0.07em] text-ink-meta uppercase">
               Try asking
             </span>
             {STARTERS.map((starter) => (
@@ -150,7 +150,7 @@ export function Composer({ onAsk, onStop, busy, full, placeholder }: Props) {
                 type="button"
                 role="menuitem"
                 onClick={() => send(starter)}
-                className="rounded-[10px] px-3 py-2 text-left text-[13px] font-medium text-ink transition hover:bg-paper"
+                className="rounded-lg px-3 py-2 text-left text-sm font-normal text-ink transition hover:bg-paper"
               >
                 {starter}
               </button>
@@ -179,7 +179,7 @@ export function Composer({ onAsk, onStop, busy, full, placeholder }: Props) {
         disabled={busy || full}
         maxLength={4000}
         placeholder={placeholder}
-        className="max-h-32 min-h-10 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1 py-2.5 text-[14px] leading-normal text-ink outline-none placeholder:text-ink-soft disabled:opacity-60"
+        className="max-h-32 min-h-10 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1 py-2.5 text-base text-ink outline-none placeholder:text-ink-soft disabled:opacity-60"
       />
 
       {dictation.supported && (
@@ -209,7 +209,7 @@ export function Composer({ onAsk, onStop, busy, full, placeholder }: Props) {
           title="Stop generating"
           className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ink-deep text-white transition hover:bg-ink"
         >
-          <span aria-hidden="true" className="size-3 rounded-[3px] bg-white" />
+          <span aria-hidden="true" className="size-3 rounded-lg bg-white" />
         </button>
       ) : (
         <button

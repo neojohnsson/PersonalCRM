@@ -80,11 +80,11 @@ export function ConversationCard({
   const waiting = answer === null;
 
   return (
-    <section className="rounded-[18px] bg-white px-[22px] py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]">
+    <section className="rounded-xl bg-white px-[22px] py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <div className="flex flex-col gap-0.5">
-          <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Every touch</h2>
-          <span className="text-[11.5px] font-medium text-ink-soft">
+          <h2 className="text-base font-bold tracking-[-0.015em]">Every touch</h2>
+          <span className="text-xs font-normal text-ink-soft">
             {total === 1 ? "1 message on record" : `${total} messages on record`}
             {entries.length < total && ` · the last ${entries.length} below`}
           </span>
@@ -94,7 +94,7 @@ export function ConversationCard({
             href={gmailLink}
             target="_blank"
             rel="noreferrer"
-            className="text-[12px] font-semibold text-accent hover:text-accent-dark"
+            className="text-xs font-semibold text-accent hover:text-accent-dark"
           >
             Open the thread in Gmail
           </a>
@@ -112,7 +112,7 @@ export function ConversationCard({
             >
               <span
                 aria-hidden="true"
-                className={`mt-0.5 flex size-[30px] shrink-0 items-center justify-center rounded-[10px] ${
+                className={`mt-0.5 flex size-[30px] shrink-0 items-center justify-center rounded-lg ${
                   entry.fromThem ? "bg-chip text-ink-soft" : "bg-info-tint text-info-ink"
                 }`}
               >
@@ -132,16 +132,16 @@ export function ConversationCard({
 
               <div className="flex min-w-0 flex-col gap-0.5">
                 <div className="flex flex-wrap items-baseline gap-x-2">
-                  <span className="text-[13px] font-semibold tracking-[-0.01em]">{entry.who}</span>
-                  <span className="text-[11.5px] font-medium text-ink-soft">{dayMonth(entry.at)}</span>
+                  <span className="text-sm font-semibold tracking-[-0.01em]">{entry.who}</span>
+                  <span className="text-xs font-normal text-ink-soft">{dayMonth(entry.at)}</span>
                 </div>
                 {entry.subject && (
-                  <span className="truncate text-[12.5px] font-medium text-ink-body">{entry.subject}</span>
+                  <span className="truncate text-sm font-normal text-ink-body">{entry.subject}</span>
                 )}
                 {line ? (
-                  <span className="text-[12.5px] leading-[1.5] text-ink-soft">{line}</span>
+                  <span className="text-sm text-ink-soft">{line}</span>
                 ) : (
-                  waiting && <span className="h-3 w-40 animate-pulse rounded bg-line-soft" aria-hidden="true" />
+                  waiting && <span className="h-3 w-40 animate-pulse rounded-lg bg-line-soft" aria-hidden="true" />
                 )}
               </div>
             </li>
@@ -153,7 +153,7 @@ export function ConversationCard({
           debugging. If Gmail can't be read, the card says so in one line. */}
       {problem && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <p role="alert" className="text-[11.5px] leading-[1.5] font-medium text-accent">
+          <p role="alert" className="text-xs font-normal text-accent">
             {problem}
           </p>
           <button
@@ -162,7 +162,7 @@ export function ConversationCard({
               setRead(null);
               setRetry((value) => value + 1);
             }}
-            className="rounded-full border border-line-strong bg-white px-2.5 py-1 text-[11.5px] font-semibold text-ink-body transition-colors hover:bg-paper"
+            className="rounded-full border border-line-strong bg-white px-2.5 py-1 text-xs font-semibold text-ink-body transition-colors hover:bg-paper"
           >
             Try again
           </button>
@@ -171,7 +171,7 @@ export function ConversationCard({
 
       {/* Said once, at the bottom, because it is the same promise the privacy
           page makes: the lines above are not in this app's database. */}
-      <p className="mt-3 text-[11.5px] leading-[1.5] font-medium text-ink-soft">
+      <p className="mt-3 text-xs font-normal text-ink-soft">
         Who wrote and when is stored. The lines are read from Gmail as you look at this page and
         are not kept.
       </p>

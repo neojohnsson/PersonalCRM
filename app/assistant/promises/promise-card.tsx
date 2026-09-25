@@ -52,7 +52,7 @@ export function PromiseCard({
         <span
           aria-hidden="true"
           style={avatarColors(promise.primaryEmail ?? promise.contactId)}
-          className="flex size-9 shrink-0 items-center justify-center rounded-full text-[12px] font-bold"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold"
         >
           {initials(promise.name, promise.primaryEmail ?? promise.name)}
         </span>
@@ -61,20 +61,20 @@ export function PromiseCard({
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
             <Link
               href={`/contacts/${promise.contactId}`}
-              className="truncate text-[13.5px] font-semibold tracking-[-0.01em] hover:text-ink-soft"
+              className="truncate text-sm font-semibold tracking-[-0.01em] hover:text-ink-soft"
             >
               {promise.name}
             </Link>
             {promise.company && (
-              <span className="min-w-0 truncate text-[12px] text-ink-soft">{promise.company}</span>
+              <span className="min-w-0 truncate text-xs text-ink-soft">{promise.company}</span>
             )}
           </div>
-          <span className="text-[12.5px] leading-[1.45] text-ink-soft">{promise.reason}</span>
+          <span className="text-sm text-ink-soft">{promise.reason}</span>
         </div>
 
         {/* The queue's direction pill: who said they would do something. */}
         <span
-          className={`shrink-0 rounded-full px-[10px] py-1 text-[11px] font-semibold whitespace-nowrap ${
+          className={`shrink-0 rounded-full px-[10px] py-1 text-2xs font-semibold whitespace-nowrap ${
             theirs ? "bg-info-tint text-info-ink" : "bg-accent-tint text-accent"
           }`}
         >
@@ -83,18 +83,18 @@ export function PromiseCard({
       </div>
 
       {promise.text ? (
-        <blockquote className="max-h-40 overflow-auto rounded-[12px] bg-paper-tint px-[15px] py-3 text-[12.5px] leading-[1.55] whitespace-pre-wrap text-ink-body">
+        <blockquote className="max-h-40 overflow-auto rounded-xl bg-paper-tint px-[15px] py-3 text-sm whitespace-pre-wrap text-ink-body">
           {promise.text}
         </blockquote>
       ) : (
-        <p className="rounded-[12px] bg-paper-tint px-[15px] py-3 text-[12.5px] leading-[1.55] text-ink-soft">
+        <p className="rounded-xl bg-paper-tint px-[15px] py-3 text-sm text-ink-soft">
           This message isn&rsquo;t in Gmail any more, so there is nothing to check it against.
         </p>
       )}
 
       <div className="flex flex-wrap items-center gap-x-[7px] gap-y-2">
         <form action={accept} className="flex flex-wrap items-center gap-[7px]">
-          <label className="flex items-center gap-2 text-[11.5px] font-medium text-ink-soft">
+          <label className="flex items-center gap-2 text-xs font-normal text-ink-soft">
             Follow up
             <input
               type="date"
@@ -103,7 +103,7 @@ export function PromiseCard({
               name="due_on"
               value={dueOn}
               onChange={(event) => setDueOn(event.target.value)}
-              className="rounded-full bg-line-soft px-3 py-[7px] text-[12px] font-semibold text-ink-body"
+              className="rounded-full bg-line-soft px-3 py-[7px] text-xs font-semibold text-ink-body"
             />
           </label>
           <AcceptButton />
@@ -122,12 +122,12 @@ export function PromiseCard({
           href={`https://mail.google.com/mail/u/0/#all/${promise.threadId}`}
           target="_blank"
           rel="noreferrer"
-          className="rounded-full px-3 py-2 text-[12px] font-semibold text-ink-soft hover:text-ink"
+          className="rounded-full px-3 py-2 text-xs font-semibold text-ink-soft hover:text-ink"
         >
           Open in Gmail
         </a>
 
-        <span className="ml-auto text-[11.5px] font-medium text-ink-soft">
+        <span className="ml-auto text-xs font-normal text-ink-soft">
           {promise.plannedOn
             ? `moves their next touch from ${dayMonth(promise.plannedOn)}`
             : `suggested ${dayMonth(promise.dueOn)}`}
@@ -135,7 +135,7 @@ export function PromiseCard({
       </div>
 
       {state?.error && (
-        <p role="status" className="text-[12px] font-medium text-accent">
+        <p role="status" className="text-xs font-normal text-accent">
           {state.error}
         </p>
       )}
@@ -150,7 +150,7 @@ function AcceptButton() {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-full bg-ink-deep px-[15px] py-2 text-[12px] font-semibold text-white transition hover:bg-ink/85 disabled:cursor-default disabled:opacity-50"
+      className="rounded-full bg-ink-deep px-[15px] py-2 text-xs font-semibold text-white transition hover:bg-ink/85 disabled:cursor-default disabled:opacity-50"
     >
       {pending ? "Adding…" : "Add next touch"}
     </button>
@@ -164,7 +164,7 @@ function DismissButton() {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-full bg-line-soft px-3.5 py-2 text-[12px] font-semibold text-ink-body transition hover:bg-chip-track disabled:cursor-default disabled:opacity-50"
+      className="rounded-full bg-line-soft px-3.5 py-2 text-xs font-semibold text-ink-body transition hover:bg-chip-track disabled:cursor-default disabled:opacity-50"
     >
       {pending ? "Dismissing…" : "Not a promise"}
     </button>

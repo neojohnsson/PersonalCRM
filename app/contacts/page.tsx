@@ -59,13 +59,13 @@ const PAGE_SIZE = 50;
 const MAX_ROWS = 1_000;
 
 const CARD =
-  "rounded-[18px] bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
+  "rounded-xl bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
 
 const DARK_PILL =
-  "flex items-center gap-[7px] rounded-full bg-ink-deep px-4 py-[9px] text-[12.5px] font-semibold text-white transition hover:bg-ink/85";
+  "flex items-center gap-[7px] rounded-full bg-ink-deep px-4 py-[9px] text-sm font-semibold text-white transition hover:bg-ink/85";
 
 const WHITE_PILL =
-  "flex items-center gap-[7px] rounded-full bg-white px-[14px] py-2 text-[12.5px] shadow-[0_1px_2px_rgba(20,20,25,.04)]";
+  "flex items-center gap-[7px] rounded-full bg-white px-[14px] py-2 text-sm shadow-[0_1px_2px_rgba(20,20,25,.04)]";
 
 type ContactRow = {
   id: string;
@@ -94,7 +94,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
     return (
       <AppShell userEmail={user.email} headerRight={<SignOutButton />}>
         <main className="flex flex-1 flex-col gap-[22px] px-4 pt-2 pb-[26px] sm:px-[30px]">
-          <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.035em]">Contacts</h1>
+          <h1 className="text-2xl font-bold tracking-[-0.035em]">Contacts</h1>
           <EmptyCard title="Connect Gmail to begin">
             <p>
               Once Gmail is connected, everyone you&rsquo;ve written to and heard back from shows
@@ -234,7 +234,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
       seenOnceCount={seenOnce}
       headerRight={
         <>
-          <span className="hidden text-[13px] text-ink-soft lg:inline">{gmail.email}</span>
+          <span className="hidden text-sm text-ink-soft lg:inline">{gmail.email}</span>
           <SignOutButton />
         </>
       }
@@ -244,7 +244,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
 
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-4">
-            <h1 className="text-[24px] leading-[1.1] font-bold tracking-[-0.03em]">Contacts</h1>
+            <h1 className="text-xl font-bold tracking-[-0.03em]">Contacts</h1>
             <ListTabs contacts={totalContacts} seenOnce={seenOnce} />
           </div>
 
@@ -254,7 +254,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
                 white pill beside Sync now it read as a dropdown, and the
                 outside test pressed it. The order is chosen in the column
                 headings below. */}
-            <span className="hidden items-center gap-1.5 self-center px-1 text-[12.5px] whitespace-nowrap lg:flex">
+            <span className="hidden items-center gap-1.5 self-center px-1 text-sm whitespace-nowrap lg:flex">
               <span className="text-ink-soft">Sorted by</span>
               <span className="font-semibold text-ink-soft">{sortLabel(sort)}</span>
             </span>
@@ -301,7 +301,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
           {duplicates > 0 && (
             <Link
               href="/contacts/duplicates"
-              className="text-[12.5px] font-medium text-ink-soft link-inline decoration-line-strong"
+              className="text-sm font-normal text-ink-soft link-inline decoration-line-strong"
             >
               {countOf(duplicates, "possible duplicate")} — look at{" "}
               {duplicates === 1 ? "it" : "them"}
@@ -346,8 +346,8 @@ function ListTabs({ contacts, seenOnce }: { contacts: number; seenOnce: number }
         aria-current="page"
         className="flex items-center gap-[7px] rounded-full bg-white px-[15px] py-[7px] shadow-[0_1px_2px_rgba(20,20,25,.06)]"
       >
-        <span className="text-[13px] font-semibold tracking-[-0.01em]">Contacts</span>
-        <span className="text-[11.5px] font-semibold text-ink-soft tabular-nums">
+        <span className="text-sm font-semibold tracking-[-0.01em]">Contacts</span>
+        <span className="text-xs font-semibold text-ink-soft tabular-nums">
           {contacts.toLocaleString("en-GB")}
         </span>
       </span>
@@ -356,8 +356,8 @@ function ListTabs({ contacts, seenOnce }: { contacts: number; seenOnce: number }
         className="flex items-center gap-[7px] rounded-full px-[15px] py-[7px] transition-colors hover:bg-white/60"
       >
         {/* ink-body, not ink-soft: soft is 4.05:1 on the grey track, under AA. */}
-        <span className="text-[13px] font-medium text-ink-body">Seen once</span>
-        <span className="text-[11.5px] font-semibold text-ink-body tabular-nums">
+        <span className="text-sm font-normal text-ink-body">Seen once</span>
+        <span className="text-xs font-semibold text-ink-body tabular-nums">
           {seenOnce.toLocaleString("en-GB")}
         </span>
       </Link>
@@ -370,10 +370,10 @@ function Chip({ href, active, label, count }: { href: string; active: boolean; l
     <Link
       href={href}
       aria-current={active ? "true" : undefined}
-      className={`rounded-full px-[13px] py-1.5 text-[12px] tabular-nums transition-colors ${
+      className={`rounded-full px-[13px] py-1.5 text-xs tabular-nums transition-colors ${
         active
           ? "bg-ink-deep font-semibold text-white"
-          : "bg-white font-medium text-ink-body shadow-[0_1px_2px_rgba(20,20,25,.04)] hover:bg-paper-tint"
+          : "bg-white font-normal text-ink-body shadow-[0_1px_2px_rgba(20,20,25,.04)] hover:bg-paper-tint"
       }`}
     >
       {label} {count.toLocaleString("en-GB")}
@@ -407,7 +407,7 @@ function ContactTable({
   sortHref: (next: SortKey | null) => string;
   moreHref: string | null;
 }) {
-  const heading = "px-2 pt-[11px] pb-[9px] text-[10.5px] font-bold tracking-[0.07em] text-ink-meta uppercase";
+  const heading = "px-2 pt-[11px] pb-[9px] text-2xs font-bold tracking-[0.07em] text-ink-meta uppercase";
 
   return (
     <div className={`${CARD} overflow-hidden`}>
@@ -479,13 +479,13 @@ function ContactTable({
                     <span
                       aria-hidden="true"
                       style={avatarColors(contact.primary_email ?? contact.id)}
-                      className="flex size-6 shrink-0 items-center justify-center rounded-full text-[9.5px] font-bold"
+                      className="flex size-6 shrink-0 items-center justify-center rounded-full text-2xs font-bold"
                     >
                       {initials(hasName ? name : null, contact.primary_email ?? contact.first_name ?? "?")}
                     </span>
                     <RowLink
                       href={`/contacts/${contact.id}`}
-                      className="truncate text-[13.5px] font-semibold tracking-[-0.01em]"
+                      className="truncate text-base font-semibold tracking-[-0.01em]"
                     >
                       {name}
                     </RowLink>
@@ -494,7 +494,7 @@ function ContactTable({
                 {/* One line, ending in "…" if it still doesn't fit; the full name on hover. */}
                 <td
                   title={contact.company ?? undefined}
-                  className="hidden truncate px-2 text-[12.5px] text-ink-soft lg:table-cell"
+                  className="hidden truncate px-2 text-sm text-ink-soft lg:table-cell"
                 >
                   {contact.company ?? <span className="text-ink-soft">—</span>}
                 </td>
@@ -507,7 +507,7 @@ function ContactTable({
                 <td className="hidden px-2 md:table-cell">
                   {warmth ? (
                     <div className="flex items-center gap-[9px]" title={`Warmth ${warmth.score}, ${warmth.band}`}>
-                      <span className={`w-5 text-[12.5px] font-semibold tabular-nums ${WARMTH_TEXT[warmth.band]}`}>
+                      <span className={`w-5 text-sm font-semibold tabular-nums ${WARMTH_TEXT[warmth.band]}`}>
                         {warmth.score}
                       </span>
                       <span aria-hidden="true" className="h-[3px] w-[52px] overflow-hidden rounded-full bg-line">
@@ -515,11 +515,11 @@ function ContactTable({
                       </span>
                     </div>
                   ) : (
-                    <span className="text-[12px] text-ink-soft">—</span>
+                    <span className="text-xs text-ink-soft">—</span>
                   )}
                 </td>
                 <td
-                  className={`pr-[22px] pl-2 text-right text-[12px] font-semibold tabular-nums ${
+                  className={`pr-[22px] pl-2 text-right text-xs font-semibold tabular-nums ${
                     turn.kind === "yours" ? "text-accent" : "text-ink-soft"
                   }`}
                 >
@@ -536,11 +536,11 @@ function ContactTable({
       </table>
 
       <div aria-live="polite" className="flex items-center justify-between border-t border-line-soft px-[22px] py-2.5">
-        <span className="text-[11.5px] font-medium text-ink-soft">
+        <span className="text-xs font-normal text-ink-soft">
           Showing {items.length.toLocaleString("en-GB")} of {countOf(total, "contact")}
         </span>
         {moreHref && (
-          <Link href={moreHref} scroll={false} className="text-[11.5px] font-semibold text-ink-soft hover:text-ink">
+          <Link href={moreHref} scroll={false} className="text-xs font-semibold text-ink-soft hover:text-ink">
             Load more
           </Link>
         )}
@@ -602,14 +602,14 @@ function NoContactsYet({ sync, seenOnce }: { sync: SyncSummary | null; seenOnce:
 const BUCKET_LABELS: Record<Exclude<ListFilter, "all">, { text: string; className: string }> = {
   yours: {
     text: "Your turn",
-    className: "text-[10.5px] font-bold tracking-[0.06em] text-accent uppercase",
+    className: "text-2xs font-bold tracking-[0.06em] text-accent uppercase",
   },
-  theirs: { text: "Their turn", className: "text-[12px] font-medium text-ink-soft" },
-  quiet: { text: "Going quiet", className: "text-[12px] font-medium text-cooling" },
-  closed: { text: "No open thread", className: "text-[12px] font-medium text-ink-soft" },
-  settled: { text: "Nothing owed", className: "text-[12px] font-medium text-ink-soft" },
-  planned: { text: "Planned", className: "text-[12px] font-medium text-info-ink" },
-  muted: { text: "Just a contact", className: "text-[12px] font-medium text-ink-soft" },
+  theirs: { text: "Their turn", className: "text-xs font-normal text-ink-soft" },
+  quiet: { text: "Going quiet", className: "text-xs font-normal text-cooling" },
+  closed: { text: "No open thread", className: "text-xs font-normal text-ink-soft" },
+  settled: { text: "Nothing owed", className: "text-xs font-normal text-ink-soft" },
+  planned: { text: "Planned", className: "text-xs font-normal text-info-ink" },
+  muted: { text: "Just a contact", className: "text-xs font-normal text-ink-soft" },
 };
 
 function BucketLabel({ bucket }: { bucket: Exclude<ListFilter, "all"> }) {

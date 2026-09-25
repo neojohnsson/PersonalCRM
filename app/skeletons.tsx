@@ -62,7 +62,7 @@ function Bone({ className = "", style }: { className?: string; style?: React.CSS
     <span
       aria-hidden="true"
       style={style}
-      className={`block animate-pulse rounded-[8px] bg-chip motion-reduce:animate-none ${className}`}
+      className={`block animate-pulse rounded-lg bg-chip motion-reduce:animate-none ${className}`}
     />
   );
 }
@@ -72,7 +72,7 @@ function Card({ className = "", children }: { className?: string; children: Reac
   return (
     <div
       aria-hidden="true"
-      className={`flex flex-col gap-3 rounded-[18px] bg-white px-[22px] py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] ${className}`}
+      className={`flex flex-col gap-3 rounded-xl bg-white px-[22px] py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] ${className}`}
     >
       {children}
     </div>
@@ -104,7 +104,7 @@ function PersonRow() {
 function DateRow() {
   return (
     <div className="flex items-start gap-3">
-      <Bone className="h-10 w-10 shrink-0 rounded-[10px]" />
+      <Bone className="h-10 w-10 shrink-0 rounded-lg" />
       <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-0.5">
         <Bone className="h-3 w-[55%]" />
         <Bone className="h-2.5 w-[80%]" />
@@ -176,7 +176,7 @@ function CalendarBones() {
               <Bone key={day} className="h-3" />
             ))}
           </div>
-          <Bone className="min-h-[440px] flex-1 rounded-[12px] opacity-60" />
+          <Bone className="min-h-[440px] flex-1 rounded-xl opacity-60" />
         </Card>
         <Card className="lg:w-[290px] lg:shrink-0">
           <Bone className="h-3.5 w-[120px]" />

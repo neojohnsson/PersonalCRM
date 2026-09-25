@@ -135,6 +135,50 @@ html {
   }
 }
 
+/*
+ * The type and shape scale (UI quality pass, milestone 4, 2026-09-25).
+ *
+ * One page used ten font sizes and a contacts row six of them; the app had
+ * twenty-three, most a half-step apart (12, 12.5, 13, 13.5), which reads as
+ * inconsistency rather than hierarchy and gave line heights like 14.25px.
+ * Now there are seven steps, each with a line height on the 4px grid:
+ *
+ *   2xs  11/16  small labels, badges
+ *   xs   12/16  captions, meta
+ *   sm   13/20  body in lists and cards
+ *   base 15/24  body to read: the contacts table, a contact's page
+ *   lg   18/24  card headings
+ *   xl   24/32  section and contact headings
+ *   2xl  30/36  page titles -- a step the audit's suggested six did not
+ *               have: they stopped at 24, which would have shrunk every page
+ *               title by a fifth
+ *
+ * Three radii: 8 (inputs, chips, small things), 12 (cards), and the pill.
+ * Tailwind's other sizes and radii are switched off, so a value off the scale
+ * does not build: tests/styles.test.ts.
+ */
+@theme {
+  --text-*: initial;
+  --text-2xs: 11px;
+  --text-2xs--line-height: 16px;
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 13px;
+  --text-sm--line-height: 20px;
+  --text-base: 15px;
+  --text-base--line-height: 24px;
+  --text-lg: 18px;
+  --text-lg--line-height: 24px;
+  --text-xl: 24px;
+  --text-xl--line-height: 32px;
+  --text-2xl: 30px;
+  --text-2xl--line-height: 36px;
+
+  --radius-*: initial;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

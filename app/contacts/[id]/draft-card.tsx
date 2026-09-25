@@ -30,12 +30,12 @@ import {
  */
 
 const CARD =
-  "rounded-[18px] bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
-const LABEL = "text-[10px] font-bold tracking-[0.07em] text-ink-meta uppercase";
+  "rounded-xl bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
+const LABEL = "text-2xs font-bold tracking-[0.07em] text-ink-meta uppercase";
 const GHOST =
-  "rounded-full bg-line-soft px-[13px] py-1.5 text-[12px] font-semibold text-ink-body transition-colors hover:bg-chip-track disabled:cursor-default disabled:opacity-60";
+  "rounded-full bg-line-soft px-[13px] py-1.5 text-xs font-semibold text-ink-body transition-colors hover:bg-chip-track disabled:cursor-default disabled:opacity-60";
 const SOLID =
-  "rounded-full bg-ink-deep px-[15px] py-1.5 text-[12px] font-semibold text-white transition hover:bg-ink/85 disabled:cursor-default disabled:opacity-60";
+  "rounded-full bg-ink-deep px-[15px] py-1.5 text-xs font-semibold text-white transition hover:bg-ink/85 disabled:cursor-default disabled:opacity-60";
 
 const TONE_LABELS: Record<Tone, string> = {
   professional: "Professional",
@@ -112,11 +112,11 @@ export function DraftCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Draft reply</h2>
-            <span className="rounded-full bg-info-tint px-2 py-0.5 text-[10.5px] font-semibold text-info-ink">AI</span>
+            <h2 className="text-base font-bold tracking-[-0.015em]">Draft reply</h2>
+            <span className="rounded-full bg-info-tint px-2 py-0.5 text-2xs font-semibold text-info-ink">AI</span>
           </div>
           {lastSaved?.saved_at && !draft && (
-            <span className="text-[11.5px] font-medium text-ink-soft">
+            <span className="text-xs font-normal text-ink-soft">
               Saved to Gmail drafts {timeAgo(lastSaved.saved_at)}
             </span>
           )}
@@ -130,10 +130,10 @@ export function DraftCard({
             </form>
           )}
           {whyNot ? (
-            <span className="text-[11px] font-medium text-ink-soft">{whyNot}</span>
+            <span className="text-2xs font-normal text-ink-soft">{whyNot}</span>
           ) : (
             !draft && (
-              <span className="text-[11px] font-medium text-ink-soft">
+              <span className="text-2xs font-normal text-ink-soft">
                 Reads your latest thread · costs about a cent
               </span>
             )
@@ -142,13 +142,13 @@ export function DraftCard({
       </div>
 
       {error && (
-        <p role="alert" className="rounded-[12px] bg-accent-tint px-4 py-2.5 text-[12.5px] leading-[1.5] text-accent-dark">
+        <p role="alert" className="rounded-xl bg-accent-tint px-4 py-2.5 text-sm text-accent-dark">
           {error}
         </p>
       )}
 
       {!draft ? (
-        <p className="max-w-[640px] text-[13px] leading-[1.55] text-ink-soft">
+        <p className="max-w-[640px] text-sm text-ink-soft">
           The AI writes a reply to your latest thread with them, in the thread&rsquo;s language and your
           tone from Profile. It appears here to read and edit. Nothing reaches Gmail until you press
           Save to Gmail drafts, and you press send in Gmail yourself.
@@ -167,17 +167,17 @@ export function DraftCard({
           )}
         </p>
       ) : (
-        <div className="flex flex-col gap-3 rounded-[14px] bg-info-tint/60 px-4 py-3.5">
+        <div className="flex flex-col gap-3 rounded-xl bg-info-tint/60 px-4 py-3.5">
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
             <span className={`${LABEL} text-info-ink`}>Waiting for you · not in Gmail yet</span>
-            <span className="text-[11.5px] font-medium text-ink-soft">
+            <span className="text-xs font-normal text-ink-soft">
               {[draft.language, TONE_LABELS[draft.tone]].filter(Boolean).join(" · ")}
             </span>
           </div>
 
           <div className="flex flex-col gap-1">
             <span className={LABEL}>Subject</span>
-            <span className="text-[13px] font-semibold break-words">{draft.subject ?? "Re:"}</span>
+            <span className="text-sm font-semibold break-words">{draft.subject ?? "Re:"}</span>
           </div>
 
           <form action={save} className="flex flex-col gap-3">
@@ -192,21 +192,21 @@ export function DraftCard({
                 value={body}
                 maxLength={MAX_BODY_CHARS}
                 onChange={(event) => setBody(event.currentTarget.value)}
-                className="w-full resize-y rounded-[11px] border border-line-strong bg-white px-3 py-2.5 text-[13.5px] leading-[1.6] text-ink transition focus:border-ink-soft"
+                className="w-full resize-y rounded-lg border border-line-strong bg-white px-3 py-2.5 text-base text-ink transition focus:border-ink-soft"
               />
-              <div className="flex justify-end text-[11.5px] tabular-nums text-ink-soft" aria-live="polite">
+              <div className="flex justify-end text-xs tabular-nums text-ink-soft" aria-live="polite">
                 {body.length.toLocaleString("en-GB")} / {MAX_BODY_CHARS.toLocaleString("en-GB")}
               </div>
             </div>
 
             {hits.length > 0 && (
-              <p className="text-[11.5px] leading-[1.45] text-cooling">
+              <p className="text-xs text-cooling">
                 It used {hits.map((phrase) => `“${phrase}”`).join(", ")}, which your Profile says never to
                 write.
               </p>
             )}
 
-            <p className="text-[11.5px] leading-[1.45] text-ink-soft">
+            <p className="text-xs text-ink-soft">
               Read it before saving — the AI can be wrong about people and about what was promised. It
               replies to {draft.subject ? "this thread" : "the latest thread"} and to this contact only;
               anyone else on the thread isn&rsquo;t added.
@@ -227,7 +227,7 @@ export function DraftCard({
           </form>
 
           <form action={regenerate} className="flex flex-wrap items-center gap-[7px] border-t border-line pt-3">
-            <span className="text-[11.5px] font-medium text-ink-soft">Rewrite it as:</span>
+            <span className="text-xs font-normal text-ink-soft">Rewrite it as:</span>
             {TONES.map((tone) => (
               <button
                 key={tone}

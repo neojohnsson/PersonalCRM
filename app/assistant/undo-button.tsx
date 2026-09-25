@@ -15,7 +15,7 @@ export function UndoButton({ actionId, label }: { actionId: string; label: strin
 
   return (
     <span className="flex shrink-0 items-center gap-2">
-      {problem && <span className="text-[11.5px] font-medium text-accent">{problem}</span>}
+      {problem && <span className="text-xs font-normal text-accent">{problem}</span>}
       <button
         type="button"
         aria-label={`Undo: ${label}`}
@@ -26,7 +26,7 @@ export function UndoButton({ actionId, label }: { actionId: string; label: strin
             setProblem(failed?.error ?? null);
           })
         }
-        className="shrink-0 rounded-full border border-line-strong bg-transparent px-3 py-[5px] text-[12px] font-semibold transition-colors hover:bg-paper disabled:opacity-60"
+        className="shrink-0 rounded-full border border-line-strong bg-transparent px-3 py-[5px] text-xs font-semibold transition-colors hover:bg-paper disabled:opacity-60"
       >
         {pending ? "Undoing…" : "Undo"}
       </button>

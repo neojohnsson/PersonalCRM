@@ -29,11 +29,11 @@ export default async function DuplicatesPage() {
     <AppShell userEmail={user.email} active="contacts" headerRight={<SignOutButton />}>
       <main className="flex flex-1 flex-col gap-4 px-4 pt-2 pb-[26px] sm:px-[30px]">
         <div className="flex flex-col gap-2">
-          <Link href="/contacts" className="text-[12.5px] font-medium text-ink-soft hover:text-ink">
+          <Link href="/contacts" className="text-sm font-normal text-ink-soft hover:text-ink">
             ← Contacts
           </Link>
-          <h1 className="text-[28px] leading-[1.1] font-bold tracking-[-0.035em]">Possible duplicates</h1>
-          <p className="max-w-[640px] text-[13.5px] leading-[1.5] text-ink-soft">
+          <h1 className="text-xl font-bold tracking-[-0.035em]">Possible duplicates</h1>
+          <p className="max-w-[640px] text-sm text-ink-soft">
             The same person often has two addresses: you write to one and they answer from
             another. Nothing is merged until you press a button, and a merge can&rsquo;t be undone.
           </p>
@@ -41,7 +41,7 @@ export default async function DuplicatesPage() {
 
         {pairs.length > 0 ? (
           <>
-            <p className="text-[12.5px] font-medium text-ink-soft">
+            <p className="text-sm font-normal text-ink-soft">
               {countOf(pairs.length, "pair")} to look at
             </p>
             <ul className="flex flex-col gap-4">

@@ -140,8 +140,8 @@ function Stored({ holdings }: { holdings: readonly { table: string; label: strin
     <dl className="flex flex-col">
       {holdings.map((holding) => (
         <div key={holding.table} className="flex flex-col gap-0.5 border-t border-line-soft py-2.5 first:border-t-0 first:pt-0">
-          <dt className="text-[13.5px] font-semibold">{holding.label}</dt>
-          <dd className="text-[13.5px] leading-[1.55] text-ink-body">{holding.what}</dd>
+          <dt className="text-sm font-semibold">{holding.label}</dt>
+          <dd className="text-sm text-ink-body">{holding.what}</dd>
         </div>
       ))}
     </dl>

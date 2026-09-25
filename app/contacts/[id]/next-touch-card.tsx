@@ -32,12 +32,12 @@ import {
  */
 
 const CARD =
-  "rounded-[18px] bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
+  "rounded-xl bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
 
-const LABEL = "text-[10.5px] font-bold tracking-[0.07em] text-ink-meta uppercase";
+const LABEL = "text-2xs font-bold tracking-[0.07em] text-ink-meta uppercase";
 
 const INPUT =
-  "w-full rounded-[11px] border border-line-strong bg-white px-3 py-2 text-[13.5px] text-ink transition placeholder:text-ink-soft focus:border-ink-soft aria-invalid:border-accent";
+  "w-full rounded-lg border border-line-strong bg-white px-3 py-2 text-base text-ink transition placeholder:text-ink-soft focus:border-ink-soft aria-invalid:border-accent";
 
 export function NextTouchCard({
   contactId,
@@ -87,13 +87,13 @@ export function NextTouchCard({
         <>
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 flex-col gap-1">
-              <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Next touch</h2>
+              <h2 className="text-base font-bold tracking-[-0.015em]">Next touch</h2>
               {touch.reason ? (
-                <span className="text-[12.5px] leading-[1.45] break-words text-ink-soft">
+                <span className="text-sm break-words text-ink-soft">
                   &ldquo;{touch.reason}&rdquo;
                 </span>
               ) : (
-                <span className="text-[12.5px] leading-[1.45] text-ink-soft">No reason written down</span>
+                <span className="text-sm text-ink-soft">No reason written down</span>
               )}
               <Due dueOn={touch.due_on} today={today} />
             </div>
@@ -138,7 +138,7 @@ export function NextTouchCard({
                 setFromSuggestion(false);
                 setOpenedAt(saves);
               }}
-              className="rounded-full px-[11px] py-1.5 text-[12px] font-semibold text-ink-soft transition-colors hover:text-ink"
+              className="rounded-full px-[11px] py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:text-ink"
             >
               Change
             </button>
@@ -151,9 +151,9 @@ export function NextTouchCard({
               hand sends nothing, and no kind means yours to act on. */}
           {suggested?.kind && <input type="hidden" name="kind" value={suggested.kind} />}
           <div className="flex flex-col gap-1">
-            <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Next touch</h2>
+            <h2 className="text-base font-bold tracking-[-0.015em]">Next touch</h2>
             {suggested ? (
-              <p className="text-[12.5px] leading-[1.45] text-info-ink">
+              <p className="text-sm text-info-ink">
                 Filled in from the AI summary
                 {!suggested.due_on
                   ? " — pick a date"
@@ -164,7 +164,7 @@ export function NextTouchCard({
               </p>
             ) : (
               !touch && (
-                <p className="text-[12.5px] leading-[1.45] text-ink-soft">
+                <p className="text-sm text-ink-soft">
                   Nothing planned. Pick a day to get back in touch, and why.
                 </p>
               )
@@ -214,7 +214,7 @@ export function NextTouchCard({
             <button
               type="submit"
               disabled={pending}
-              className="rounded-full bg-ink-deep px-[15px] py-1.5 text-[12px] font-semibold text-white transition hover:bg-ink/85 disabled:opacity-60"
+              className="rounded-full bg-ink-deep px-[15px] py-1.5 text-xs font-semibold text-white transition hover:bg-ink/85 disabled:opacity-60"
             >
               {pending ? "Saving…" : touch ? "Save" : "Set next touch"}
             </button>
@@ -223,7 +223,7 @@ export function NextTouchCard({
                 type="button"
                 onClick={() => setOpenedAt(null)}
                 disabled={pending}
-                className="rounded-full bg-line-soft px-[13px] py-1.5 text-[12px] font-semibold text-ink-body transition-colors hover:bg-chip-track"
+                className="rounded-full bg-line-soft px-[13px] py-1.5 text-xs font-semibold text-ink-body transition-colors hover:bg-chip-track"
               >
                 Cancel
               </button>
@@ -238,9 +238,9 @@ export function NextTouchCard({
 function Badge({ isoDate }: { isoDate: string }) {
   const { day, month } = dateBadge(isoDate);
   return (
-    <div className="flex shrink-0 flex-col items-center rounded-[11px] bg-chip px-[11px] py-1.5">
-      <span className="text-[15px] leading-[1.1] font-bold">{day}</span>
-      <span className="text-[9.5px] font-semibold tracking-[0.05em] text-ink-meta uppercase">{month}</span>
+    <div className="flex shrink-0 flex-col items-center rounded-lg bg-chip px-[11px] py-1.5">
+      <span className="text-base font-bold">{day}</span>
+      <span className="text-2xs font-semibold tracking-[0.05em] text-ink-meta uppercase">{month}</span>
     </div>
   );
 }
@@ -248,14 +248,14 @@ function Badge({ isoDate }: { isoDate: string }) {
 function Due({ dueOn, today }: { dueOn: string; today: string }) {
   const { text, overdue } = dueText(dueOn, today);
   return (
-    <span className={`text-[11.5px] font-medium ${overdue ? "text-accent" : "text-ink-soft"}`}>
+    <span className={`text-xs font-normal ${overdue ? "text-accent" : "text-ink-soft"}`}>
       {overdue ? text : `Due ${text}`}
     </span>
   );
 }
 
 const GHOST =
-  "rounded-full bg-line-soft px-[13px] py-1.5 text-[12px] font-semibold text-ink-body transition-colors hover:bg-chip-track disabled:cursor-default disabled:opacity-60";
+  "rounded-full bg-line-soft px-[13px] py-1.5 text-xs font-semibold text-ink-body transition-colors hover:bg-chip-track disabled:cursor-default disabled:opacity-60";
 
 /**
  * Snooze, which now asks how long (slice 9b, Part 3).
@@ -348,7 +348,7 @@ function SnoozeMenu({
           <div
             role="dialog"
             aria-label="Snooze until"
-            className="absolute bottom-full left-0 z-20 mb-2 flex w-[240px] flex-col overflow-hidden rounded-[14px] bg-white py-1 shadow-[0_1px_2px_rgba(20,20,25,.06),0_12px_32px_rgba(20,20,25,.14)]"
+            className="absolute bottom-full left-0 z-20 mb-2 flex w-[240px] flex-col overflow-hidden rounded-xl bg-white py-1 shadow-[0_1px_2px_rgba(20,20,25,.06),0_12px_32px_rgba(20,20,25,.14)]"
           >
             {choices.map((choice) => (
               <button
@@ -357,8 +357,8 @@ function SnoozeMenu({
                 onClick={() => choose(choice.key)}
                 className="flex items-baseline justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-paper-tint"
               >
-                <span className="text-[13px] font-semibold text-ink">{choice.label}</span>
-                <span className="text-[11.5px] text-ink-soft">{dayMonth(choice.dueOn)}</span>
+                <span className="text-sm font-semibold text-ink">{choice.label}</span>
+                <span className="text-xs text-ink-soft">{dayMonth(choice.dueOn)}</span>
               </button>
             ))}
             <button
@@ -367,7 +367,7 @@ function SnoozeMenu({
                 setOpen(false);
                 onPickDate();
               }}
-              className="border-t border-line-soft px-4 py-2.5 text-left text-[13px] font-semibold text-ink transition-colors hover:bg-paper-tint"
+              className="border-t border-line-soft px-4 py-2.5 text-left text-sm font-semibold text-ink transition-colors hover:bg-paper-tint"
             >
               Pick a date…
             </button>
@@ -436,7 +436,7 @@ function TouchAction({
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
   return (
-    <p id={id} role="alert" className="text-[12px] font-medium text-accent">
+    <p id={id} role="alert" className="text-xs font-normal text-accent">
       {message}
     </p>
   );

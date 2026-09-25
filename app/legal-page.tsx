@@ -23,27 +23,27 @@ export function LegalPage({ title, lead, children }: { title: string; lead: stri
         <div className="flex flex-col gap-[18px]">
           <BrandTile />
           <div className="flex flex-col gap-2.5">
-            <h1 className="text-[28px] leading-[1.15] font-bold tracking-[-0.035em] sm:text-[33px]">{title}</h1>
-            <p className="text-[15.5px] leading-[1.55] text-ink-soft">{lead}</p>
-            <p className="text-[12.5px] text-ink-soft">Last changed {LEGAL_UPDATED}</p>
+            <h1 className="text-xl font-bold tracking-[-0.035em] sm:text-2xl">{title}</h1>
+            <p className="text-base text-ink-soft">{lead}</p>
+            <p className="text-sm text-ink-soft">Last changed {LEGAL_UPDATED}</p>
           </div>
         </div>
 
         {!LEGAL_REVIEWED && (
           <p
             role="note"
-            className="rounded-[14px] bg-accent-tint px-4 py-3 text-[13px] leading-[1.5] font-medium text-accent-dark"
+            className="rounded-xl bg-accent-tint px-4 py-3 text-sm font-normal text-accent-dark"
           >
             Draft. Nobody who knows Swedish and EU law has reviewed this page yet, and the app is not open to the
             public. It says what the app really does today; the wording may change before launch.
           </p>
         )}
 
-        <article className="flex flex-col gap-[22px] rounded-[18px] bg-white px-6 py-[24px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] sm:px-[30px]">
+        <article className="flex flex-col gap-[22px] rounded-xl bg-white px-6 py-[24px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] sm:px-[30px]">
           {children}
         </article>
 
-        <nav className="flex flex-wrap gap-x-4 gap-y-1 px-1 text-[13px] text-ink-soft" aria-label="Legal pages">
+        <nav className="flex flex-wrap gap-x-4 gap-y-1 px-1 text-sm text-ink-soft" aria-label="Legal pages">
           <Link href="/terms" className="link-inline">
             Terms
           </Link>
@@ -65,8 +65,8 @@ export function LegalPage({ title, lead, children }: { title: string; lead: stri
 export function Part({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-2.5">
-      <h2 className="text-[16px] font-bold tracking-[-0.02em]">{title}</h2>
-      <div className="flex flex-col gap-2.5 text-[14px] leading-[1.6] text-ink-body">{children}</div>
+      <h2 className="text-base font-bold tracking-[-0.02em]">{title}</h2>
+      <div className="flex flex-col gap-2.5 text-base text-ink-body">{children}</div>
     </section>
   );
 }

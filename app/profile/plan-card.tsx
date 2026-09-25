@@ -21,13 +21,13 @@ export function PlanCard({ entitlement, uses }: { entitlement: Entitlement; uses
   const { plan, currentPeriodEnd } = entitlement;
 
   return (
-    <section className="flex max-w-[680px] flex-col gap-[13px] rounded-[18px] bg-white px-[22px] py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]">
+    <section className="flex max-w-[680px] flex-col gap-[13px] rounded-xl bg-white px-[22px] py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Your plan</h2>
-        <span className="rounded-full bg-info-tint px-2 py-0.5 text-[10.5px] font-semibold text-info-ink">
+        <h2 className="text-base font-bold tracking-[-0.015em]">Your plan</h2>
+        <span className="rounded-full bg-info-tint px-2 py-0.5 text-2xs font-semibold text-info-ink">
           {plan.label}
         </span>
-        <Link href="/pricing" className="ml-auto text-[12px] font-semibold text-ink-soft hover:text-ink">
+        <Link href="/pricing" className="ml-auto text-xs font-semibold text-ink-soft hover:text-ink">
           See plans
         </Link>
       </div>
@@ -39,19 +39,19 @@ export function PlanCard({ entitlement, uses }: { entitlement: Entitlement; uses
             return (
               <li
                 key={purpose}
-                className="flex items-center gap-3 border-t border-line-soft py-[9px] text-[13px] text-ink-body"
+                className="flex items-center gap-3 border-t border-line-soft py-[9px] text-sm text-ink-body"
               >
                 <span className="min-w-0 flex-1">{allowanceLine(allowance, purpose)}</span>
                 <Meter share={allowance.allowed > 0 ? allowance.used / allowance.allowed : 1} />
               </li>
             );
           })}
-          <li className="border-t border-line-soft pt-[9px] text-[12.5px] text-ink-soft">
+          <li className="border-t border-line-soft pt-[9px] text-sm text-ink-soft">
             They come back on the 1st. Pro, {PRICE_SEK.pro} kr a month, has no monthly count.
           </li>
         </ul>
       ) : (
-        <p className="border-t border-line-soft pt-[13px] text-[13px] leading-[1.5] text-ink-body">
+        <p className="border-t border-line-soft pt-[13px] text-sm text-ink-body">
           Summaries, drafts, scans and the Assistant have no monthly count
           {plan.research ? ", and web research is included" : ""}.
           {currentPeriodEnd && ` Paid until ${dateOf(currentPeriodEnd)}.`}
@@ -62,7 +62,7 @@ export function PlanCard({ entitlement, uses }: { entitlement: Entitlement; uses
         <form action={managePlanAction} className="border-t border-line-soft pt-[13px]">
           <button
             type="submit"
-            className="rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] font-medium text-ink-soft transition hover:bg-paper hover:text-ink"
+            className="rounded-lg border border-line bg-white px-3 py-1.5 text-sm font-normal text-ink-soft transition hover:bg-paper hover:text-ink"
           >
             Manage or cancel
           </button>

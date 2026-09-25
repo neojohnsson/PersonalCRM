@@ -104,7 +104,7 @@ export function SearchBox({ query }: { query: string }) {
           clearTimeout(timer.current);
           timer.current = setTimeout(search, TYPING_PAUSE_MS);
         }}
-        className="w-full min-w-0 bg-transparent text-[12.5px] text-ink outline-none placeholder:text-ink-soft"
+        className="w-full min-w-0 bg-transparent text-sm text-ink outline-none placeholder:text-ink-soft"
       />
     </form>
   );

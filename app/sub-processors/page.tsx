@@ -18,11 +18,11 @@ export default function SubProcessorsPage() {
       {SUB_PROCESSORS.map((each) => (
         <Part key={each.name} title={each.name}>
           <dl className="grid gap-x-4 gap-y-1.5 sm:grid-cols-[110px_1fr]">
-            <dt className="text-[12.5px] font-semibold text-ink-soft">What it does</dt>
+            <dt className="text-sm font-semibold text-ink-soft">What it does</dt>
             <dd>{each.role}</dd>
-            <dt className="text-[12.5px] font-semibold text-ink-soft">What it gets</dt>
+            <dt className="text-sm font-semibold text-ink-soft">What it gets</dt>
             <dd>{each.gets}</dd>
-            <dt className="text-[12.5px] font-semibold text-ink-soft">Where</dt>
+            <dt className="text-sm font-semibold text-ink-soft">Where</dt>
             <dd>{each.where}</dd>
           </dl>
         </Part>

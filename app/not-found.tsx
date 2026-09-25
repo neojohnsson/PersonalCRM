@@ -35,7 +35,7 @@ export default async function NotFound() {
       </p>
       <Link
         href={email ? "/" : "/login"}
-        className="mt-5 self-start rounded-full bg-ink-deep px-4 py-[9px] text-[12.5px] font-semibold text-white transition hover:bg-ink/85"
+        className="mt-5 self-start rounded-full bg-ink-deep px-4 py-[9px] text-sm font-semibold text-white transition hover:bg-ink/85"
       >
         {email ? "Back to Who needs you today" : "Sign in"}
       </Link>
@@ -51,7 +51,7 @@ export default async function NotFound() {
   return (
     <AppShell userEmail={email} active="home" headerRight={<SignOutButton />}>
       <main className="flex flex-1 flex-col gap-[22px] px-4 pt-2 pb-[30px] sm:px-[30px]">
-        <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.035em]">Not found</h1>
+        <h1 className="text-2xl font-bold tracking-[-0.035em]">Not found</h1>
         {card}
       </main>
     </AppShell>

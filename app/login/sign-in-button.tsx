@@ -54,7 +54,7 @@ export function SignInButton() {
       <button
         onClick={signIn}
         disabled={pending}
-        className="flex w-full items-center justify-center gap-2.5 rounded-full bg-ink-deep px-[26px] py-3.5 text-[14.5px] font-semibold tracking-[-0.01em] text-white transition hover:bg-ink/85 disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2.5 rounded-full bg-ink-deep px-[26px] py-3.5 text-base font-semibold tracking-[-0.01em] text-white transition hover:bg-ink/85 disabled:opacity-60"
       >
         <span className="flex size-[22px] items-center justify-center rounded-full bg-white">
           <GoogleMark />
@@ -63,7 +63,7 @@ export function SignInButton() {
       </button>
 
       {error && (
-        <p role="alert" className="text-center text-[13px] text-accent">
+        <p role="alert" className="text-center text-sm text-accent">
           {error}
         </p>
       )}

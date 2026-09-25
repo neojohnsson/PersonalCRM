@@ -249,7 +249,7 @@ export function AssistantChat() {
           // No height of its own and no scrollbar (2026-09-24, as ChatGPT
           // does it): the conversation is part of the page, the page scrolls,
           // and the bar below stays pinned to the bottom of the window.
-          className="flex flex-col gap-[13px] rounded-[18px] bg-white px-5 py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]"
+          className="flex flex-col gap-[13px] rounded-xl bg-white px-5 py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]"
         >
           {entries.map((entry, index) => (
             <EntryView
@@ -262,7 +262,7 @@ export function AssistantChat() {
             />
           ))}
           {busy && (
-            <p role="status" className="flex items-center gap-2 text-[12.5px] font-medium text-ink-soft">
+            <p role="status" className="flex items-center gap-2 text-sm font-normal text-ink-soft">
               <span aria-hidden="true" className="size-1.5 animate-pulse rounded-full bg-info-ink" />
               {looking ?? "Thinking…"}
             </p>
@@ -305,12 +305,12 @@ export function AssistantChat() {
           }
         />
         {full ? (
-          <p className="px-4 text-[11.5px] leading-[1.5] font-medium text-accent">
+          <p className="px-4 text-xs font-normal text-accent">
             This conversation has used its $0.50. Reload the page to start a new one — everything
             it did stays done, and stays undoable from the contact pages.
           </p>
         ) : (
-          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 text-[11.5px] font-medium text-ink-soft">
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 text-xs font-normal text-ink-soft">
             <span>This conversation isn&rsquo;t saved.</span>
             <span>Notes and dates it changes on its own. Mail and calendar always ask.</span>
             {spentUsd > 0 && (
@@ -350,20 +350,20 @@ function EntryView({
     case "you":
       return (
         <div className="max-w-[640px] self-end rounded-[16px_16px_4px_16px] bg-chip px-[15px] py-[11px]">
-          <p className="text-[13.5px] leading-[1.5] whitespace-pre-wrap">{entry.text}</p>
+          <p className="text-sm whitespace-pre-wrap">{entry.text}</p>
         </div>
       );
     case "said":
       return (
         <div className="flex max-w-[900px] items-start gap-[11px]">
           <Spark />
-          <p className="text-[13.5px] leading-[1.55] whitespace-pre-wrap">{entry.text}</p>
+          <p className="text-sm whitespace-pre-wrap">{entry.text}</p>
         </div>
       );
     case "done":
       return (
-        <div className="flex flex-col gap-[7px] rounded-[14px] bg-done-tint px-[15px] py-3">
-          <span className="text-[11.5px] font-bold tracking-[0.06em] text-affirm uppercase">Done, and undoable</span>
+        <div className="flex flex-col gap-[7px] rounded-xl bg-done-tint px-[15px] py-3">
+          <span className="text-xs font-bold tracking-[0.06em] text-affirm uppercase">Done, and undoable</span>
           {entry.actions.map((action) => (
             <DoneRow key={action.id} action={action} onUndone={onUndone} />
           ))}
@@ -391,7 +391,7 @@ function EntryView({
       );
     case "stopped":
       return (
-        <p role="status" className="rounded-[12px] bg-accent-tint px-3.5 py-2.5 text-[12.5px] leading-[1.5] font-medium text-alert-ink">
+        <p role="status" className="rounded-xl bg-accent-tint px-3.5 py-2.5 text-sm font-normal text-alert-ink">
           {entry.reason}
         </p>
       );
@@ -412,11 +412,11 @@ function DoneRow({
       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" className="size-[15px] shrink-0 text-affirm">
         <path d="M5 12.5l4.5 4.5L19 7.5" />
       </svg>
-      <span className={`min-w-0 flex-1 text-[13px] ${action.undone ? "text-ink-soft line-through" : ""}`}>
+      <span className={`min-w-0 flex-1 text-sm ${action.undone ? "text-ink-soft line-through" : ""}`}>
         {action.summary}
       </span>
       {action.undone ? (
-        <span className="text-[12px] font-semibold text-ink-soft">Undone</span>
+        <span className="text-xs font-semibold text-ink-soft">Undone</span>
       ) : (
         <button
           type="button"
@@ -427,19 +427,19 @@ function DoneRow({
               onUndone(action.id, failed?.error ?? null);
             })
           }
-          className="shrink-0 rounded-full border border-line-strong bg-white px-3 py-[5px] text-[12px] font-semibold transition-colors hover:bg-paper disabled:opacity-60"
+          className="shrink-0 rounded-full border border-line-strong bg-white px-3 py-[5px] text-xs font-semibold transition-colors hover:bg-paper disabled:opacity-60"
         >
           {pending ? "Undoing…" : "Undo"}
         </button>
       )}
-      {action.problem && <span className="w-full text-[11.5px] font-medium text-accent">{action.problem}</span>}
+      {action.problem && <span className="w-full text-xs font-normal text-accent">{action.problem}</span>}
     </div>
   );
 }
 
 function Spark() {
   return (
-    <span aria-hidden="true" className="mt-px flex size-[26px] shrink-0 items-center justify-center rounded-[9px] bg-ink-deep">
+    <span aria-hidden="true" className="mt-px flex size-[26px] shrink-0 items-center justify-center rounded-lg bg-ink-deep">
       <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
         <path d="M12 3.2l1.7 4.6 4.6 1.7-4.6 1.7L12 15.8l-1.7-4.6L5.7 9.5l4.6-1.7z" />
       </svg>

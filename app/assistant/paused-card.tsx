@@ -42,18 +42,18 @@ export function PausedCard({
   ].filter(Boolean);
 
   return (
-    <div className="flex max-w-[560px] flex-col gap-2.5 rounded-[16px] border border-line px-4 py-3.5">
+    <div className="flex max-w-[560px] flex-col gap-2.5 rounded-xl border border-line px-4 py-3.5">
       <div className="flex items-center gap-[9px]">
-        <h3 className="text-[13.5px] font-bold tracking-[-0.01em]">This is a big task</h3>
+        <h3 className="text-sm font-bold tracking-[-0.01em]">This is a big task</h3>
         <span
-          className={`rounded-full px-[9px] py-[3px] text-[11px] font-bold ${
+          className={`rounded-full px-[9px] py-[3px] text-2xs font-bold ${
             state === "asking" ? "bg-accent-tint text-needs-ink" : "bg-chip text-ink-soft"
           }`}
         >
           {state === "asking" ? "Needs you" : state === "carried-on" ? "Carrying on" : "Stopped"}
         </span>
       </div>
-      <p className="text-[12.5px] leading-[1.5] text-ink-body">
+      <p className="text-sm text-ink-body">
         {reason === "steps" ? "It has used its steps for one go" : "It has reached this go's $0.50"}
         {sofar.length > 0 ? ` — so far it has ${sofar.join(", ")}` : ""}, for ${turnUsd.toFixed(2)}.
         {state === "asking" &&
@@ -64,20 +64,20 @@ export function PausedCard({
           <button
             type="button"
             onClick={onCarryOn}
-            className="rounded-full bg-ink-deep px-[15px] py-[9px] text-[12.5px] font-semibold text-white transition hover:bg-ink/85"
+            className="rounded-full bg-ink-deep px-[15px] py-[9px] text-sm font-semibold text-white transition hover:bg-ink/85"
           >
             Carry on
           </button>
           <button
             type="button"
             onClick={onStop}
-            className="rounded-full border border-line bg-transparent px-[15px] py-[9px] text-[12.5px] font-semibold text-ink-body transition hover:bg-paper"
+            className="rounded-full border border-line bg-transparent px-[15px] py-[9px] text-sm font-semibold text-ink-body transition hover:bg-paper"
           >
             Stop here
           </button>
         </div>
       )}
-      <p className="text-[11.5px] leading-[1.45] text-ink-soft">
+      <p className="text-xs text-ink-soft">
         {tally.acted > 0
           ? "Everything it changes on its own is in Everything it did, each with Undo."
           : "It has changed nothing on its own. Anything it changes will be in Everything it did, with Undo."}

@@ -146,7 +146,7 @@ describe("the sidebar and the bottom bar", () => {
     expect(SHELL.match(/aria-label="Pages"/g)).toHaveLength(1);
     // The word is on screen, not only for a screen reader.
     const navItem = SHELL.slice(SHELL.indexOf("function NavItem("), SHELL.indexOf("function HoverLabel("));
-    expect(navItem).toMatch(/<span className=\{`text-\[[\d.]+px\][^`]*`\}>\{label\}<\/span>/);
+    expect(navItem).toMatch(/<span className=\{`[^`]*\btext-(?:2xs|xs)\b[^`]*`\}>\{label\}<\/span>/);
     expect(navItem).not.toMatch(/sr-only[^>]*>\{label\}/);
   });
 

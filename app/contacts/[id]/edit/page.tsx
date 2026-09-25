@@ -46,10 +46,10 @@ export default async function EditContactPage({ params }: PageProps<"/contacts/[
     <AppShell userEmail={user.email} headerRight={<SignOutButton />}>
       <main className="flex flex-1 flex-col gap-4 px-4 pt-2.5 pb-7 sm:px-[30px]">
         <div className="flex flex-col gap-2">
-          <Link href={`/contacts/${id}`} className="text-[12.5px] font-medium text-ink-soft hover:text-ink">
+          <Link href={`/contacts/${id}`} className="text-sm font-normal text-ink-soft hover:text-ink">
             ← {name}
           </Link>
-          <h1 className="text-[28px] leading-[1.1] font-bold tracking-[-0.035em]">Edit contact</h1>
+          <h1 className="text-xl font-bold tracking-[-0.035em]">Edit contact</h1>
         </div>
 
         <ContactForm

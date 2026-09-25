@@ -26,7 +26,7 @@ export const metadata = { title: `Dismissed · ${APP_NAME}` };
  */
 
 const CARD =
-  "rounded-[18px] bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
+  "rounded-xl bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
 
 export default async function DismissedPage() {
   const user = await requireUser();
@@ -52,11 +52,11 @@ export default async function DismissedPage() {
     >
       <main className="flex flex-1 flex-col gap-4 px-4 pt-2.5 pb-7 sm:px-[30px]">
         <div className="flex flex-col gap-2">
-          <Link href="/seen-once" className="text-[12.5px] font-medium text-ink-soft hover:text-ink">
+          <Link href="/seen-once" className="text-sm font-normal text-ink-soft hover:text-ink">
             ← Seen once
           </Link>
-          <h1 className="text-[28px] leading-[1.1] font-bold tracking-[-0.035em]">Dismissed</h1>
-          <p className="max-w-[640px] text-[13.5px] leading-[1.5] text-ink-soft">
+          <h1 className="text-xl font-bold tracking-[-0.035em]">Dismissed</h1>
+          <p className="max-w-[640px] text-sm text-ink-soft">
             {countOf(dismissals.length, "address", "addresses")} whose mail is skipped. Undo, and the
             mail they sent in the last {lookbackDays()} days is read back in from Gmail — they
             show up in Seen once, or as a contact if you&rsquo;ve written to each other. Notes and
@@ -75,16 +75,16 @@ export default async function DismissedPage() {
                   <span
                     aria-hidden="true"
                     style={avatarColors(dismissal.email)}
-                    className="flex size-9 shrink-0 items-center justify-center rounded-full text-[12px] font-bold"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold"
                   >
                     {initials(null, dismissal.email)}
                   </span>
 
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="truncate text-[13.5px] font-semibold tracking-[-0.01em]">
+                    <span className="truncate text-sm font-semibold tracking-[-0.01em]">
                       {dismissal.email}
                     </span>
-                    <span className="truncate text-[12px] text-ink-soft">
+                    <span className="truncate text-xs text-ink-soft">
                       Dismissed {dayMonth(dismissal.dismissedAt)}
                     </span>
                   </div>
@@ -96,8 +96,8 @@ export default async function DismissedPage() {
           </div>
         ) : (
           <section className={`${CARD} flex max-w-xl flex-col px-[22px] py-6 sm:px-8`}>
-            <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Nobody dismissed</h2>
-            <p className="mt-2 text-[13.5px] leading-[1.55] text-ink-soft">
+            <h2 className="text-base font-bold tracking-[-0.015em]">Nobody dismissed</h2>
+            <p className="mt-2 text-sm text-ink-soft">
               People you dismiss from Seen once or from a contact page show up here.
             </p>
           </section>

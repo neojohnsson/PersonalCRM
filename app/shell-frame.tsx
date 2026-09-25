@@ -114,16 +114,16 @@ export function ShellFrame({
       <div className="flex flex-1 bg-paper text-ink">
         <a
           href="#main-content"
-          className="sr-only fixed left-3 top-3 z-50 rounded-full bg-ink-deep px-4 py-2 text-[13px] font-semibold text-white focus:not-sr-only"
+          className="sr-only fixed left-3 top-3 z-50 rounded-full bg-ink-deep px-4 py-2 text-sm font-semibold text-white focus:not-sr-only"
         >
           Skip to main content
         </a>
         <aside className="sticky top-0 z-40 hidden h-dvh w-[72px] shrink-0 flex-col items-center gap-[3px] self-start border-r border-rail-edge bg-rail pt-3.5 pb-4 sm:flex">
           <div
             aria-hidden="true"
-            className="mb-3 flex size-[30px] items-center justify-center rounded-[9px] bg-rail-logo"
+            className="mb-3 flex size-[30px] items-center justify-center rounded-lg bg-rail-logo"
           >
-            <span className="text-[14px] font-extrabold tracking-[-0.03em] text-ink-deep">
+            <span className="text-base font-bold tracking-[-0.03em] text-ink-deep">
               {APP_NAME.charAt(0)}
             </span>
           </div>
@@ -152,18 +152,18 @@ export function ShellFrame({
             <Link
               href="/profile"
               aria-current={active === "profile" ? "page" : undefined}
-              className={`group relative mt-1.5 flex size-9 items-center justify-center rounded-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-rail ${
+              className={`group relative mt-1.5 flex size-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-rail ${
                 active === "profile" ? "bg-rail-active" : "hover:bg-rail-active"
               }`}
             >
               <span
                 // A rounded square like the logo tile, not the design's circle:
                 // changed at the user's request, 2026-09-16.
-                className={`flex items-center justify-center rounded-[9px] bg-rail-avatar ${
+                className={`flex items-center justify-center rounded-lg bg-rail-avatar ${
                   active === "profile" ? "size-7 ring-[1.5px] ring-white" : "size-[30px]"
                 }`}
               >
-                <span className="text-[10.5px] font-bold text-white">{initials(null, userEmail)}</span>
+                <span className="text-2xs font-bold text-white">{initials(null, userEmail)}</span>
                 <span className="sr-only">Profile</span>
               </span>
               <HoverLabel>{`Profile · ${userEmail}`}</HoverLabel>
@@ -179,7 +179,7 @@ export function ShellFrame({
             last row of every page. */}
         <div className="flex min-w-0 flex-1 flex-col pb-[74px] sm:pb-0">
           <header className="relative flex h-[60px] shrink-0 items-center gap-3 px-4 sm:px-[26px]">
-            <span className="text-[15px] font-semibold tracking-tight sm:hidden">{APP_NAME}</span>
+            <span className="text-base font-semibold tracking-tight sm:hidden">{APP_NAME}</span>
             <div className="ml-auto flex items-center gap-2">
               <ThemeSwitcher />
               {headerRight}
@@ -312,7 +312,7 @@ function BottomItem({
           />
         )}
       </span>
-      <span className={`text-[10px] ${active ? "font-bold" : "font-semibold"}`}>{label}</span>
+      <span className={`text-2xs ${active ? "font-bold" : "font-semibold"}`}>{label}</span>
       <NavPending />
     </Link>
   );
@@ -344,7 +344,7 @@ function NavItem({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`group relative flex w-[62px] flex-col items-center gap-[5px] rounded-[11px] px-1 pt-2 pb-[7px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-rail ${
+      className={`group relative flex w-[64px] flex-col items-center gap-[5px] rounded-lg pt-2 pb-[7px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-rail ${
         active ? "bg-rail-active text-white" : "text-rail-icon hover:text-white"
       }`}
     >
@@ -366,7 +366,7 @@ function NavItem({
           className="absolute top-1.5 right-[17px] size-1.5 rounded-full bg-accent-soft"
         />
       )}
-      <span className={`text-[10.5px] leading-none ${active ? "font-bold" : "font-semibold"}`}>{label}</span>
+      <span className={`whitespace-nowrap text-2xs leading-none ${active ? "font-bold" : "font-semibold"}`}>{label}</span>
       {label !== title && <span className="sr-only"> — {title}</span>}
       {label !== title && <HoverLabel>{title}</HoverLabel>}
       <NavPending />
@@ -387,7 +387,7 @@ function HoverLabel({ children }: { children: React.ReactNode }) {
   return (
     <span
       aria-hidden="true"
-      className="pointer-events-none absolute left-full z-40 ml-2 hidden whitespace-nowrap rounded-[9px] bg-ink-deep px-2.5 py-1.5 text-[12px] font-semibold text-white opacity-0 shadow-[0_4px_12px_rgba(20,20,25,.18)] transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 sm:block"
+      className="pointer-events-none absolute left-full z-40 ml-2 hidden whitespace-nowrap rounded-lg bg-ink-deep px-2.5 py-1.5 text-xs font-semibold text-white opacity-0 shadow-[0_4px_12px_rgba(20,20,25,.18)] transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 sm:block"
     >
       {children}
     </span>

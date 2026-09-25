@@ -129,6 +129,29 @@ describe("the themes", () => {
     expect(css).not.toContain('data-theme="studio"');
   });
 
+  it("have one type and shape scale, and nothing off it", () => {
+    // UI quality pass, milestone 4 (2026-09-25): 23 font sizes and 14 radii,
+    // most a half-step apart. Seven sizes, each with a line height on the
+    // 4px grid; three radii; three weights.
+    const steps = [...css.matchAll(/--text-([0-9a-z]+): (\d+)px;\s*--text-\1--line-height: (\d+)px;/g)];
+    expect(steps.map((step) => step[1])).toEqual(["2xs", "xs", "sm", "base", "lg", "xl", "2xl"]);
+    for (const [, name, , lineHeight] of steps) expect(Number(lineHeight) % 4, `${name} line height`).toBe(0);
+    expect(css).toContain("--text-*: initial;");
+    expect(css).toContain("--radius-*: initial;");
+    const files = (dir: string): string[] =>
+      readdirSync(dir).flatMap((name) => {
+        const path = join(dir, name);
+        return statSync(path).isDirectory() ? files(path) : /\.(ts|tsx)$/.test(name) ? [path] : [];
+      });
+    for (const file of [...files("app"), ...files("lib")]) {
+      const source = readFileSync(file, "utf8");
+      expect(source, `${file}: a font size off the scale`).not.toMatch(/\btext-\[[0-9.]+px\]/);
+      expect(source, `${file}: a radius off the scale`).not.toMatch(/\brounded(-[trbl]{1,2})?-\[[0-9.]+px\]/);
+      expect(source, `${file}: a weight off the scale`).not.toMatch(/\bfont-(medium|extrabold|black|light|thin)\b/);
+      expect(source, `${file}: a line height off the grid`).not.toMatch(/\bleading-\[[0-9.]+\]/);
+    }
+  });
+
   it("keep the sidebar's logo white in every theme", () => {
     // Night repaints .bg-white; the logo used it and disappeared.
     expect(readFileSync("app/shell-frame.tsx", "utf8")).toContain("bg-rail-logo");

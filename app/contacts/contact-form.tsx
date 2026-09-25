@@ -115,7 +115,7 @@ export function ContactForm({
       {errors.form && (
         <p
           role="alert"
-          className="flex items-start gap-3 rounded-[14px] bg-accent-tint px-[18px] py-[15px] text-[13.5px] leading-[1.55] text-alert-ink"
+          className="flex items-start gap-3 rounded-xl bg-accent-tint px-[18px] py-[15px] text-sm text-alert-ink"
         >
           {errors.form}
         </p>
@@ -160,7 +160,7 @@ export function ContactForm({
                 className={`${INPUT} min-w-0 flex-1`}
               />
               {index === 0 ? (
-                emails.length > 1 && <span className="text-[11.5px] font-semibold text-ink-soft">Primary</span>
+                emails.length > 1 && <span className="text-xs font-semibold text-ink-soft">Primary</span>
               ) : (
                 <SmallButton onClick={() => makePrimary(index)}>Make primary</SmallButton>
               )}
@@ -209,7 +209,7 @@ export function ContactForm({
           {errors.tags ? (
             <FieldError id="tags-error" message={errors.tags} />
           ) : (
-            <p id="tags-hint" className="text-[12px] text-ink-soft">
+            <p id="tags-hint" className="text-xs text-ink-soft">
               Separate tags with commas.
             </p>
           )}
@@ -224,7 +224,7 @@ export function ContactForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-full bg-ink-deep px-[22px] py-3 text-[14px] font-semibold tracking-[-0.01em] text-white transition hover:bg-ink/85 disabled:opacity-60"
+          className="rounded-full bg-ink-deep px-[22px] py-3 text-base font-semibold tracking-[-0.01em] text-white transition hover:bg-ink/85 disabled:opacity-60"
         >
           {pending ? "Saving…" : "Save contact"}
         </button>
@@ -236,7 +236,7 @@ export function ContactForm({
               event.preventDefault();
             }
           }}
-          className="text-[14px] font-medium text-ink-soft hover:text-ink"
+          className="text-base font-normal text-ink-soft hover:text-ink"
         >
           Cancel
         </Link>
@@ -245,18 +245,18 @@ export function ContactForm({
   );
 }
 
-const LABEL = "text-[10.5px] font-bold tracking-[0.07em] text-ink-meta uppercase";
+const LABEL = "text-2xs font-bold tracking-[0.07em] text-ink-meta uppercase";
 
 const INPUT =
-  "w-full rounded-[11px] border border-line-strong bg-white px-3 py-2.5 text-[14px] text-ink transition placeholder:text-ink-soft focus:border-ink-soft aria-invalid:border-accent";
+  "w-full rounded-lg border border-line-strong bg-white px-3 py-2.5 text-base text-ink transition placeholder:text-ink-soft focus:border-ink-soft aria-invalid:border-accent";
 
 function Section({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
   return (
     <section
       id={id}
-      className="flex flex-col gap-3 rounded-[18px] bg-white px-[22px] py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]"
+      className="flex flex-col gap-3 rounded-xl bg-white px-[22px] py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]"
     >
-      <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">{title}</h2>
+      <h2 className="text-base font-bold tracking-[-0.015em]">{title}</h2>
       {children}
     </section>
   );
@@ -331,7 +331,7 @@ function TextArea({
         placeholder={placeholder}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${name}-error` : undefined}
-        className={`${INPUT} resize-y leading-[1.6]`}
+        className={`${INPUT} resize-y`}
       />
       <FieldError id={`${name}-error`} message={error} />
     </div>
@@ -341,7 +341,7 @@ function TextArea({
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
   return (
-    <p id={id} role="alert" className="text-[12.5px] font-medium text-accent">
+    <p id={id} role="alert" className="text-sm font-normal text-accent">
       {message}
     </p>
   );
@@ -360,7 +360,7 @@ function SmallButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full bg-line-soft px-3 py-1.5 text-[12px] font-semibold text-ink-body transition-colors hover:bg-chip-track ${className}`}
+      className={`rounded-full bg-line-soft px-3 py-1.5 text-xs font-semibold text-ink-body transition-colors hover:bg-chip-track ${className}`}
     >
       {children}
     </button>

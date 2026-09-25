@@ -14,7 +14,7 @@ export function BrandTile() {
       aria-hidden="true"
       className="flex size-10 items-center justify-center rounded-xl bg-ink-deep"
     >
-      <span className="text-[18px] font-extrabold tracking-[-0.03em] text-white">
+      <span className="text-lg font-bold tracking-[-0.03em] text-white">
         {APP_NAME.charAt(0)}
       </span>
     </div>
@@ -30,7 +30,7 @@ export function Section({
 }) {
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-[11px] font-bold tracking-[0.09em] text-ink-meta uppercase">
+      <h2 className="text-2xs font-bold tracking-[0.09em] text-ink-meta uppercase">
         {title}
       </h2>
       <ul className="flex flex-col gap-[9px]">{children}</ul>
@@ -59,7 +59,7 @@ export function Item({
         name={icon}
         className={`mt-0.5 size-[17px] shrink-0 ${TONES[tone]}`}
       />
-      <p className="text-[14.5px] leading-[1.5]">{children}</p>
+      <p className="text-base">{children}</p>
     </li>
   );
 }
@@ -80,10 +80,10 @@ export function Callout({
   return (
     <div
       role={role}
-      className="flex items-start gap-3 rounded-[14px] bg-accent-tint px-[18px] py-[15px]"
+      className="flex items-start gap-3 rounded-xl bg-accent-tint px-[18px] py-[15px]"
     >
       <Icon name={icon} className="mt-0.5 size-[17px] shrink-0 text-accent" />
-      <p className="text-[13.5px] leading-[1.55] text-alert-ink">{children}</p>
+      <p className="text-sm text-alert-ink">{children}</p>
     </div>
   );
 }
