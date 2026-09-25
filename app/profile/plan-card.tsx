@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { managePlanAction } from "@/app/pricing/actions";
 import type { Entitlement } from "@/lib/plans/current";
 import { PRICE_SEK, type AiPurpose } from "@/lib/plans/plans";
 import { allowanceLine, allowanceOf, type Uses } from "@/lib/plans/allowance";
@@ -10,9 +11,8 @@ import { allowanceLine, allowanceOf, type Uses } from "@/lib/plans/allowance";
  * No design covers this card. It is the Connections card below it on this
  * page: the same white card, heading and label/value rows.
  *
- * Differences for honest reasons: no "Manage or cancel" yet. That opens
- * Stripe's customer portal, which arrives with payments in the next commit of
- * this slice; a paid plan today was set by hand, and has nothing to manage.
+ * "Manage or cancel" opens Stripe's own customer portal (slice 13, commit 5),
+ * only for somebody Stripe knows. A plan set by hand has nothing to manage.
  */
 
 const COUNTED: AiPurpose[] = ["summary", "draft", "promises", "assistant"];
@@ -56,6 +56,17 @@ export function PlanCard({ entitlement, uses }: { entitlement: Entitlement; uses
           {plan.research ? ", and web research is included" : ""}.
           {currentPeriodEnd && ` Paid until ${dateOf(currentPeriodEnd)}.`}
         </p>
+      )}
+
+      {entitlement.hasStripeCustomer && (
+        <form action={managePlanAction} className="border-t border-line-soft pt-[13px]">
+          <button
+            type="submit"
+            className="rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] font-medium text-ink-soft transition hover:bg-paper hover:text-ink"
+          >
+            Manage or cancel
+          </button>
+        </form>
       )}
     </section>
   );

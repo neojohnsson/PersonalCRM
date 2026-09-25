@@ -4,6 +4,7 @@ import { APP_NAME } from "@/lib/app-config";
 import { loadEntitlement } from "@/lib/plans/current";
 import { PLANS, PLAN_NAMES, PRICE_SEK, includes, type Plan } from "@/lib/plans/plans";
 import { createClient } from "@/lib/supabase/server";
+import { choosePlanAction, managePlanAction } from "./actions";
 
 export const metadata = { title: `Plans · ${APP_NAME}` };
 
@@ -19,18 +20,20 @@ export const metadata = { title: `Plans · ${APP_NAME}` };
  * and cross lists, because it is the same kind of page, read before or
  * outside the app, not a working screen inside it.
  *
- * Differences for honest reasons:
- *   - There is no "Choose Pro" button yet. Paying arrives with Stripe in
- *     the next commit of this slice, and a button that did nothing would be
- *     a lie. Until then the cards only say what each plan is.
- *   - Everything a plan includes is built from lib/plans/plans.ts, so the
- *     page cannot promise more than the limits give.
+ * Everything a plan includes is built from lib/plans/plans.ts, so the page
+ * cannot promise more than the limits give.
+ *
+ * "Choose" sends you to Stripe's Checkout (./actions.ts); the plan changes
+ * only when Stripe's signed webhook says you paid. Coming back here with
+ * ?paid=1 proves nothing, so the page says only that it updates in a moment.
  */
-export default async function PricingPage() {
+export default async function PricingPage({ searchParams }: PageProps<"/pricing">) {
+  const { paid } = await searchParams;
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const userId = data?.claims?.sub ?? null;
-  const mine = userId ? (await loadEntitlement(supabase, userId)).plan : null;
+  const entitlement = userId ? await loadEntitlement(supabase, userId) : null;
+  const mine = entitlement?.plan ?? null;
 
   return (
     <main className="flex flex-1 justify-center bg-paper px-4 py-12 text-ink sm:px-6 sm:py-14">
@@ -47,9 +50,23 @@ export default async function PricingPage() {
           </div>
         </div>
 
+        {paid === "1" && (
+          <p role="status" className="rounded-[14px] bg-info-tint px-4 py-3 text-[13.5px] leading-[1.5] text-info-ink">
+            Thank you. Stripe is confirming the payment, and your plan changes as soon as it does, usually within a
+            minute. Reload this page to see it.
+          </p>
+        )}
+
         <div className="grid gap-[18px] md:grid-cols-3">
           {PLAN_NAMES.map((name) => (
-            <PlanCard key={name} plan={PLANS[name]} mine={mine?.name === name} />
+            <PlanCard
+              key={name}
+              plan={PLANS[name]}
+              mine={mine?.name === name}
+              signedIn={userId !== null}
+              onFree={mine?.name === "free"}
+              paying={mine !== null && mine.name !== "free" && entitlement!.hasStripeCustomer}
+            />
           ))}
         </div>
 
@@ -75,7 +92,10 @@ export default async function PricingPage() {
   );
 }
 
-function PlanCard({ plan, mine }: { plan: Plan; mine: boolean }) {
+type ButtonProps = { plan: Plan; mine: boolean; signedIn: boolean; onFree: boolean; paying: boolean };
+
+function PlanCard(props: ButtonProps) {
+  const { plan, mine } = props;
   const price = PRICE_SEK[plan.name];
   return (
     <section
@@ -105,6 +125,39 @@ function PlanCard({ plan, mine }: { plan: Plan; mine: boolean }) {
           </Item>
         ))}
       </ul>
+      <PlanButton {...props} />
     </section>
+  );
+}
+
+const SOLID =
+  "w-full rounded-full bg-ink-deep px-4 py-2.5 text-[13.5px] font-semibold text-white transition hover:bg-ink/85";
+const GHOST =
+  "w-full rounded-full bg-line-soft px-4 py-2.5 text-[13.5px] font-semibold text-ink-body transition-colors hover:bg-chip-track";
+
+/**
+ * One button per card, or none: Free is where everybody starts, so it has
+ * nothing to choose; a plan you pay for is changed or cancelled in Stripe's
+ * portal, which also moves you between Pro and Premium. A paid plan set by
+ * hand in the database, with no Stripe behind it, gets no buttons at all.
+ */
+function PlanButton({ plan, mine, signedIn, onFree, paying }: ButtonProps) {
+  if (!signedIn || plan.name === "free") return null;
+  if (paying) {
+    return (
+      <form action={managePlanAction} className="mt-auto">
+        <button type="submit" className={GHOST}>
+          {mine ? "Manage or cancel" : `Change to ${plan.label}`}
+        </button>
+      </form>
+    );
+  }
+  if (mine || !onFree) return null;
+  return (
+    <form action={choosePlanAction.bind(null, plan.name)} className="mt-auto">
+      <button type="submit" className={SOLID}>
+        Choose {plan.label}
+      </button>
+    </form>
   );
 }
