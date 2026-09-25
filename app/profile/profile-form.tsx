@@ -40,7 +40,7 @@ const CARD =
   "flex flex-col gap-3.5 rounded-[18px] bg-white px-[22px] pt-[18px] pb-5 shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
 const FIELD_LABEL = "text-[11.5px] font-semibold text-ink-soft";
 const INPUT =
-  "w-full rounded-[11px] border border-line bg-paper-tint px-3 py-[9px] text-[13.5px] leading-[1.5] text-ink outline-none transition placeholder:text-ink-soft focus:border-ink-soft focus:bg-white focus:ring-2 focus:ring-ink/10 aria-invalid:border-accent";
+  "w-full rounded-[11px] border border-line bg-paper-tint px-3 py-[9px] text-[13.5px] leading-[1.5] text-ink transition placeholder:text-ink-soft focus:border-ink-soft focus:bg-white aria-invalid:border-accent";
 
 const TONE_OPTIONS: { value: Tone; name: string; description: string; example: string }[] = [
   {
@@ -490,7 +490,7 @@ function ChipList({
             }
           }}
           onBlur={(event) => add(event.currentTarget.value)}
-          className="w-40 rounded-full border border-line-strong bg-white px-[11px] py-1 text-[12px] outline-none focus:ring-2 focus:ring-ink/10"
+          className="w-40 rounded-full border border-line-strong bg-white px-[11px] py-1 text-[12px]"
         />
       ) : (
         <button
@@ -528,7 +528,7 @@ function LinkList({
     );
 
   const plainInput =
-    "w-full min-w-0 rounded-md border border-transparent bg-transparent px-1 -mx-1 outline-none hover:border-line focus:border-ink-soft focus:bg-white";
+    "w-full min-w-0 rounded-md border border-transparent bg-transparent px-1 -mx-1 hover:border-line focus:border-ink-soft focus:bg-white";
 
   return (
     <div className="flex flex-col">

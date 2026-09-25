@@ -53,7 +53,9 @@
   --theme-info-ink: #2c5c96;
   --theme-info-tint: #e8eef7;
   --theme-rail-active: #303237;
-  --theme-rail-icon: #75777e;
+  /* #75777e was enough for an icon, but the rail's items carry words now
+     (UI quality pass, milestone 3), and a word needs 4.5:1: this is 5.36. */
+  --theme-rail-icon: #8b8d94;
   --theme-rail-avatar: #4a4d54;
   /* The sidebar's own colour, apart from ink-deep: Night makes the dark
      buttons a raised grey, and the sidebar must stay dark. */
@@ -327,5 +329,63 @@ body {
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
+  }
+
+  /*
+   * One focus ring for everything (UI quality pass, milestone 3). Before,
+   * a few buttons drew an accent ring, inputs a ring of ink at 10% (about
+   * 1.1:1 on white, invisible), and the rest fell back to the browser's own
+   * outline, a different colour on every element. Now anything focused from
+   * the keyboard gets the same 2px accent ring, 2px out: about 5:1 on white
+   * and 6:1 on Night's cards, above the 3:1 WCAG 2.4.11 asks for.
+   *
+   * Nothing turns it off without drawing its own: tests/focus.test.ts.
+   */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+/*
+ * A link that makes its whole row clickable (a contact in a list): the link
+ * itself draws no ring, its ::after covers the row and draws the shared one,
+ * just inside the row so a neighbour does not cover it.
+ */
+/*
+ * The pending hint on a navigation item (app/nav-pending.tsx): a short bar
+ * under the word, shown only if the page takes longer than 100ms to change.
+ */
+.nav-pending {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  width: 18px;
+  height: 2px;
+  margin-left: -9px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+}
+.nav-pending.is-pending {
+  animation: nav-pending 0.9s ease-in-out 0.1s infinite;
+}
+@keyframes nav-pending {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.9; }
+}
+
+@utility stretched-link {
+  outline: none;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+  }
+  &:focus-visible::after {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
   }
 }

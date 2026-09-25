@@ -248,7 +248,7 @@ export function ContactForm({
 const LABEL = "text-[10.5px] font-bold tracking-[0.07em] text-ink-meta uppercase";
 
 const INPUT =
-  "w-full rounded-[11px] border border-line-strong bg-white px-3 py-2.5 text-[14px] text-ink outline-none transition placeholder:text-ink-soft focus:border-ink-soft focus:ring-2 focus:ring-ink/10 aria-invalid:border-accent";
+  "w-full rounded-[11px] border border-line-strong bg-white px-3 py-2.5 text-[14px] text-ink transition placeholder:text-ink-soft focus:border-ink-soft aria-invalid:border-accent";
 
 function Section({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
   return (

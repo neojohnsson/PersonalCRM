@@ -339,7 +339,7 @@ function PersonRow({ person, line, daysClass, draftHref }: Row) {
           {/* The link stretches over the whole row (after:inset-0). */}
           <Link
             href={`/contacts/${contact.id}`}
-            className="truncate text-[14px] font-semibold tracking-[-0.01em] outline-none after:absolute after:inset-0 after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-ink/20 focus-visible:after:ring-inset"
+            className="stretched-link truncate text-[14px] font-semibold tracking-[-0.01em]"
           >
             {name}
           </Link>
@@ -425,7 +425,7 @@ function ComingUpCard({ touches }: { touches: ComingUp<ContactRow>[] }) {
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <Link
                     href={`/contacts/${touch.contact.id}`}
-                    className="truncate text-[13.5px] font-semibold tracking-[-0.01em] outline-none after:absolute after:inset-0 after:content-[''] hover:text-ink-soft"
+                    className="stretched-link truncate text-[13.5px] font-semibold tracking-[-0.01em] hover:text-ink-soft"
                   >
                     {displayName(touch.contact)}
                   </Link>

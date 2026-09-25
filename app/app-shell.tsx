@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ToastProvider } from "@/app/toasts";
 import { ThemeSwitcher } from "@/app/theme-switcher";
+import { NavPending } from "@/app/nav-pending";
 
 /**
  * The frame around signed-in pages: design/Main.dc.html, ContactList.dc.html
@@ -112,11 +113,11 @@ export async function AppShell({
       <div className="flex flex-1 bg-paper text-ink">
         <a
           href="#main-content"
-          className="sr-only fixed left-3 top-3 z-50 rounded-full bg-ink-deep px-4 py-2 text-[13px] font-semibold text-white focus:not-sr-only focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-paper"
+          className="sr-only fixed left-3 top-3 z-50 rounded-full bg-ink-deep px-4 py-2 text-[13px] font-semibold text-white focus:not-sr-only"
         >
           Skip to main content
         </a>
-        <aside className="sticky top-0 z-40 hidden h-dvh w-14 shrink-0 flex-col items-center gap-[3px] self-start border-r border-rail-edge bg-rail pt-3.5 pb-4 sm:flex">
+        <aside className="sticky top-0 z-40 hidden h-dvh w-[72px] shrink-0 flex-col items-center gap-[3px] self-start border-r border-rail-edge bg-rail pt-3.5 pb-4 sm:flex">
           <div
             aria-hidden="true"
             className="mb-3 flex size-[30px] items-center justify-center rounded-[9px] bg-rail-logo"
@@ -126,7 +127,7 @@ export async function AppShell({
             </span>
           </div>
 
-          <nav aria-label="Main" className="flex flex-col items-center gap-[3px]">
+          <nav aria-label="Main" className="flex flex-col items-center gap-1">
             {pages.map((page) => (
               <NavItem
                 key={page.key}
@@ -173,7 +174,6 @@ export async function AppShell({
         <div className="flex min-w-0 flex-1 flex-col pb-[74px] sm:pb-0">
           <header className="relative flex h-[60px] shrink-0 items-center gap-3 px-4 sm:px-[26px]">
             <span className="text-[15px] font-semibold tracking-tight sm:hidden">{APP_NAME}</span>
-            <PageSwitcher active={active} pages={pages} />
             <div className="ml-auto flex items-center gap-2">
               <ThemeSwitcher />
               {headerRight}
@@ -191,51 +191,15 @@ export async function AppShell({
   );
 }
 
-/**
- * The header's centred page switcher — the white pill of words that five of
- * the designs carry (design/Main.dc.html, ContactList.dc.html,
- * ReviewQueue.dc.html, Calendar.dc.html and ContactDetail.dc.html). It was
- * left out of every one of them until now, on the grounds that the rail
- * already went to those pages; you asked for it on 2026-09-22, and it is in
- * the Assistant design we agreed before building.
- *
- * The **word** variant, not the icon one. The designs have both — icons on
- * Main, ContactList and ReviewQueue, words on Calendar and ContactDetail —
- * and the first outside test of the app could not tell the rail's icons
- * apart, so four more unlabelled pills would have been the same mistake
- * twice. The measurements are ContactDetail's: 4px of padding round the pill,
- * 6px by 15px per word, 12.5px type, the active one on #f1f1ef.
- *
- * Differences from the design, on purpose:
- *   - An inactive word is ink-soft (#6f7177), not the design's #9c9ea4, which
- *     is about 2.6:1 against white at 12.5px and hard to read.
- *   - Hidden below md. Centred absolutely, it would sit under Sign out on a
- *     narrow window, and on a phone the bottom bar is the switcher.
+/*
+ * The header's centred page switcher -- the pill of words from five of the
+ * designs, added 2026-09-22 at the user's request -- was removed 2026-09-25
+ * (UI quality pass, milestone 3, the user's decision). It and the rail were
+ * two navigations with the same five links on every desktop screen, and a
+ * screen reader heard them twice. Its reason for being -- words, because the
+ * first outside test could not tell the rail's icons apart -- moved into the
+ * rail, which now carries a word under each icon (NavItem).
  */
-function PageSwitcher({ active, pages }: { active: ActivePage; pages: VisiblePages }) {
-  return (
-    <nav
-      aria-label="Switch page"
-      className="absolute left-1/2 hidden -translate-x-1/2 gap-0.5 rounded-full bg-white p-1 shadow-[0_1px_2px_rgba(20,20,25,.05),0_4px_12px_rgba(20,20,25,.06)] md:flex"
-    >
-      {pages.map((page) => {
-        const current = active === page.key;
-        return (
-          <Link
-            key={page.key}
-            href={page.href}
-            aria-current={current ? "page" : undefined}
-            className={`rounded-full px-[15px] py-1.5 text-[12.5px] transition-colors ${
-              current ? "bg-chip font-semibold text-ink" : "font-medium text-ink-soft hover:text-ink"
-            }`}
-          >
-            {page.label}
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
 
 /**
  * The navigation on a phone (slice 9b, Part 1). Below the sm breakpoint the
@@ -310,9 +274,9 @@ function BottomItem({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`relative flex min-h-[58px] flex-1 flex-col items-center justify-center gap-1 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset ${
-        active ? "text-ink" : "text-ink-soft"
-      }`}
+      className={`relative flex min-h-[58px] flex-1 flex-col items-center justify-center gap-1 focus-visible:z-10 focus-visible:ring-inset ${
+ active ?"text-ink":"text-ink-soft"
+ }`}
     >
       {active && (
         <span
@@ -360,11 +324,18 @@ function NavItem({
   dot?: boolean;
   children: React.ReactNode;
 }) {
+  // An icon over its word (UI quality pass, milestone 3): the pill switcher's
+  // words moved here when it went. The word is the page's short label; the
+  // longer title, where there is one ("Who needs you today"), is still the
+  // hover label and the screen reader's.
+  //
+  // The one focus ring that is not the accent: on the dark rail the accent is
+  // about 3:1, on the limit; white is about 18:1. The gap is the rail's colour.
   return (
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`group relative flex size-9 items-center justify-center rounded-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-ink-deep ${
+      className={`group relative flex w-[62px] flex-col items-center gap-[5px] rounded-[11px] px-1 pt-2 pb-[7px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-rail ${
         active ? "bg-rail-active text-white" : "text-rail-icon hover:text-white"
       }`}
     >
@@ -383,11 +354,13 @@ function NavItem({
       {dot && (
         <span
           aria-hidden="true"
-          className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-accent-soft"
+          className="absolute top-1.5 right-[17px] size-1.5 rounded-full bg-accent-soft"
         />
       )}
-      <span className="sr-only">{label === title ? label : `${label} — ${title}`}</span>
-      <HoverLabel>{title}</HoverLabel>
+      <span className={`text-[10.5px] leading-none ${active ? "font-bold" : "font-semibold"}`}>{label}</span>
+      {label !== title && <span className="sr-only"> — {title}</span>}
+      {label !== title && <HoverLabel>{title}</HoverLabel>}
+      <NavPending />
     </Link>
   );
 }

@@ -214,7 +214,7 @@ function Checkbox({
         checked={checked}
         onChange={onChange}
         aria-label={label}
-        className="peer size-5 cursor-pointer appearance-none rounded-[5px] border-[1.5px] border-line-strong bg-white transition-colors checked:border-ink-deep checked:bg-ink-deep focus-visible:ring-2 focus-visible:ring-ink/20 focus-visible:outline-none"
+        className="peer size-5 cursor-pointer appearance-none rounded-[5px] border-[1.5px] border-line-strong bg-white transition-colors checked:border-ink-deep checked:bg-ink-deep"
       />
       <svg
         aria-hidden="true"

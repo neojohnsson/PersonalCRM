@@ -98,7 +98,7 @@ function Danger({
                 name="confirm"
                 autoComplete="off"
                 spellCheck={false}
-                className="w-full rounded-[11px] border border-line bg-white px-3 py-[9px] text-[13.5px] text-ink outline-none transition focus:border-ink-soft focus:ring-2 focus:ring-ink/10"
+                className="w-full rounded-[11px] border border-line bg-white px-3 py-[9px] text-[13.5px] text-ink transition focus:border-ink-soft"
               />
             </label>
             <div className="flex gap-[7px] pt-5">

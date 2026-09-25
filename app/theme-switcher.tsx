@@ -36,7 +36,7 @@ export function ThemeSwitcher() {
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((value) => !value)}
-        className="flex size-9 items-center justify-center rounded-[11px] text-ink-soft transition-colors hover:bg-chip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="flex size-9 items-center justify-center rounded-[11px] text-ink-soft transition-colors hover:bg-chip"
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="size-[17px]">
           <circle cx="12" cy="12" r="4" />

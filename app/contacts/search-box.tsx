@@ -82,7 +82,7 @@ export function SearchBox({ query }: { query: string }) {
         event.preventDefault();
         search();
       }}
-      className="flex w-full items-center gap-2 rounded-full bg-white px-[15px] py-2 shadow-[0_1px_2px_rgba(20,20,25,.04)] focus-within:ring-2 focus-within:ring-ink/10 sm:w-[206px]"
+      className="flex w-full items-center gap-2 rounded-full bg-white px-[15px] py-2 shadow-[0_1px_2px_rgba(20,20,25,.04)] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent sm:w-[206px]"
     >
       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" className="size-[15px] shrink-0 text-ink-soft">
         <circle cx="10.5" cy="10.5" r="6.5" />

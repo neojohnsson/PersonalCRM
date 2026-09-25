@@ -266,7 +266,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
                       <div className="flex min-w-0 flex-col gap-0.5">
                         <Link
                           href={`/contacts/${contact.id}`}
-                          className="truncate text-[13.5px] font-semibold tracking-[-0.01em] outline-none after:absolute after:inset-0 after:content-[''] hover:text-ink-soft"
+                          className="stretched-link truncate text-[13.5px] font-semibold tracking-[-0.01em] hover:text-ink-soft"
                         >
                           {name}
                         </Link>

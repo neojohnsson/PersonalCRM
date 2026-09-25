@@ -484,7 +484,7 @@ function ContactTable({
                     </span>
                     <Link
                       href={`/contacts/${contact.id}`}
-                      className="truncate text-[13.5px] font-semibold tracking-[-0.01em] outline-none after:absolute after:inset-0 after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-ink/20 focus-visible:after:ring-inset"
+                      className="stretched-link truncate text-[13.5px] font-semibold tracking-[-0.01em]"
                     >
                       {name}
                     </Link>

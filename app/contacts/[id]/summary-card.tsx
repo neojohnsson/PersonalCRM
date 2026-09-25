@@ -319,7 +319,7 @@ function ApprovedSummary({
               maxLength={MAX_PART_CHARS}
               defaultValue={hasErrors && state ? state.values[part] : (summary[part] ?? "")}
               aria-invalid={errors[part] ? true : undefined}
-              className="w-full resize-y rounded-[11px] border border-line-strong bg-white px-3 py-2 text-[13.5px] leading-[1.55] text-ink outline-none transition focus:border-ink-soft focus:ring-2 focus:ring-ink/10 aria-invalid:border-accent"
+              className="w-full resize-y rounded-[11px] border border-line-strong bg-white px-3 py-2 text-[13.5px] leading-[1.55] text-ink transition focus:border-ink-soft aria-invalid:border-accent"
             />
             {errors[part] && (
               <p role="alert" className="text-[12px] font-medium text-accent">

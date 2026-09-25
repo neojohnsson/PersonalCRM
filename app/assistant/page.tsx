@@ -270,7 +270,7 @@ function WhoNeedsYou({ entries }: { entries: BriefEntry<ContactRow>[] }) {
                 <div className="flex min-w-0 items-baseline gap-2">
                   <Link
                     href={`/contacts/${entry.contact.id}`}
-                    className="truncate text-[14px] font-semibold tracking-[-0.01em] after:absolute after:inset-0 after:content-['']"
+                    className="stretched-link truncate text-[14px] font-semibold tracking-[-0.01em]"
                   >
                     {displayName(entry.contact)}
                   </Link>
@@ -382,7 +382,7 @@ function ThisWeek({
                 <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
                   <Link
                     href={`/contacts/${contact.id}`}
-                    className="truncate text-[13.5px] font-semibold tracking-[-0.01em] after:absolute after:inset-0 after:content-['']"
+                    className="stretched-link truncate text-[13.5px] font-semibold tracking-[-0.01em]"
                   >
                     {displayName(contact)}
                   </Link>
