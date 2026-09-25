@@ -713,11 +713,11 @@ describe("what was found on the web", () => {
   });
 
   afterAll(async () => {
-    await admin.from("entitlements").upsert({ user_id: alice.user.id, research: true });
+    await admin.from("entitlements").upsert({ user_id: alice.user.id, plan: "premium" });
   });
 
   it("is read with the contact: the kept facts, with their links and day, marked as from the web", async () => {
-    await admin.from("entitlements").upsert({ user_id: alice.user.id, research: true });
+    await admin.from("entitlements").upsert({ user_id: alice.user.id, plan: "premium" });
     const outcome = await call(alice, "get_contact", { contact_id: alice.karinId });
     expect(outcome).toMatchObject({
       result: {
@@ -736,7 +736,7 @@ describe("what was found on the web", () => {
   });
 
   it("is not read at all with research switched off", async () => {
-    await admin.from("entitlements").upsert({ user_id: alice.user.id, research: false });
+    await admin.from("entitlements").upsert({ user_id: alice.user.id, plan: "free" });
     const outcome = await call(alice, "get_contact", { contact_id: alice.karinId });
     expect(outcome).toMatchObject({ tier: "read" });
     expect(outcome).not.toMatchObject({ result: { from_the_web: expect.anything() } });
@@ -744,7 +744,7 @@ describe("what was found on the web", () => {
   });
 
   it("is never somebody else's", async () => {
-    await admin.from("entitlements").upsert({ user_id: bob.user.id, research: true });
+    await admin.from("entitlements").upsert({ user_id: bob.user.id, plan: "premium" });
     const outcome = await call(bob, "get_contact", { contact_id: alice.karinId });
     expect(JSON.stringify(outcome)).not.toContain("Fact 1.");
   });
