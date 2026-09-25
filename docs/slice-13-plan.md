@@ -134,11 +134,22 @@ checked out. That is exactly what migration 0025's comment said slice 13 would d
   than "add a month". Receiving it twice changes nothing the second time.
 - Cancelled or unpaid past Stripe's retries → Free. Nothing is deleted (§2).
 
-**The right of withdrawal (ångerrätt).** Swedish distance-selling law gives a consumer 14
-days to withdraw. For a digital service it can end when the service starts, but only if the
-customer agreed to that before paying. So Checkout has a required tick box — "Start now,
-and I understand I lose the right of withdrawal" — using Stripe Checkout's own consent
-collection, and the webhook records that it was ticked.
+**Stripe is the seller: Managed Payments** (decided with the user 2026-09-25). The first
+test Checkout showed the Stripe account has Managed Payments on: Stripe, through its Link
+service, becomes the merchant of record. It calculates, collects and pays VAT in 80+
+countries (sales to other EU countries included), applies the right of withdrawal and
+other consumer rules, handles disputes and sends the receipts, for 3.5% on top of the
+card fee (about 1.70 kr a month per Pro user). For a sole trader selling to consumers
+anywhere in the EU, that hands over exactly the parts most likely to go wrong. So:
+
+- Every Checkout sets `managed_payments: { enabled: true }`, never left to the default.
+- Our own right-of-withdrawal tick box is gone: Managed Payments forbids custom wording,
+  and as the seller Stripe applies the cooling-off period itself. The
+  `withdrawal_waived_at` column (migration 0027) is no longer written, and goes with the
+  old switches in the contract migration.
+- Each product has the tax code `txcd_10103000` (software as a service, personal use),
+  and the prices include VAT, so 49 kr is what the person pays.
+- The pricing page says the plans are sold through Link, before the card page does.
 
 **Test mode and live mode are the same code.** Stripe's test keys take the card 4242 4242
 4242 4242 and move no money; the whole flow can be clicked through, and shown in a demo,
@@ -202,7 +213,7 @@ takes and why it comes where it does:
    many are left and when they come back, a Pro cap holds, a broken row can't exceed the
    ceiling, Free has no web research.
 4. The pricing page and the Your plan card.
-5. Stripe Checkout (with the right-of-withdrawal tick box), the customer portal, the
+5. Stripe Checkout (Managed Payments: Stripe is the seller), the customer portal, the
    webhook and the live-key guard. Tests: an unsigned or altered request is refused and
    changes nothing; a subscription sets the right plan; the same event twice is harmless;
    cancelling returns to Free and deletes nothing; an unknown price is refused; a live key
@@ -221,4 +232,4 @@ takes and why it comes where it does:
 - [ ] The pricing, privacy-policy, terms and sub-processors pages exist and fit 390px.
 - [ ] `docs/release.md` lists part B with costs and the go-live switch, and the app is
       still in testing mode.
-- [ ] Checkout cannot be completed without the right-of-withdrawal tick box.
+- [ ] Every Checkout is sold through Managed Payments (Stripe is the seller).

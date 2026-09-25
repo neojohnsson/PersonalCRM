@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { createClient, type User } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { WITHDRAWAL_TEXT, checkoutParams } from "@/lib/stripe/checkout";
+import { checkoutParams } from "@/lib/stripe/checkout";
 import { LiveKeyOutsideProduction, StripeNotConfigured, stripeSecretKey } from "@/lib/stripe/client";
 import { planForLookupKey } from "@/lib/stripe/prices";
 import { handleStripeWebhook, type WebhookDeps } from "@/lib/stripe/webhook";
@@ -208,28 +208,11 @@ describe("a subscription", () => {
 });
 
 describe("a finished Checkout", () => {
-  it("records when the right of withdrawal was waived, and sets the plan", async () => {
+  it("sets the plan from its subscription, as Stripe says it is now", async () => {
     now.sub_a = subscription("sub_a");
-    const session = {
-      id: "cs_test_1",
-      object: "checkout.session",
-      client_reference_id: alva.id,
-      subscription: "sub_a",
-      created: 1_790_000_000,
-      consent: { terms_of_service: "accepted" },
-    };
+    const session = { id: "cs_test_1", object: "checkout.session", client_reference_id: alva.id, subscription: "sub_a", created: 1 };
     await send(event("checkout.session.completed", session));
-    expect(await row()).toMatchObject({
-      plan: "pro",
-      withdrawal_waived_at: new Date(1_790_000_000 * 1000).toISOString().replace(".000Z", "+00:00"),
-    });
-  });
-
-  it("records no waiver the box was not ticked for", async () => {
-    now.sub_a = subscription("sub_a");
-    const session = { id: "cs_test_2", object: "checkout.session", client_reference_id: alva.id, subscription: "sub_a", created: 1, consent: null };
-    await send(event("checkout.session.completed", session));
-    expect((await row())?.withdrawal_waived_at).toBeNull();
+    expect(await row()).toMatchObject({ plan: "pro", stripe_subscription_id: "sub_a", withdrawal_waived_at: null });
   });
 
   it("ignores events that are not about a plan", async () => {
@@ -247,12 +230,12 @@ describe("the Checkout page", () => {
     appUrl: "https://contacthub.example",
   });
 
-  it("cannot be paid without ticking the right-of-withdrawal box", () => {
-    expect(params.consent_collection).toEqual({ terms_of_service: "required" });
-    expect(params.custom_text?.terms_of_service_acceptance).toEqual({
-      message: WITHDRAWAL_TEXT.replace("{terms}", "https://contacthub.example/terms"),
-    });
-    expect(WITHDRAWAL_TEXT).toContain("I understand that I then lose my 14-day right of withdrawal");
+  it("always makes Stripe the seller, with Managed Payments, and asks for nothing Stripe forbids there", () => {
+    expect(params.managed_payments).toEqual({ enabled: true });
+    // Managed Payments refuses these: Stripe, as the seller, controls them.
+    for (const forbidden of ["custom_text", "automatic_tax", "payment_method_types", "invoice_creation", "shipping_address_collection"]) {
+      expect(params).not.toHaveProperty(forbidden);
+    }
   });
 
   it("names who it is for on the subscription, for every later event", () => {

@@ -72,19 +72,3 @@ export async function applySubscription(admin: SupabaseClient, subscription: Str
   if (error) throw supabaseError(error, "Couldn't record the plan");
   return { applied: true, userId, plan: paying ? plan : "free" };
 }
-
-/**
- * Checkout finished: when the right-of-withdrawal box was ticked. Stripe will
- * not complete a Checkout without it (consent_collection, lib/stripe/checkout.ts),
- * and this keeps the date it was given. Only this column is written; the plan
- * comes from the subscription.
- */
-export async function recordConsent(admin: SupabaseClient, session: Stripe.Checkout.Session): Promise<boolean> {
-  const userId = session.client_reference_id;
-  if (typeof userId !== "string" || !isUuid(userId) || session.consent?.terms_of_service !== "accepted") return false;
-  const { error } = await admin
-    .from("entitlements")
-    .upsert({ user_id: userId, withdrawal_waived_at: new Date(session.created * 1000).toISOString() }, { onConflict: "user_id" });
-  if (error) throw supabaseError(error, "Couldn't record the consent");
-  return true;
-}

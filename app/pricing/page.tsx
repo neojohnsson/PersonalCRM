@@ -87,6 +87,14 @@ export default async function PricingPage({ searchParams }: PageProps<"/pricing"
             </>
           )}
         </p>
+
+        {/* Managed Payments (lib/stripe/checkout.ts): the person should know
+            who they are buying from before the card page says so. */}
+        <p className="px-1 text-[12.5px] leading-[1.55] text-ink-quiet">
+          Plans are sold through Link, Stripe&rsquo;s reseller: Link takes the payment, handles VAT and receipts, and
+          your right to withdraw from the purchase under EU consumer law. Cancelling or changing plan is always on the
+          Manage or cancel button in your profile.
+        </p>
       </div>
     </main>
   );

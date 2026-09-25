@@ -1,7 +1,7 @@
 import "server-only";
 import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { applySubscription, recordConsent, type SyncOutcome } from "./sync";
+import { applySubscription, type SyncOutcome } from "./sync";
 
 /**
  * One call from Stripe to app/api/stripe/webhook/route.ts (slice 13, commit 5;
@@ -65,7 +65,6 @@ export async function handleStripeWebhook(
     subscriptionId = (event.data.object as Stripe.Subscription).id;
   } else if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    await recordConsent(deps.admin, session);
     subscriptionId = typeof session.subscription === "string" ? session.subscription : (session.subscription?.id ?? null);
   } else if (event.type === "invoice.payment_failed" || event.type === "invoice.paid") {
     const invoice = event.data.object as Stripe.Invoice;

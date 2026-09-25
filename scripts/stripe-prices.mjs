@@ -23,15 +23,21 @@ const PLANS = [
   { lookup: "premium_monthly", name: "Contact Hub Premium", amount: 9900 },
 ];
 
+// Managed Payments (Stripe is the seller, lib/stripe/checkout.ts) needs every
+// product to say what it is for tax: software as a service, for personal use.
+const TAX_CODE = "txcd_10103000";
+
 const prices = [];
 for (const plan of PLANS) {
-  const found = await stripe.prices.list({ lookup_keys: [plan.lookup], active: true, limit: 1 });
+  const found = await stripe.prices.list({ lookup_keys: [plan.lookup], active: true, limit: 1, expand: ["data.product"] });
   if (found.data[0]) {
+    const product = found.data[0].product;
+    if (product.tax_code !== TAX_CODE && product.tax_code?.id !== TAX_CODE) await stripe.products.update(product.id, { tax_code: TAX_CODE });
     console.log(`${plan.lookup}: already there (${found.data[0].id})`);
     prices.push(found.data[0]);
     continue;
   }
-  const product = await stripe.products.create({ name: plan.name });
+  const product = await stripe.products.create({ name: plan.name, tax_code: TAX_CODE });
   const price = await stripe.prices.create({
     product: product.id,
     currency: "sek",
