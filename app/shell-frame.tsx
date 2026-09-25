@@ -242,17 +242,22 @@ function BottomBar({
       // scans comments too, and a class candidate in one broke the build.
       className="fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-1px_2px_rgba(20,20,25,.04)] sm:hidden"
     >
-      {pages.map((page) => (
-        <BottomItem
-          key={page.key}
-          href={page.href}
-          label={page.label}
-          active={active === page.key}
-          dot={page.key === "seen-once" && seenOnceCount > 0}
-        >
-          {ICONS[page.key]}
-        </BottomItem>
-      ))}
+      {/* Five items, not six (UI quality pass, milestone 5): at six each was
+          55px wide with 10px words. Seen once folds into Contacts, whose page
+          opens with a Contacts / Seen once toggle; its waiting dot comes too. */}
+      {pages
+        .filter((page) => page.key !== "seen-once")
+        .map((page) => (
+          <BottomItem
+            key={page.key}
+            href={page.href}
+            label={page.label}
+            active={active === page.key || (page.key === "contacts" && active === "seen-once")}
+            dot={page.key === "contacts" && seenOnceCount > 0}
+          >
+            {ICONS[page.key]}
+          </BottomItem>
+        ))}
       {userEmail && (
         <BottomItem href="/profile" label="You" active={active === "profile"}>
           <circle cx="12" cy="8.5" r="3.6" />

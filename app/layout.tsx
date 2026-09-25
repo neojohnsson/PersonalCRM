@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { APP_NAME } from "@/lib/app-config";
@@ -13,6 +13,18 @@ export const metadata: Metadata = {
   title: APP_NAME,
   description:
     "Imports the people you actually talk to from Gmail, and tells you who is waiting on you.",
+};
+
+/*
+ * viewport-fit=cover (UI quality pass, milestone 5): without it a phone
+ * reports every safe-area inset as 0, so the bottom bar's
+ * env(safe-area-inset-bottom) padding did nothing and its labels sat under
+ * the iPhone's home indicator.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

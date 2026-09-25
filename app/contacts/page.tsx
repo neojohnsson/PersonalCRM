@@ -100,7 +100,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
               Once Gmail is connected, everyone you&rsquo;ve written to and heard back from shows
               up here — whoever is waiting on you first.
             </p>
-            <Link href="/connect" className={`${DARK_PILL} mt-5 self-start`}>
+            <Link href="/connect" className={`${DARK_PILL} mt-5 self-center`}>
               Connect Gmail
             </Link>
           </EmptyCard>
@@ -320,15 +320,12 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
             }
           />
         ) : query || filter !== "all" || tag ? (
-          <EmptyCard title="No contacts here">
+          <EmptyCard title="No contacts here" icon="search" action={{ href: "/contacts", label: "Show all contacts" }}>
             <p>
               {query ? `Nobody matches “${query}”` : "Nobody"}
               {filter !== "all" ? ` under ${FILTERS.find((f) => f.value === filter)!.label}` : ""}
               {tag ? ` tagged ${tag}` : ""}.
             </p>
-            <Link href="/contacts" className="mt-3 self-start font-semibold text-ink hover:text-ink-soft">
-              Show all contacts
-            </Link>
           </EmptyCard>
         ) : (
           <NoContactsYet sync={sync} seenOnce={seenOnce} />
@@ -485,7 +482,7 @@ function ContactTable({
                     </span>
                     <RowLink
                       href={`/contacts/${contact.id}`}
-                      className="truncate text-base font-semibold tracking-[-0.01em]"
+                      className="break-words text-base font-semibold tracking-[-0.01em]"
                     >
                       {name}
                     </RowLink>
@@ -562,16 +559,15 @@ function NoContactsYet({ sync, seenOnce }: { sync: SyncSummary | null; seenOnce:
 
   if (sync?.status === "synced") {
     return (
-      <EmptyCard title="No contacts yet">
+      <EmptyCard
+        title="No contacts yet"
+        icon="people"
+        action={seenOnce > 0 ? { href: "/seen-once", label: `Review ${countOf(seenOnce, "person", "people")}` } : undefined}
+      >
         <p>
           Nobody in the last {days} days both wrote to you and got a reply.
           {seenOnce > 0 && " People who only wrote once are waiting in Seen once."}
         </p>
-        {seenOnce > 0 && (
-          <Link href="/seen-once" className="mt-3 self-start font-semibold text-ink hover:text-ink-soft">
-            Review {countOf(seenOnce, "person", "people")}
-          </Link>
-        )}
       </EmptyCard>
     );
   }

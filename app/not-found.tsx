@@ -35,7 +35,7 @@ export default async function NotFound() {
       </p>
       <Link
         href={email ? "/" : "/login"}
-        className="mt-5 self-start rounded-full bg-ink-deep px-4 py-[9px] text-sm font-semibold text-white transition hover:bg-ink/85"
+        className="mt-5 self-center rounded-full bg-ink-deep px-4 py-[9px] text-sm font-semibold text-white transition hover:bg-ink/85"
       >
         {email ? "Back to Who needs you today" : "Sign in"}
       </Link>

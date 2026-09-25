@@ -53,15 +53,12 @@ export default async function DuplicatesPage() {
             </ul>
           </>
         ) : (
-          <EmptyCard title="No duplicates found">
+          <EmptyCard title="No duplicates found" icon="done" action={{ href: "/contacts", label: "Back to contacts" }}>
             <p>
               Nobody in your contacts looks like the same person twice. The check runs on names,
               phone numbers and the names inside email addresses — never on a shared first name or
               a shared company.
             </p>
-            <Link href="/contacts" className="mt-3 self-start font-semibold text-ink hover:text-ink-soft">
-              Back to contacts
-            </Link>
           </EmptyCard>
         )}
       </main>

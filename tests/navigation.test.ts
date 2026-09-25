@@ -107,7 +107,10 @@ describe("the sidebar and the bottom bar", () => {
     // is the list filtered for this person -- still one list, worked out once
     // in the shell and handed to both. (The header's page switcher mapped it
     // too, until the UI quality pass removed it.)
-    expect(SHELL.match(/pages\.map\(/g)).toHaveLength(2);
+    // The bottom bar leaves one out, Seen once, which folds into Contacts on
+    // a phone (UI quality pass, milestone 5): five items fit, six did not.
+    expect(SHELL.match(/pages(?:\s*\.filter\([\s\S]*?\))?\s*\.map\(/g)).toHaveLength(2);
+    expect(SHELL).toContain('.filter((page) => page.key !== "seen-once")');
     // Worked out by AppShell for this person; the loading skeleton uses the
     // same function for its frame (every plan has the Assistant).
     expect(readFileSync("app/app-shell.tsx", "utf8").match(/visiblePages\(/g)).toHaveLength(1);

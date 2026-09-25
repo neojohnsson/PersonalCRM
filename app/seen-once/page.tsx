@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
+import { EmptyCard } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
 import { APP_NAME } from "@/lib/app-config";
 import { requireUser } from "@/lib/auth";
@@ -28,9 +29,6 @@ export const metadata = { title: `Seen once · ${APP_NAME}` };
 
 const PAGE_SIZE = 50;
 const MAX_ROWS = 1_000;
-
-const CARD =
-  "rounded-xl bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
 
 export default async function SeenOncePage({ searchParams }: PageProps<"/seen-once">) {
   const user = await requireUser();
@@ -133,20 +131,23 @@ export default async function SeenOncePage({ searchParams }: PageProps<"/seen-on
             moreHref={people.length < total && limit < MAX_ROWS ? `/seen-once?show=${limit + PAGE_SIZE}` : null}
           />
         ) : (
-          <section className={`${CARD} flex max-w-xl flex-col px-[22px] py-6 sm:px-8`}>
-            <h2 className="text-base font-bold tracking-[-0.015em]">Nobody waiting</h2>
-            <p className="mt-2 text-sm text-ink-soft">
+          <EmptyCard
+            title="Nobody waiting"
+            icon="inbox"
+            action={gmailResult.data ? { href: "/contacts", label: "See your contacts" } : { href: "/connect", label: "Connect Gmail" }}
+          >
+            <p>
               {gmailResult.data
                 ? `Everyone you've exchanged mail with in the last ${lookbackDays()} days is a contact or has been dismissed.`
                 : "Connect Gmail, and people who wrote to you once — or you wrote to once — show up here."}
             </p>
             {filtered > 0 && (
-              <p className="mt-2 text-sm text-ink-soft">
+              <p className="mt-2">
                 {countOf(filtered, "automated message")} were filtered out — newsletters, no-reply,
                 calendar invites.
               </p>
             )}
-          </section>
+          </EmptyCard>
         )}
       </main>
     </AppShell>

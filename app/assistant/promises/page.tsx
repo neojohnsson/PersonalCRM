@@ -94,7 +94,7 @@ export default async function PromisesPage() {
             </p>
             <Link
               href="/assistant"
-              className="mt-5 self-start rounded-full bg-line-soft px-[15px] py-2 text-xs font-semibold text-ink-body transition hover:bg-chip-track"
+              className="mt-5 self-center rounded-full bg-line-soft px-[15px] py-2 text-xs font-semibold text-ink-body transition hover:bg-chip-track"
             >
               Back to the Assistant
             </Link>

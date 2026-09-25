@@ -214,8 +214,16 @@ export default async function AssistantPage() {
           <p className="pb-1 text-sm font-normal text-ink-soft">{weekdayDayMonth(now)}</p>
         </div>
 
-        <div className="flex flex-col gap-[18px] lg:flex-row">
-          <WhoNeedsYou entries={brief} />
+        {/* Content-driven, not three equal columns (UI quality pass,
+            milestone 5): three cards stretched to the tallest, so a card with
+            one sentence was 440px of blank with its footer at the bottom, and
+            at 1150-1250px names were cut to "Linda Jöns…". Who needs you has
+            the left; This week and Things to decide stack on the right, each as
+            tall as its content, and the 1fr row takes the slack. */}
+        <div className="flex flex-col gap-[18px] lg:grid lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-5">
+          <div className="lg:row-span-2">
+            <WhoNeedsYou entries={brief} />
+          </div>
           <ThisWeek
             connected={calendar !== null}
             meetings={meetings}
@@ -268,15 +276,17 @@ function WhoNeedsYou({ entries }: { entries: BriefEntry<ContactRow>[] }) {
             >
               <Avatar contact={entry.contact} />
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <div className="flex min-w-0 items-baseline gap-2">
+                {/* A name is never cut short (UI quality pass, milestone 5): it
+                    wraps, and the company drops below it when there is no room. */}
+                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
                   <RowLink
                     href={`/contacts/${entry.contact.id}`}
-                    className="truncate text-base font-semibold tracking-[-0.01em]"
+                    className="break-words text-base font-semibold tracking-[-0.01em]"
                   >
                     {displayName(entry.contact)}
                   </RowLink>
                   {entry.contact.company && (
-                    <span className="hidden min-w-0 truncate text-sm text-ink-soft sm:inline">
+                    <span className="hidden min-w-0 break-words text-sm text-ink-soft sm:inline">
                       {entry.contact.company}
                     </span>
                   )}
@@ -383,7 +393,7 @@ function ThisWeek({
                 <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
                   <RowLink
                     href={`/contacts/${contact.id}`}
-                    className="truncate text-sm font-semibold tracking-[-0.01em]"
+                    className="break-words text-sm font-semibold tracking-[-0.01em]"
                   >
                     {displayName(contact)}
                   </RowLink>

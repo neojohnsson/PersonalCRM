@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/app/app-shell";
+import { RowLink } from "@/app/nav-pending";
 import { SignOutButton } from "@/app/sign-out-button";
 import { APP_NAME } from "@/lib/app-config";
 import { AiNotConfigured, aiConfig, monthlyCapUsd } from "@/lib/ai/config";
@@ -404,8 +405,11 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
           <ResearchCard contactId={contact.id} pending={research.pending} kept={research.kept} typicalUsd={researchUsd} />
         )}
 
-        <div className="flex flex-col gap-[18px] lg:flex-row">
-          <section className={`${CARD} flex min-w-0 flex-1 flex-col gap-[11px] px-[22px] py-[18px]`}>
+        {/* lg:items-start (UI quality pass, milestone 5): stretched to the
+            height of the card beside it, "No notes yet." floated in 350px of
+            blank. Each card is as tall as its content now. */}
+        <div className="flex flex-col gap-[18px] lg:flex-row lg:items-start">
+          <section className={`${CARD} relative flex min-w-0 flex-1 flex-col gap-[11px] px-[22px] py-[18px]`}>
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-base font-bold tracking-[-0.015em]">Your notes</h2>
               {/* Slice 9b, Part 6: this is the CONTACT's updated_at, not the
@@ -423,7 +427,11 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
             {contact.notes ? (
               <p className="text-base whitespace-pre-line text-ink-body">{contact.notes}</p>
             ) : (
-              <p className="text-base text-ink-soft">No notes yet.</p>
+              // With no note, the whole card starts one: the link stretches over
+              // it, and the buttons below sit above the stretch (relative z-10).
+              <RowLink href={`/contacts/${id}/edit#notes`} className="self-start text-base text-ink-soft hover:text-ink">
+                No notes yet. Add one
+              </RowLink>
             )}
 
             {contact.how_known && (
@@ -433,10 +441,10 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
               </div>
             )}
 
-            <div className="mt-auto flex flex-wrap items-center gap-2 pt-1.5">
+            <div className="relative z-10 mt-auto flex flex-wrap items-center gap-2 pt-1.5">
               <Link href={`/contacts/${id}/edit#notes`} className={GHOST_PILL}>
                 <PencilIcon className="size-[13px] text-ink-soft" />
-                Edit note
+                {contact.notes ? "Edit note" : "Add note"}
               </Link>
               <Link href={`/contacts/${id}/edit#tags`} className={GHOST_PILL}>
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="size-[13px] text-ink-soft">

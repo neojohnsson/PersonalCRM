@@ -267,7 +267,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
                       <div className="flex min-w-0 flex-col gap-0.5">
                         <RowLink
                           href={`/contacts/${contact.id}`}
-                          className="truncate text-sm font-semibold tracking-[-0.01em] link-action"
+                          className="break-words text-sm font-semibold tracking-[-0.01em] link-action"
                         >
                           {name}
                         </RowLink>
@@ -568,7 +568,7 @@ function NextWithContact({
           {initials(name, contact.primary_email ?? name)}
         </span>
         <div className="flex min-w-0 flex-col gap-px">
-          <span className="truncate text-base font-semibold tracking-[-0.01em]">{name}</span>
+          <span className="break-words text-base font-semibold tracking-[-0.01em]">{name}</span>
           {contact.company && <span className="truncate text-xs text-ink-soft">{contact.company}</span>}
         </div>
       </div>

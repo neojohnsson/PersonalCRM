@@ -15,7 +15,7 @@ export default async function NewContactPage() {
   return (
     <AppShell userEmail={user.email} headerRight={<SignOutButton />}>
       <main className="flex flex-1 flex-col gap-4 px-4 pt-2.5 pb-7 sm:px-[30px]">
-        <div className="flex flex-col gap-2">
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-2">
           <Link href="/contacts" className="text-sm font-normal text-ink-soft hover:text-ink">
             ← Contacts
           </Link>

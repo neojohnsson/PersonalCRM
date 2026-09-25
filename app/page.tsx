@@ -88,7 +88,7 @@ export default async function Home() {
               Once Gmail is connected, this page shows who is waiting on a reply from you, whose
               threads are going quiet, and who you meant to get back to.
             </p>
-            <Link href="/connect" className={`${DARK_PILL} mt-5 self-start`}>
+            <Link href="/connect" className={`${DARK_PILL} mt-5 self-center`}>
               Connect Gmail
             </Link>
           </EmptyCard>
@@ -177,8 +177,14 @@ export default async function Home() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-5 lg:flex-row">
-          <div className="flex min-w-0 flex-1 flex-col gap-[18px]">
+        {/* One grid, not two columns (UI quality pass, milestone 5). With the
+            usual two or three people, the left column ended at a third of the
+            page while Coming up and Seen once ran on down the right. Seen once
+            now sits under Going quiet on a wide screen, and Coming up has the
+            right to itself; its span ends in a 1fr row that takes the slack,
+            so a long Coming up does not push the left cards apart. On a phone
+            the order is unchanged: Your turn, Going quiet, Coming up, Seen once. */}
+        <div className="flex flex-col gap-[18px] lg:grid lg:grid-cols-[minmax(0,1fr)_296px] lg:grid-rows-[auto_auto_auto_1fr] lg:items-start lg:gap-x-5">
             <PeopleCard
               title="Your turn"
               dot="bg-accent"
@@ -217,10 +223,10 @@ export default async function Home() {
                   : null
               }
             />
-          </div>
 
-          <div className="flex flex-col gap-[18px] lg:w-[296px] lg:shrink-0">
-            <ComingUpCard touches={comingUp} />
+            <div className="lg:col-start-2 lg:row-span-4 lg:row-start-1">
+              <ComingUpCard touches={comingUp} />
+            </div>
 
             <section className={`${CARD} flex flex-col gap-[11px] px-5 py-[18px]`}>
               <h2 className="text-base font-bold tracking-[-0.015em]">Seen once</h2>
@@ -243,9 +249,7 @@ export default async function Home() {
                 </p>
               )}
             </section>
-          </div>
         </div>
-
       </main>
     </AppShell>
   );
@@ -340,7 +344,7 @@ function PersonRow({ person, line, daysClass, draftHref }: Row) {
           {/* The name stretches over the whole row, and the row fades while the contact opens (RowLink). */}
           <RowLink
             href={`/contacts/${contact.id}`}
-            className="truncate text-base font-semibold tracking-[-0.01em]"
+            className="break-words text-base font-semibold tracking-[-0.01em]"
           >
             {name}
           </RowLink>
@@ -375,7 +379,7 @@ function PersonRow({ person, line, daysClass, draftHref }: Row) {
           {draftHref && (
             <Link
               href={draftHref}
-              className="relative z-10 rounded-full bg-ink-deep px-3.5 py-[13px] text-xs font-semibold text-white transition hover:bg-ink/85 sm:py-[7px] sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 sm:no-hover:opacity-100"
+              className="relative z-10 whitespace-nowrap rounded-full bg-ink-deep px-3.5 py-3.5 text-xs font-semibold text-white transition hover:bg-ink/85 sm:py-[7px] sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 sm:no-hover:opacity-100"
             >
               Draft reply
             </Link>
@@ -426,7 +430,7 @@ function ComingUpCard({ touches }: { touches: ComingUp<ContactRow>[] }) {
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <RowLink
                     href={`/contacts/${touch.contact.id}`}
-                    className="truncate text-sm font-semibold tracking-[-0.01em] link-action"
+                    className="break-words text-sm font-semibold tracking-[-0.01em] link-action"
                   >
                     {displayName(touch.contact)}
                   </RowLink>

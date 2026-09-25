@@ -70,7 +70,7 @@ export function ConversationDoneButton({
             ? "Marked done. Undo it from the line at the foot of the screen."
             : "Nothing more is owed here, so it stops asking you about it"
         }
-        className={`rounded-full px-3.5 py-[13px] text-xs font-semibold transition disabled:cursor-default sm:py-2 ${
+        className={`whitespace-nowrap rounded-full px-3.5 py-3.5 text-xs font-semibold transition disabled:cursor-default sm:py-2 ${
           done
             ? "bg-line-soft text-ink-soft"
             : "bg-line-soft text-ink-body hover:bg-chip-track disabled:opacity-50"

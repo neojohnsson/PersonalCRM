@@ -110,7 +110,10 @@ export function ContactForm({
       action={formAction}
       noValidate
       onInput={() => setDirty(true)}
-      className="flex max-w-2xl flex-col gap-4"
+      // Centred, in three groups, with the buttons held at the bottom of the
+      // screen (UI quality pass, milestone 5): it was six cards for ten
+      // fields, left-aligned in a wide page, with Save below the fold.
+      className="mx-auto flex w-full max-w-2xl flex-col gap-4"
     >
       {errors.form && (
         <p
@@ -121,14 +124,11 @@ export function ContactForm({
         </p>
       )}
 
-      <Section title="Name">
+      <Section title="Who they are">
         <div className="grid gap-3 sm:grid-cols-2">
           <TextInput name="first_name" label="First name" values={values} errors={errors} />
           <TextInput name="last_name" label="Last name" values={values} errors={errors} />
         </div>
-      </Section>
-
-      <Section title="Work">
         <div className="grid gap-3 sm:grid-cols-2">
           <TextInput name="company" label="Company" values={values} errors={errors} />
           <TextInput name="role" label="Role" values={values} errors={errors} />
@@ -180,21 +180,18 @@ export function ContactForm({
         <TextInput name="phone" label="Phone" type="tel" values={values} errors={errors} />
       </Section>
 
-      <Section title="How you know them">
+      <Section title="About them">
         <TextArea
           name="how_known"
           label="How you know them"
-          hideLabel
           rows={3}
           values={values}
           errors={errors}
           placeholder="Met after the guest lecture at LNU in March"
         />
-      </Section>
 
-      <Section title="Tags">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="tags" className="sr-only">
+          <label htmlFor="tags" className={LABEL}>
             Tags
           </label>
           <input
@@ -214,13 +211,16 @@ export function ContactForm({
             </p>
           )}
         </div>
+
+        {/* #notes: the contact page's "Add note" lands here. */}
+        <div id="notes" className="scroll-mt-4">
+          <TextArea name="notes" label="Notes" rows={6} values={values} errors={errors} />
+        </div>
       </Section>
 
-      <Section title="Notes" id="notes">
-        <TextArea name="notes" label="Notes" hideLabel rows={6} values={values} errors={errors} />
-      </Section>
-
-      <div className="flex items-center gap-4">
+      {/* Held at the bottom of the screen while the form scrolls; on a phone,
+          above the bottom bar (58px, plus the safe area) rather than under it. */}
+      <div className="sticky bottom-[calc(58px+env(safe-area-inset-bottom))] z-20 -mx-4 flex items-center gap-4 border-t border-line bg-paper px-4 py-3 sm:bottom-0 sm:mx-0 sm:rounded-xl sm:border sm:px-[22px]">
         <button
           type="submit"
           disabled={pending}
