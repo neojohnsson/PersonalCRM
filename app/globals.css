@@ -58,6 +58,9 @@
   /* The sidebar's own colour, apart from ink-deep: Night makes the dark
      buttons a raised grey, and the sidebar must stay dark. */
   --theme-rail: #17181a;
+  /* The rail's right-hand line: none in Paper, where dark on light is edge
+     enough; Night gives it one (UI quality pass, milestone 2). */
+  --theme-rail-edge: transparent;
   /* The design's six avatar pairs (lib/format.ts), as variables so a theme
      can mute them. */
   --avatar-1-bg: #e8eef7;
@@ -192,6 +195,7 @@ html {
   --color-rail-icon: var(--theme-rail-icon);
   --color-rail-avatar: var(--theme-rail-avatar);
   --color-rail: var(--theme-rail);
+  --color-rail-edge: var(--theme-rail-edge);
   /* The logo tile stays white in every theme: the rail is dark in all of
      them, and Night's .bg-white repaint made the "C" disappear. */
   --color-rail-logo: #ffffff;
@@ -207,9 +211,15 @@ html {
  *   page     #161618   the canvas
  *   surface  #1e1f22   every card, the bar, the menus
  *   raised   #28292d   chips, bubbles, hover, the selected row, dark buttons
- *   line     #2a2b2f   one border colour, just visible; #34363b for outlines
+ *   line     #34363c   one border colour; #3f4147 for outlines
  *
  * No shadow anywhere: on dark, a shadow reads as a hard rim, not depth.
+ *
+ * Structure without shadows (UI quality pass, milestone 2, 2026-09-25): a
+ * card on the page is 1.10:1, which nobody sees, so every card gets a 1px
+ * edge in the one line colour instead (the rule below the tokens), and the
+ * rail gets its own darker tone and a right-hand line. The line was #2a2b2f,
+ * 1.17:1 on a card; #34363c is 1.36:1, visible without being sharp.
  */
 :root[data-theme="night"] {
   color-scheme: dark;
@@ -220,9 +230,9 @@ html {
   --theme-paper-tint: #232427;
   --theme-chip: #28292d;
   --theme-chip-track: #28292d;
-  --theme-line: #2a2b2f;
-  --theme-line-soft: #2a2b2f;
-  --theme-line-strong: #34363b;
+  --theme-line: #34363c;
+  --theme-line-soft: #34363c;
+  --theme-line-strong: #3f4147;
   --theme-ink: #ececec;
   --theme-ink-body: #c8c8cc;
   /* The same four text roles. Meta is measured on the RAISED tone, not the
@@ -233,7 +243,8 @@ html {
   --theme-ink-meta: #909196;
   /* The dark pill buttons: raised grey with white words, not a hole. */
   --theme-ink-deep: #33343a;
-  --theme-rail: #111112;
+  --theme-rail: #0d0d0f;
+  --theme-rail-edge: #2c2d32;
   --theme-rail-active: #28292d;
   --theme-rail-icon: #8e8f95;
   --theme-rail-avatar: #3a3b40;
@@ -269,6 +280,9 @@ html {
   --avatar-5-ink: #8fcfc9;
   --avatar-6-bg: #32291d;
   --avatar-6-ink: #e2bd84;
+  /* The scrollbar: Paper's light-grey thumb was left on the dark page. */
+  --scrollbar-thumb: #3a3b40;
+  --scrollbar-thumb-hover: #4a4b51;
 }
 
 /* Night's surfaces: every white card and paper strip takes Night's tones. */
@@ -282,9 +296,21 @@ html {
 
 /* No shadows in Night: Tailwind's shadow utilities all draw through
    --tw-shadow, so emptying it removes every one without naming them.
-   Focus rings are drawn separately and stay. */
+   Focus rings are drawn separately and stay. So do inset rings: an outline
+   is drawn with inset-ring-*, never with an inset shadow, or Night would
+   erase it with the shadows (the Profile radios lost theirs until 2026-09-25). */
 :root[data-theme="night"] * {
   --tw-shadow: 0 0 #0000 !important;
+}
+
+/* ...and in their place, an edge. Every white surface that had a shadow --
+   the cards, menus, chips and buttons that sat on the page by their shadow
+   in Paper -- gets a 1px line in Night's one line colour, drawn inside it so
+   nothing moves. One rule rather than a class on each of 79 elements. Left
+   out: a surface that already has a full border (the theme menu), which
+   would otherwise get two. */
+:root[data-theme="night"] .bg-white[class*="shadow-"]:not([class~="border"]) {
+  --tw-inset-ring-shadow: inset 0 0 0 1px var(--theme-line);
 }
 
 body {

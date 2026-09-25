@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { THEME_COLOR } from "@/lib/theme";
 
 // Studio was removed 2026-09-25 (UI quality pass): it was Paper with another
 // accent. Someone who had chosen it is back on Paper.
@@ -75,4 +76,5 @@ function storedTheme(): Theme {
 
 function applyTheme(theme: Theme) {
   document.documentElement.setAttribute("data-theme", theme);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", THEME_COLOR[theme]);
 }

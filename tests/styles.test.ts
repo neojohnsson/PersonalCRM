@@ -55,6 +55,32 @@ describe("the themes", () => {
     for (let n = 1; n <= 6; n += 1) expect(night).toContain(`--avatar-${n}-bg:`);
   });
 
+  it("give Night its structure with edges instead of shadows", () => {
+    // UI quality pass, milestone 2 (2026-09-25): a card on the page is
+    // 1.10:1, so without shadows Night was one flat field. Every surface
+    // that had a shadow gets a 1px edge in the one line colour instead.
+    expect(css).toMatch(
+      /:root\[data-theme="night"\] \.bg-white\[class\*="shadow-"\]:not\(\[class~="border"\]\) \{\s*--tw-inset-ring-shadow: inset 0 0 0 1px var\(--theme-line\);/,
+    );
+    const night = block(':root[data-theme="night"]');
+    // The rail is its own plane, with its own line.
+    expect(night).toMatch(/--theme-rail-edge: #[0-9a-f]{6};/);
+    expect(readFileSync("app/app-shell.tsx", "utf8")).toContain("border-r border-rail-edge bg-rail");
+    // The scrollbar is Night's, not Paper's light thumb on a dark page.
+    expect(night).toContain("--scrollbar-thumb:");
+  });
+
+  it("draw outlines with rings, never with inset shadows, which Night erases", () => {
+    const files = (dir: string): string[] =>
+      readdirSync(dir).flatMap((name) => {
+        const path = join(dir, name);
+        return statSync(path).isDirectory() ? files(path) : /\.tsx$/.test(name) ? [path] : [];
+      });
+    for (const file of files("app")) {
+      expect(readFileSync(file, "utf8"), file).not.toMatch(/shadow-\[inset_/);
+    }
+  });
+
   it("leave no colour written into a class where a theme cannot reach it", () => {
     // text-[#7c3a12] was in three files; a theme cannot change a colour that
     // is not a token.

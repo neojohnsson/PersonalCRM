@@ -239,8 +239,8 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
                     }}
                     className={`flex flex-col gap-[5px] rounded-[14px] px-3.5 py-3 text-left transition ${
                       on
-                        ? "bg-white shadow-[inset_0_0_0_1.5px_var(--color-ink-deep)]"
-                        : "bg-paper-tint shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white"
+                        ? "bg-white inset-ring-[1.5px] inset-ring-ink-deep"
+                        : "bg-paper-tint inset-ring-[1px] inset-ring-line hover:bg-white"
                     }`}
                   >
                     <span className="flex items-center gap-2">
@@ -248,8 +248,8 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
                         aria-hidden="true"
                         className={`size-3.5 shrink-0 rounded-full ${
                           on
-                            ? "shadow-[inset_0_0_0_4.5px_var(--color-ink-deep)]"
-                            : "shadow-[inset_0_0_0_1.5px_var(--color-radio-ring)]"
+                            ? "inset-ring-[4.5px] inset-ring-ink-deep"
+                            : "inset-ring-[1.5px] inset-ring-radio-ring"
                         }`}
                       />
                       <span className="text-[13.5px] font-semibold tracking-[-0.01em]">{option.name}</span>
@@ -340,7 +340,7 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
                         setNeverWrite([...neverWrite, phrase]);
                         saveSoon();
                       }}
-                      className="rounded-full px-[11px] py-[5px] text-[12px] font-medium text-ink-soft shadow-[inset_0_0_0_1px_var(--color-line)] hover:text-ink"
+                      className="rounded-full px-[11px] py-[5px] text-[12px] font-medium text-ink-soft inset-ring-[1px] inset-ring-line hover:text-ink"
                     >
                       + “{phrase}”
                     </button>
@@ -496,7 +496,7 @@ function ChipList({
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="flex items-center gap-[5px] rounded-full px-[11px] py-[5px] text-[12px] font-semibold text-ink-soft shadow-[inset_0_0_0_1px_var(--color-line)] hover:text-ink"
+          className="flex items-center gap-[5px] rounded-full px-[11px] py-[5px] text-[12px] font-semibold text-ink-soft inset-ring-[1px] inset-ring-line hover:text-ink"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" className="size-[11px]">
             <path d="M12 5v14M5 12h14" />
