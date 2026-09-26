@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { visiblePages, type ActivePage } from "@/lib/nav";
 import { createClient } from "@/lib/supabase/server";
 import { ShellFrame } from "@/app/shell-frame";
+import { RememberEmail } from "@/app/shell-memory";
 
 /**
  * The frame around signed-in pages: who you are, and which pages you have,
@@ -32,8 +33,11 @@ export async function AppShell({
   const user = await requireUser();
   const pages = visiblePages(await hasAssistant(await createClient(), user.id));
 
+  // RememberEmail leaves the address in the browser for the next page's
+  // loading skeleton, so the avatar stays put while it loads (shell-memory.tsx).
   return (
     <ShellFrame pages={pages} active={active} seenOnceCount={seenOnceCount} userEmail={userEmail} headerRight={headerRight}>
+      <RememberEmail email={userEmail} />
       {children}
     </ShellFrame>
   );
