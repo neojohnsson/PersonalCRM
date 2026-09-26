@@ -6,6 +6,7 @@ import { undoAssistantAction } from "@/app/assistant/actions";
 import { Composer } from "@/app/assistant/composer";
 import { NeedsYouCard } from "@/app/assistant/needs-you";
 import { PausedCard, type Tally } from "@/app/assistant/paused-card";
+import { boldParts } from "@/lib/assistant/bold";
 import type { ConverseEvent, Said } from "@/lib/assistant/converse";
 import type { Proposal } from "@/lib/assistant/tools";
 
@@ -354,10 +355,16 @@ function EntryView({
         </div>
       );
     case "said":
+      // The Assistant's **bold**, drawn as bold (lib/assistant/bold.ts).
+      // Yours above is left exactly as you typed it.
       return (
         <div className="flex max-w-[900px] items-start gap-[11px]">
           <Spark />
-          <p className="text-sm whitespace-pre-wrap">{entry.text}</p>
+          <p className="text-sm whitespace-pre-wrap">
+            {boldParts(entry.text).map((part, index) =>
+              part.bold ? <strong key={index}>{part.text}</strong> : part.text,
+            )}
+          </p>
         </div>
       );
     case "done":
