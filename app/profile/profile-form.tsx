@@ -37,10 +37,10 @@ import { saveProfileAction, type ProfileState } from "./actions";
  */
 
 const CARD =
-  "flex flex-col gap-3.5 rounded-[18px] bg-white px-[22px] pt-[18px] pb-5 shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
-const FIELD_LABEL = "text-[11.5px] font-semibold text-ink-muted";
+  "flex flex-col gap-3.5 rounded-xl bg-white px-[22px] pt-[18px] pb-5 shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
+const FIELD_LABEL = "text-xs font-semibold text-ink-soft";
 const INPUT =
-  "w-full rounded-[11px] border border-line bg-paper-tint px-3 py-[9px] text-[13.5px] leading-[1.5] text-ink outline-none transition placeholder:text-ink-hush focus:border-ink-faint focus:bg-white focus:ring-2 focus:ring-ink/10 aria-invalid:border-accent";
+  "w-full rounded-lg border border-line bg-paper-tint px-3 py-[9px] text-sm text-ink transition placeholder:text-ink-soft focus:border-ink-soft focus:bg-white aria-invalid:border-accent";
 
 const TONE_OPTIONS: { value: Tone; name: string; description: string; example: string }[] = [
   {
@@ -109,7 +109,7 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
       ? { dot: "bg-accent", text: "Not saved — see the marked fields" }
       : state.savedAt
         ? { dot: "bg-affirm", text: `Saved ${timeAgo(state.savedAt)}` }
-        : { dot: "bg-ink-faint", text: "Not saved yet" };
+        : { dot: "bg-ink-soft", text: "Not saved yet" };
 
   const textField = (name: ProfileTextField, label: string, options: { rows?: number; placeholder?: string } = {}) => {
     const common = {
@@ -131,7 +131,7 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
           {label}
         </label>
         {options.rows ? (
-          <textarea {...common} rows={options.rows} className={`${INPUT} resize-y`} />
+          <textarea {...common} rows={options.rows} className={`${INPUT} min-h-24 resize-none field-sizing-content`} />
         ) : (
           <input
             {...common}
@@ -167,21 +167,21 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
       <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
         <span
           aria-hidden="true"
-          className="flex size-16 shrink-0 items-center justify-center rounded-full bg-rail-avatar text-[21px] font-bold text-white"
+          className="flex size-16 shrink-0 items-center justify-center rounded-full bg-rail-avatar text-lg font-bold text-white"
         >
           {initials(displayName.trim() || null, email)}
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-[5px]">
-          <h1 className="text-[27px] leading-[1.1] font-bold tracking-[-0.035em] break-words">
+          <h1 className="text-xl font-bold tracking-[-0.035em] break-words">
             {displayName.trim() || "Your profile"}
           </h1>
-          <p className="text-[14px] font-medium text-ink-muted">
+          <p className="text-base font-normal text-ink-soft">
             What your drafts know about you. Nothing here goes to the AI until you ask for a draft.
           </p>
         </div>
         <div role="status" className="flex shrink-0 items-center gap-2">
           <span aria-hidden="true" className={`size-1.5 rounded-full ${status.dot}`} />
-          <span className="text-[12.5px] font-medium text-ink-quiet">{status.text}</span>
+          <span className="text-sm font-normal text-ink-soft">{status.text}</span>
         </div>
       </div>
 
@@ -210,7 +210,7 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
                     saveSoon();
                   }}
                 />
-                <span className="text-[11.5px] leading-[1.45] text-ink-faint">
+                <span className="text-xs text-ink-soft">
                   A draft is written in the language of the thread it answers.
                 </span>
                 <FieldError message={errors.languages} />
@@ -237,10 +237,10 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
                       setTone(option.value);
                       saveSoon();
                     }}
-                    className={`flex flex-col gap-[5px] rounded-[14px] px-3.5 py-3 text-left transition ${
+                    className={`flex flex-col gap-[5px] rounded-xl px-3.5 py-3 text-left transition ${
                       on
-                        ? "bg-white shadow-[inset_0_0_0_1.5px_var(--color-ink-deep)]"
-                        : "bg-paper-tint shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white"
+                        ? "bg-white inset-ring-[1.5px] inset-ring-ink-deep"
+                        : "bg-paper-tint inset-ring-[1px] inset-ring-line hover:bg-white"
                     }`}
                   >
                     <span className="flex items-center gap-2">
@@ -248,14 +248,14 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
                         aria-hidden="true"
                         className={`size-3.5 shrink-0 rounded-full ${
                           on
-                            ? "shadow-[inset_0_0_0_4.5px_var(--color-ink-deep)]"
-                            : "shadow-[inset_0_0_0_1.5px_var(--color-radio-ring)]"
+                            ? "inset-ring-[4.5px] inset-ring-ink-deep"
+                            : "inset-ring-[1.5px] inset-ring-radio-ring"
                         }`}
                       />
-                      <span className="text-[13.5px] font-semibold tracking-[-0.01em]">{option.name}</span>
+                      <span className="text-sm font-semibold tracking-[-0.01em]">{option.name}</span>
                     </span>
-                    <span className="text-[12px] leading-[1.4] text-ink-soft">{option.description}</span>
-                    <span className="text-[12px] leading-[1.45] text-ink-faint">{option.example}</span>
+                    <span className="text-xs text-ink-soft">{option.description}</span>
+                    <span className="text-xs text-ink-soft">{option.example}</span>
                   </button>
                 );
               })}
@@ -293,7 +293,7 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
               </SettingRow>
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between gap-4">
-                  <label htmlFor="profile-sign_off" className="text-[13px] font-semibold tracking-[-0.01em]">
+                  <label htmlFor="profile-sign_off" className="text-sm font-semibold tracking-[-0.01em]">
                     Sign off with
                   </label>
                   <input
@@ -307,7 +307,7 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
                     onBlur={(event) => {
                       if (event.currentTarget.value.trim() !== (state.profile.sign_off ?? "")) save();
                     }}
-                    className={`${INPUT} max-w-[230px] py-1.5 text-[12.5px]`}
+                    className={`${INPUT} max-w-[230px] py-1.5 text-sm`}
                   />
                 </div>
                 <FieldError message={errors.sign_off} />
@@ -317,7 +317,7 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
             <div aria-hidden="true" className="h-px bg-line" />
 
             <div className="flex flex-col gap-2">
-              <span className="text-[13px] font-semibold tracking-[-0.01em]">Never write</span>
+              <span className="text-sm font-semibold tracking-[-0.01em]">Never write</span>
               <ChipList
                 items={neverWrite}
                 addLabel="Add"
@@ -331,7 +331,7 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
               />
               {COMMON_AI_PHRASES.some((phrase) => !neverWrite.includes(phrase)) && (
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-[11.5px] text-ink-faint">Common AI phrases:</span>
+                  <span className="text-xs text-ink-soft">Common AI phrases:</span>
                   {COMMON_AI_PHRASES.filter((phrase) => !neverWrite.includes(phrase)).map((phrase) => (
                     <button
                       key={phrase}
@@ -340,7 +340,7 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
                         setNeverWrite([...neverWrite, phrase]);
                         saveSoon();
                       }}
-                      className="rounded-full px-[11px] py-[5px] text-[12px] font-medium text-ink-muted shadow-[inset_0_0_0_1px_var(--color-line)] hover:text-ink"
+                      className="rounded-full px-[11px] py-[5px] text-xs font-normal text-ink-soft inset-ring-[1px] inset-ring-line hover:text-ink"
                     >
                       + “{phrase}”
                     </button>
@@ -362,7 +362,7 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
               onBlurField={save}
             />
             <FieldError message={errors.links} />
-            <p className="text-[11.5px] leading-[1.5] font-medium text-ink-faint">
+            <p className="text-xs font-normal text-ink-soft">
               The AI only sees the address. The app never opens these pages &mdash; LinkedIn is not
               read or scraped. If you want what is on your LinkedIn profile to reach a draft, put
               it in &ldquo;What you do&rdquo; and &ldquo;What you&rsquo;re looking for&rdquo;
@@ -378,8 +378,8 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
 function CardHeading({ title, caption }: { title: string; caption: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">{title}</h2>
-      <span className="text-[11.5px] font-semibold text-ink-faint">{caption}</span>
+      <h2 className="text-base font-bold tracking-[-0.015em]">{title}</h2>
+      <span className="text-xs font-semibold text-ink-soft">{caption}</span>
     </div>
   );
 }
@@ -387,7 +387,7 @@ function CardHeading({ title, caption }: { title: string; caption: string }) {
 function SettingRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-      <span className="text-[13px] font-semibold tracking-[-0.01em]">{label}</span>
+      <span className="text-sm font-semibold tracking-[-0.01em]">{label}</span>
       {children}
     </div>
   );
@@ -415,10 +415,10 @@ function Segmented<T extends string>({
             role="radio"
             aria-checked={on}
             onClick={() => onChange(option.value)}
-            className={`rounded-full px-[13px] py-[5px] text-[11.5px] transition-colors ${
+            className={`rounded-full px-[13px] py-[5px] text-xs transition-colors ${
               on
                 ? "bg-white font-semibold text-ink shadow-[0_1px_2px_rgba(20,20,25,.06)]"
-                : "font-medium text-ink-faint hover:text-ink-soft"
+                : "font-normal text-ink-soft hover:text-ink-soft"
             }`}
           >
             {option.label}
@@ -459,14 +459,14 @@ function ChipList({
       {items.map((item) => (
         <span
           key={item}
-          className="flex items-center gap-1.5 rounded-full bg-line-soft py-[5px] pr-2 pl-[11px] text-[12px] font-medium text-ink-body"
+          className="flex items-center gap-1.5 rounded-full bg-line-soft py-[5px] pr-2 pl-[11px] text-xs font-normal text-ink-body"
         >
           {quote ? `“${item}”` : item}
           <button
             type="button"
             onClick={() => onChange(items.filter((other) => other !== item))}
             aria-label={`Remove ${item}`}
-            className="text-ink-faint hover:text-ink"
+            className="text-ink-soft hover:text-ink"
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" className="size-3">
               <path d="M7 7l10 10M17 7 7 17" />
@@ -490,13 +490,13 @@ function ChipList({
             }
           }}
           onBlur={(event) => add(event.currentTarget.value)}
-          className="w-40 rounded-full border border-line-strong bg-white px-[11px] py-1 text-[12px] outline-none focus:ring-2 focus:ring-ink/10"
+          className="w-40 rounded-full border border-line-strong bg-white px-[11px] py-1 text-xs"
         />
       ) : (
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="flex items-center gap-[5px] rounded-full px-[11px] py-[5px] text-[12px] font-semibold text-ink-muted shadow-[inset_0_0_0_1px_var(--color-line)] hover:text-ink"
+          className="flex items-center gap-[5px] rounded-full px-[11px] py-[5px] text-xs font-semibold text-ink-soft inset-ring-[1px] inset-ring-line hover:text-ink"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" className="size-[11px]">
             <path d="M12 5v14M5 12h14" />
@@ -528,7 +528,7 @@ function LinkList({
     );
 
   const plainInput =
-    "w-full min-w-0 rounded-md border border-transparent bg-transparent px-1 -mx-1 outline-none hover:border-line focus:border-ink-faint focus:bg-white";
+    "w-full min-w-0 rounded-lg border border-transparent bg-transparent px-1 -mx-1 hover:border-line focus:border-ink-soft focus:bg-white";
 
   return (
     <div className="flex flex-col">
@@ -539,7 +539,7 @@ function LinkList({
           className="flex items-center gap-3 border-t border-line-soft py-2.5 first:border-t-0 first:pt-0"
         >
           <input type="hidden" name="link_in_signature" value={String(link.in_signature)} />
-          <span aria-hidden="true" className="flex size-[30px] shrink-0 items-center justify-center rounded-[9px] bg-line-soft text-ink-soft">
+          <span aria-hidden="true" className="flex size-[30px] shrink-0 items-center justify-center rounded-lg bg-line-soft text-ink-soft">
             <LinkIcon label={link.label} />
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-px">
@@ -551,7 +551,7 @@ function LinkList({
               maxLength={PROFILE_LIMITS.link_label}
               onChange={(event) => update(index, { label: event.currentTarget.value }, false)}
               onBlur={onBlurField}
-              className={`${plainInput} text-[13px] font-semibold tracking-[-0.01em] placeholder:font-medium placeholder:text-ink-hush`}
+              className={`${plainInput} text-sm font-semibold tracking-[-0.01em] placeholder:font-normal placeholder:text-ink-soft`}
             />
             <input
               name="link_url"
@@ -561,7 +561,7 @@ function LinkList({
               maxLength={PROFILE_LIMITS.link_url}
               onChange={(event) => update(index, { url: event.currentTarget.value }, false)}
               onBlur={onBlurField}
-              className={`${plainInput} truncate text-[12px] text-ink-muted placeholder:text-ink-hush`}
+              className={`${plainInput} truncate text-xs text-ink-soft placeholder:text-ink-soft`}
             />
           </div>
           <button
@@ -585,7 +585,7 @@ function LinkList({
             type="button"
             onClick={() => onChange(links.filter((_, i) => i !== index), true)}
             aria-label={`Remove ${link.label || "this link"}`}
-            className="text-ink-faint hover:text-ink"
+            className="text-ink-soft hover:text-ink"
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" className="size-3.5">
               <path d="M7 7l10 10M17 7 7 17" />
@@ -598,9 +598,9 @@ function LinkList({
           <button
             type="button"
             onClick={() => onChange([...links, { label: "", url: "", in_signature: false }], false)}
-            className="flex items-center gap-1.5 rounded-full bg-line-soft px-[13px] py-[7px] text-[12px] font-semibold text-ink-body transition-colors hover:bg-chip-track"
+            className="flex items-center gap-1.5 rounded-full bg-line-soft px-[13px] py-[7px] text-xs font-semibold text-ink-body transition-colors hover:bg-chip-track"
           >
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" className="size-3 text-ink-muted">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" className="size-3 text-ink-soft">
               <path d="M12 5v14M5 12h14" />
             </svg>
             Add link
@@ -636,7 +636,7 @@ function LinkIcon({ label }: { label: string }) {
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <p role="alert" className="text-[12px] font-medium text-accent">
+    <p role="alert" className="text-xs font-normal text-accent">
       {message}
     </p>
   );

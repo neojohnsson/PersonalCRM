@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
+import { RowLink } from "@/app/nav-pending";
 import { ConversationDoneButton } from "@/app/conversation-done-button";
 import { CARD, EmptyCard, StatusLine } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
@@ -46,8 +47,8 @@ export const metadata = { title: `Who needs you today · ${APP_NAME}` };
  *     (lib/sync/describe.ts has the same reason).
  *   - The temporary Sync now pill sits beside the date (slice-1-plan.md,
  *     decision 5). The header's search and bell are left out as on the other
- *     pages; its centred page switcher arrived in slice 9b
- *     (app/app-shell.tsx).
+ *     pages; its centred page switcher arrived in slice 9b and left again
+ *     in the UI quality pass, milestone 3 (app/app-shell.tsx).
  */
 
 const YOUR_TURN_ROWS = 8;
@@ -63,7 +64,7 @@ type ContactRow = {
 };
 
 const DARK_PILL =
-  "flex items-center gap-[7px] rounded-full bg-ink-deep px-4 py-[9px] text-[12.5px] font-semibold text-white transition hover:bg-ink/85";
+  "flex items-center gap-[7px] rounded-full bg-ink-deep px-4 py-[9px] text-sm font-semibold text-white transition hover:bg-ink/85";
 
 export default async function Home() {
   const user = await requireUser();
@@ -81,13 +82,13 @@ export default async function Home() {
     return (
       <AppShell userEmail={user.email} active="home" headerRight={<SignOutButton />}>
         <main className="flex flex-1 flex-col gap-[22px] px-4 pt-2 pb-[30px] sm:px-[30px]">
-          <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.035em]">Who needs you today</h1>
+          <h1 className="text-2xl font-bold tracking-[-0.035em]">Who needs you today</h1>
           <EmptyCard title="Connect Gmail to begin">
             <p>
               Once Gmail is connected, this page shows who is waiting on a reply from you, whose
               threads are going quiet, and who you meant to get back to.
             </p>
-            <Link href="/connect" className={`${DARK_PILL} mt-5 self-start`}>
+            <Link href="/connect" className={`${DARK_PILL} mt-5 self-center`}>
               Connect Gmail
             </Link>
           </EmptyCard>
@@ -150,7 +151,7 @@ export default async function Home() {
       seenOnceCount={seenOnce}
       headerRight={
         <>
-          <span className="hidden text-[13px] text-ink-faint lg:inline">{gmail.email}</span>
+          <span className="hidden text-sm text-ink-soft lg:inline">{gmail.email}</span>
           <SignOutButton />
         </>
       }
@@ -158,15 +159,15 @@ export default async function Home() {
       <main className="flex flex-1 flex-col gap-[22px] px-4 pt-2 pb-[30px] sm:px-[30px]">
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div className="flex flex-col gap-2">
-            <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.035em]">Who needs you today</h1>
+            <h1 className="text-2xl font-bold tracking-[-0.035em]">Who needs you today</h1>
             <StatusLine line={describeSync(sync, contacts.length, now)} />
           </div>
           <div className="flex items-center gap-3 pb-1">
-            <p className="text-[13px] font-medium text-ink-faint">{weekdayDayMonth(now)}</p>
+            <p className="text-sm font-normal text-ink-soft">{weekdayDayMonth(now)}</p>
             {sync?.status === "needs_reconnect" ? (
               <Link
                 href="/connect"
-                className="rounded-full bg-white px-[14px] py-2 text-[12.5px] font-semibold shadow-[0_1px_2px_rgba(20,20,25,.04)] hover:bg-paper-tint"
+                className="rounded-full bg-white px-[14px] py-2 text-sm font-semibold shadow-[0_1px_2px_rgba(20,20,25,.04)] hover:bg-paper-tint"
               >
                 Reconnect Gmail
               </Link>
@@ -176,8 +177,14 @@ export default async function Home() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-5 lg:flex-row">
-          <div className="flex min-w-0 flex-1 flex-col gap-[18px]">
+        {/* One grid, not two columns (UI quality pass, milestone 5). With the
+            usual two or three people, the left column ended at a third of the
+            page while Coming up and Seen once ran on down the right. Seen once
+            now sits under Going quiet on a wide screen, and Coming up has the
+            right to itself; its span ends in a 1fr row that takes the slack,
+            so a long Coming up does not push the left cards apart. On a phone
+            the order is unchanged: Your turn, Going quiet, Coming up, Seen once. */}
+        <div className="flex flex-col gap-[18px] lg:grid lg:grid-cols-[minmax(0,1fr)_296px] lg:grid-rows-[auto_auto_auto_1fr] lg:items-start lg:gap-x-5">
             <PeopleCard
               title="Your turn"
               dot="bg-accent"
@@ -202,13 +209,13 @@ export default async function Home() {
 
             <PeopleCard
               title="Going quiet"
-              dot="bg-ink-faint"
+              dot="bg-ink-soft"
               subtitle="You spoke last and nothing came back"
               empty="Nothing yet. A thread shows up here when you wrote last and two weeks pass without an answer."
               rows={quiet.slice(0, GOING_QUIET_ROWS).map((person) => ({
                 person,
                 line: quietLine(person),
-                daysClass: "text-ink-faint",
+                daysClass: "text-ink-soft",
               }))}
               more={
                 quiet.length > GOING_QUIET_ROWS
@@ -216,35 +223,33 @@ export default async function Home() {
                   : null
               }
             />
-          </div>
 
-          <div className="flex flex-col gap-[18px] lg:w-[296px] lg:shrink-0">
-            <ComingUpCard touches={comingUp} />
+            <div className="lg:col-start-2 lg:row-span-4 lg:row-start-1">
+              <ComingUpCard touches={comingUp} />
+            </div>
 
             <section className={`${CARD} flex flex-col gap-[11px] px-5 py-[18px]`}>
-              <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Seen once</h2>
+              <h2 className="text-base font-bold tracking-[-0.015em]">Seen once</h2>
               {seenOnce > 0 ? (
                 <>
-                  <p className="text-[12.5px] leading-[1.5] text-ink-soft">
+                  <p className="text-sm text-ink-soft">
                     {countOf(seenOnce, "person", "people")} wrote to you — or you wrote to them — but
                     never both. They&rsquo;re waiting out of the way.
                   </p>
                   <Link
                     href="/seen-once"
-                    className="self-start rounded-full bg-chip px-4 py-[9px] text-[12.5px] font-semibold transition-colors hover:bg-chip-track"
+                    className="self-start rounded-full bg-chip px-4 py-[9px] text-sm font-semibold transition-colors hover:bg-chip-track"
                   >
                     Review them
                   </Link>
                 </>
               ) : (
-                <p className="text-[12.5px] leading-[1.5] text-ink-soft">
+                <p className="text-sm text-ink-soft">
                   Nobody waiting. People you&rsquo;ve only exchanged one-way mail with land here.
                 </p>
               )}
             </section>
-          </div>
         </div>
-
       </main>
     </AppShell>
   );
@@ -293,8 +298,8 @@ function PeopleCard({
     <section className={`${CARD} overflow-hidden`}>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 px-[22px] pt-[17px] pb-[13px]">
         <span aria-hidden="true" className={`size-[7px] rounded-full ${dot}`} />
-        <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">{title}</h2>
-        <span className="text-[12px] font-semibold text-ink-faint">{subtitle}</span>
+        <h2 className="text-base font-bold tracking-[-0.015em]">{title}</h2>
+        <span className="text-xs font-semibold text-ink-soft">{subtitle}</span>
       </div>
 
       {rows.length > 0 ? (
@@ -304,12 +309,12 @@ function PeopleCard({
           ))}
         </ul>
       ) : (
-        <p className="px-[22px] pb-[18px] text-[12.5px] leading-[1.5] text-ink-soft">{empty}</p>
+        <p className="px-[22px] pb-[18px] text-sm text-ink-soft">{empty}</p>
       )}
 
       {more && (
         <div className="border-t border-line-soft px-[22px] py-2.5">
-          <Link href={more.href} className="text-[11.5px] font-semibold text-ink-muted hover:text-ink">
+          <Link href={more.href} className="text-xs font-semibold text-ink-soft hover:text-ink">
             {more.text}
           </Link>
         </div>
@@ -326,31 +331,31 @@ function PersonRow({ person, line, daysClass, draftHref }: Row) {
   const days = relationship.turn.kind === "none" ? null : relationship.turn.days;
 
   return (
-    <li className="group relative flex flex-wrap items-center gap-x-[13px] gap-y-2.5 px-[22px] py-[11px] transition-colors hover:bg-paper-tint">
+    <li className="row-hover group relative flex flex-wrap items-center gap-x-[13px] gap-y-2.5 px-[22px] py-[11px]">
       <span
         aria-hidden="true"
         style={avatarColors(contact.primary_email ?? contact.id)}
-        className="flex size-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+        className="flex size-8 shrink-0 items-center justify-center rounded-full text-2xs font-bold"
       >
         {initials(hasName ? name : null, contact.primary_email ?? name)}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <div className="flex min-w-0 items-baseline gap-2">
-          {/* The link stretches over the whole row (after:inset-0). */}
-          <Link
+          {/* The name stretches over the whole row, and the row fades while the contact opens (RowLink). */}
+          <RowLink
             href={`/contacts/${contact.id}`}
-            className="truncate text-[14px] font-semibold tracking-[-0.01em] outline-none after:absolute after:inset-0 after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-ink/20 focus-visible:after:ring-inset"
+            className="break-words text-base font-semibold tracking-[-0.01em]"
           >
             {name}
-          </Link>
+          </RowLink>
           {contact.company && (
             // One line, ending in "…"; the full name on hover.
-            <span title={contact.company} className="hidden min-w-0 truncate text-[12.5px] text-ink-faint sm:inline">
+            <span title={contact.company} className="hidden min-w-0 truncate text-sm text-ink-soft sm:inline">
               {contact.company}
             </span>
           )}
         </div>
-        <span className="truncate text-[12.5px] text-ink-soft">{line}</span>
+        <span className="truncate text-sm text-ink-soft">{line}</span>
       </div>
       {/* Slice 6c: say the conversation is finished, without opening it.
           Shown with Draft reply, on the row under the pointer or keyboard
@@ -374,7 +379,7 @@ function PersonRow({ person, line, daysClass, draftHref }: Row) {
           {draftHref && (
             <Link
               href={draftHref}
-              className="relative z-10 rounded-full bg-ink-deep px-3.5 py-[13px] text-[12px] font-semibold text-white transition hover:bg-ink/85 sm:py-[7px] sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 sm:no-hover:opacity-100"
+              className="relative z-10 whitespace-nowrap rounded-full bg-ink-deep px-3.5 py-3.5 text-xs font-semibold text-white transition hover:bg-ink/85 sm:py-[7px] sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 sm:no-hover:opacity-100"
             >
               Draft reply
             </Link>
@@ -382,7 +387,7 @@ function PersonRow({ person, line, daysClass, draftHref }: Row) {
         </div>
       )}
       {days !== null && (
-        <span className={`w-[34px] shrink-0 text-right text-[12.5px] font-semibold tabular-nums ${daysClass}`}>
+        <span className={`w-[34px] shrink-0 text-right text-sm font-semibold tabular-nums ${daysClass}`}>
           {days === 0 ? "today" : `${days}d`}
         </span>
       )}
@@ -395,10 +400,10 @@ function ComingUpCard({ touches }: { touches: ComingUp<ContactRow>[] }) {
 
   return (
     <section className={`${CARD} flex flex-col gap-[15px] px-5 py-[18px]`}>
-      <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Coming up</h2>
+      <h2 className="text-base font-bold tracking-[-0.015em]">Coming up</h2>
 
       {shown.length === 0 ? (
-        <p className="-mt-1.5 text-[12.5px] leading-[1.5] text-ink-soft">
+        <p className="-mt-1.5 text-sm text-ink-soft">
           No next touches set. Give a contact one from their page, and it shows up here.
         </p>
       ) : (
@@ -409,38 +414,38 @@ function ComingUpCard({ touches }: { touches: ComingUp<ContactRow>[] }) {
             return (
               <li key={touch.id} className="relative flex items-start gap-3">
                 <div
-                  className={`flex w-10 shrink-0 flex-col items-center rounded-[10px] py-[5px] ${
+                  className={`flex w-10 shrink-0 flex-col items-center rounded-lg py-[5px] ${
                     due ? "bg-accent-tint text-accent" : "bg-chip"
                   }`}
                 >
-                  <span className="text-[14px] leading-[1.1] font-bold">{day.padStart(2, "0")}</span>
+                  <span className="text-base font-bold">{day.padStart(2, "0")}</span>
                   <span
-                    className={`text-[9.5px] font-semibold tracking-[0.05em] uppercase ${
-                      due ? "text-accent" : "text-ink-quiet"
+                    className={`text-2xs font-semibold tracking-[0.05em] uppercase ${
+                      due ? "text-accent" : "text-ink-meta"
                     }`}
                   >
                     {month}
                   </span>
                 </div>
                 <div className="flex min-w-0 flex-col gap-0.5">
-                  <Link
+                  <RowLink
                     href={`/contacts/${touch.contact.id}`}
-                    className="truncate text-[13.5px] font-semibold tracking-[-0.01em] outline-none after:absolute after:inset-0 after:content-[''] hover:text-ink-soft"
+                    className="break-words text-sm font-semibold tracking-[-0.01em] link-action"
                   >
                     {displayName(touch.contact)}
-                  </Link>
+                  </RowLink>
                   {/* Slice 9a: a reminder to check is not a thing to do. */}
                   {isWaitingKind(touch.kind) && (
-                    <span className="text-[11px] font-semibold tracking-[0.04em] text-info-ink uppercase">
+                    <span className="text-2xs font-semibold tracking-[0.04em] text-info-ink uppercase">
                       Waiting on them
                     </span>
                   )}
                   {touch.reason ? (
-                    <span className="text-[12px] leading-[1.4] break-words text-ink-soft">
+                    <span className="text-xs break-words text-ink-soft">
                       &ldquo;{touch.reason}&rdquo;
                     </span>
                   ) : (
-                    <span className="text-[12px] leading-[1.4] text-ink-hush">No reason written down</span>
+                    <span className="text-xs text-ink-soft">No reason written down</span>
                   )}
                 </div>
               </li>
@@ -454,7 +459,7 @@ function ComingUpCard({ touches }: { touches: ComingUp<ContactRow>[] }) {
         // the days you have planned are the contact list's "Planned" filter.
         <Link
           href="/contacts?filter=planned"
-          className="text-[11.5px] font-medium text-ink-faint transition-colors hover:text-ink"
+          className="text-xs font-normal text-ink-soft transition-colors hover:text-ink"
         >
           and {touches.length - shown.length} more later
         </Link>

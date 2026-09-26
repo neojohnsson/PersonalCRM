@@ -19,7 +19,7 @@ import { PAGES, visiblePages } from "@/lib/nav";
  * destructive button in a page header.
  */
 
-const SHELL = readFileSync("app/app-shell.tsx", "utf8");
+const SHELL = readFileSync("app/shell-frame.tsx", "utf8");
 
 function tsxFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -101,13 +101,20 @@ function sourceFiles(dir: string): string[] {
 }
 
 describe("the sidebar and the bottom bar", () => {
-  it("are both built from the same list, and so is the header's switcher", () => {
-    // The rail maps it, the bottom bar maps it, the switcher maps it. If one
-    // grows a hard-coded entry, they drift and a page goes missing from one.
-    // Since slice 11 it is the list filtered for this person -- still one list,
-    // worked out once in the shell and handed to all three.
-    expect(SHELL.match(/pages\.map\(/g)).toHaveLength(3);
-    expect(SHELL.match(/visiblePages\(/g)).toHaveLength(1);
+  it("are both built from the same list", () => {
+    // The rail maps it and the bottom bar maps it. If one grows a hard-coded
+    // entry, they drift and a page goes missing from one. Since slice 11 it
+    // is the list filtered for this person -- still one list, worked out once
+    // in the shell and handed to both. (The header's page switcher mapped it
+    // too, until the UI quality pass removed it.)
+    // The bottom bar leaves one out, Seen once, which folds into Contacts on
+    // a phone (UI quality pass, milestone 5): five items fit, six did not.
+    expect(SHELL.match(/pages(?:\s*\.filter\([\s\S]*?\))?\s*\.map\(/g)).toHaveLength(2);
+    expect(SHELL).toContain('.filter((page) => page.key !== "seen-once")');
+    // Worked out by AppShell for this person; the loading skeleton uses the
+    // same function for its frame (every plan has the Assistant).
+    expect(readFileSync("app/app-shell.tsx", "utf8").match(/visiblePages\(/g)).toHaveLength(1);
+    expect(readFileSync("app/skeletons.tsx", "utf8")).toContain("visiblePages(true)");
     for (const page of PAGES) {
       if (page.href === "/") continue;
       expect(SHELL.includes(`href="${page.href}"`), `${page.href} is hard-coded`).toBe(false);
@@ -129,17 +136,21 @@ describe("the sidebar and the bottom bar", () => {
     expect(SHELL).toContain('label="You"');
   });
 
-  it("has the header's page switcher, in words, on a wide enough window", () => {
-    // The designs carry it on five screens and it was left out of all of
-    // them until slice 9b. Words, not the icon variant: the same report that
-    // could not read the rail's icons would not read four more.
-    expect(SHELL).toContain("function PageSwitcher(");
-    expect(SHELL).toMatch(/\{page\.label\}/);
-    // Hidden below md, where it would sit under Sign out.
-    expect(SHELL).toMatch(/absolute left-1\/2 hidden[^"]*md:flex/);
-    // Two navigations both called "Pages" would read as one landmark twice.
-    expect(SHELL).toContain('aria-label="Switch page"');
+  it("has one navigation per screen, with a word under every icon on the rail too", () => {
+    // UI quality pass, milestone 3 (the user's decision, 2026-09-25): the
+    // header's page switcher and the rail held the same links on every
+    // desktop screen, so a screen reader heard them twice. The switcher went;
+    // its words, there because the first outside test could not tell the
+    // rail's icons apart, moved under the rail's icons.
+    expect(SHELL).not.toContain("function PageSwitcher(");
+    expect(SHELL).not.toContain('aria-label="Switch page"');
+    // The rail on a wide screen, the bottom bar on a phone: one landmark each.
+    expect(SHELL.match(/aria-label="Main"/g)).toHaveLength(1);
     expect(SHELL.match(/aria-label="Pages"/g)).toHaveLength(1);
+    // The word is on screen, not only for a screen reader.
+    const navItem = SHELL.slice(SHELL.indexOf("function NavItem("), SHELL.indexOf("function HoverLabel("));
+    expect(navItem).toMatch(/<span className=\{`[^`]*\btext-(?:2xs|xs)\b[^`]*`\}>\{label\}<\/span>/);
+    expect(navItem).not.toMatch(/sr-only[^>]*>\{label\}/);
   });
 
   it("gives the rail's icons a label that doesn't wait a second for a tooltip", () => {
@@ -147,6 +158,44 @@ describe("the sidebar and the bottom bar", () => {
     expect(SHELL).toMatch(/group-hover:opacity-100 group-focus-visible:opacity-100/);
     // The `title` attribute was what it had before, and what was not enough.
     expect(SHELL.includes("title={label}")).toBe(false);
+  });
+});
+
+describe("going to another page", () => {
+  // UI quality pass, milestone 3: a press on a link changed nothing on screen
+  // until the next page arrived, and every page here is built on the server
+  // per request. useLinkStatus (next/link) says a Link is on its way.
+  const PENDING = readFileSync("app/nav-pending.tsx", "utf8");
+  const CSS = readFileSync("app/globals.css", "utf8");
+
+  it("shows on every navigation item: the rail, the Profile avatar and the bottom bar", () => {
+    for (const name of ["function NavItem(", "function BottomItem("]) {
+      const start = SHELL.indexOf(name);
+      const body = SHELL.slice(start, SHELL.indexOf("\n}\n", start));
+      expect(body, name).toContain("<NavPending");
+    }
+    const profile = SHELL.slice(SHELL.indexOf('href="/profile"'), SHELL.indexOf("</aside>"));
+    expect(profile).toContain("<NavPending");
+    expect(PENDING).toMatch(/export function NavPending[\s\S]*useLinkStatus\(\)/);
+  });
+
+  it("fades the row of a contact while their page opens, in every list", () => {
+    // Six lists open a contact from a row. All of them go through RowLink, so
+    // the stretched link and the fade are written once.
+    expect(PENDING).toMatch(/export function RowLink[\s\S]*stretched-link[\s\S]*<RowPending \/>/);
+    for (const file of tsxFiles("app")) {
+      if (file.endsWith("nav-pending.tsx")) continue;
+      expect(readFileSync(file, "utf8"), `${file} stretches a link by hand`).not.toContain("stretched-link");
+    }
+    const rows = tsxFiles("app").filter((file) => readFileSync(file, "utf8").includes("<RowLink"));
+    expect(rows.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("waits 100ms before showing, so a fast page does not flash it", () => {
+    expect(CSS).toMatch(/\.nav-pending\.is-pending \{\s*animation: nav-pending 0\.9s ease-in-out 0\.1s infinite;/);
+    expect(CSS).toMatch(/\.row-pending\.is-pending \{\s*animation: row-pending 0\.2s ease-out 0\.1s forwards;/);
+    // Less motion asked for: a steady bar, not a pulse.
+    expect(CSS).toMatch(/prefers-reduced-motion: reduce\)[\s\S]*nav-pending-steady/);
   });
 });
 
@@ -158,7 +207,7 @@ describe("what you can do to a row", () => {
       // The shell's one hover-revealed thing is HoverLabel: a decoration on a
       // rail icon, and the rail itself does not exist below sm. It is right
       // for that to be hidden on a phone; a row action never is.
-      if (file.endsWith(join("app", "app-shell.tsx"))) continue;
+      if (file.endsWith(join("app", "shell-frame.tsx"))) continue;
       if (!value.includes("group-hover:opacity-100")) continue;
       expect(value.includes("hidden"), `${file}: a hover-only action is hidden`).toBe(false);
       expect(value, `${file}: a hover-only action needs no-hover:`).toContain(

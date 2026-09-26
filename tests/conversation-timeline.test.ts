@@ -119,6 +119,28 @@ describe("the first line", () => {
     expect(firstLine("Se nedan. ---------- Vidarebefordrat meddelande --------- Från: någon")).toBe("Se nedan.");
   });
 
+  it("stops at an Outlook-style quoted header, and drops the sign-off before it", () => {
+    // UI quality pass, milestone 6: a preview read "... M vh /Niklas Från: Neo
+    // Johnsson <johnsson.neo@gma…" -- the quoted mail's header and the sign-off.
+    expect(
+      firstLine("Hej Neo, jag kollar med chefen och återkommer. M vh /Niklas Från: Neo Johnsson <johnsson.neo@gmail.com> Skickat: den 10 sep"),
+    ).toBe("Hej Neo, jag kollar med chefen och återkommer.");
+    expect(firstLine("Thanks, see you Tuesday. Best regards, Karin From: Neo <neo@example.se> Sent: 10 September")).toBe(
+      "Thanks, see you Tuesday.",
+    );
+    expect(firstLine("Låter bra! -----Ursprungligt meddelande----- Från: Neo")).toBe("Låter bra!");
+    expect(firstLine("Great. -----Original Message----- From: Neo")).toBe("Great.");
+  });
+
+  it("keeps a sign-off word that is part of the message", () => {
+    // Only a sign-off at the very end goes; "hälsningar" mid-sentence stays.
+    expect(firstLine("Hälsningar från Växjö! Vi ses på mässan.")).toBe("Hälsningar från Växjö! Vi ses på mässan.");
+    expect(firstLine("Thanks for the intro to Karin.")).toBe("Thanks for the intro to Karin.");
+    // A sign-off starts its own sentence: the last word of one is not one.
+    expect(firstLine("Thanks again, you're the best")).toBe("Thanks again, you're the best");
+    expect(firstLine("Vi hörs. Best, Karin")).toBe("Vi hörs.");
+  });
+
   it("puts everything on one line and cuts a long one", () => {
     expect(firstLine("Hej\n\n  Neo,   tack")).toBe("Hej Neo, tack");
 

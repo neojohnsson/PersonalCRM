@@ -106,6 +106,18 @@ export function firstLine(snippet: string | undefined, max = 160): string | null
     // colon in it -- so the middle is a bounded lazy match, not [^:].
     .replace(/\s*(?:On|Den)\s+\d{1,2}[\s\S]{0,80}?(?:wrote|skrev)\b[^:]{0,80}:[\s\S]*$/i, "")
     .replace(/\s*(?:-{2,}|_{2,})\s*(?:Forwarded message|Vidarebefordrat meddelande).*$/i, "")
+    // Outlook quotes a reply under a header, not a "wrote:" line: "Från: Neo
+    // Johnsson <neo@…> Skickat: …". A From: with an address after it is that
+    // header (UI quality pass, milestone 6), and so is Outlook's divider.
+    .replace(/\s*(?:Från|From|Von|De):\s*[^<]{0,80}<[^>\s]+@[\s\S]*$/i, "")
+    .replace(/\s*-{3,}\s*(?:Original Message|Ursprungligt meddelande)\s*-{3,}[\s\S]*$/i, "")
+    // ...and the sign-off left at the end once the quote is gone: "M vh
+    // /Niklas", "Best regards, Karin". Only at the very end and followed by at
+    // most a short name, so "Hälsningar från Växjö!" mid-message stays.
+    .replace(
+      /(?:^|(?<=[.!?…]))\s*(?:M\s?vh|Med vänliga? hälsningar|Vänliga? hälsningar|Hälsningar|Best regards|Kind regards|Regards|Best(?=,)|Cheers)[,.!]?\s*[/-]?\s*[\p{L}.' -]{0,40}$/iu,
+      "",
+    )
     .trim();
 
   if (!text) return null;

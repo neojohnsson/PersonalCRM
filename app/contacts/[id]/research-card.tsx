@@ -22,12 +22,12 @@ import { discardResearchAction, keepResearchAction, removeFactAction, researchAc
  *             and an x to take it out
  */
 
-const CARD = "rounded-[18px] bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
-const LABEL = "text-[10px] font-bold tracking-[0.07em] text-ink-ghost uppercase";
+const CARD = "rounded-xl bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
+const LABEL = "text-2xs font-bold tracking-[0.07em] text-ink-meta uppercase";
 const GHOST =
-  "rounded-full bg-line-soft px-[13px] py-1.5 text-[12px] font-semibold text-ink-body transition-colors hover:bg-chip-track disabled:cursor-default disabled:opacity-60";
+  "rounded-full bg-line-soft px-[13px] py-1.5 text-xs font-semibold text-ink-body transition-colors hover:bg-chip-track disabled:cursor-default disabled:opacity-60";
 const SOLID =
-  "rounded-full bg-ink-deep px-[15px] py-1.5 text-[12px] font-semibold text-white transition hover:bg-ink/85 disabled:cursor-default disabled:opacity-60";
+  "rounded-full bg-ink-deep px-[15px] py-1.5 text-xs font-semibold text-white transition hover:bg-ink/85 disabled:cursor-default disabled:opacity-60";
 
 const IDENTITY = {
   sure: { words: "The same person", className: "bg-done-tint text-affirm" },
@@ -86,7 +86,7 @@ export function ResearchCard({
   return (
     <section className={`${CARD} flex flex-col gap-3 px-[22px] py-[18px]`} aria-label="From the web">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">From the web</h2>
+        <h2 className="text-base font-bold tracking-[-0.015em]">From the web</h2>
         {!pending && (
           <button type="button" onClick={research} disabled={busy} className={`${keptFacts.length > 0 ? GHOST : SOLID} ml-auto`}>
             {searching ? "Searching the web…" : keptFacts.length > 0 ? "Research again" : "Research this person"}
@@ -95,17 +95,17 @@ export function ResearchCard({
       </div>
 
       {searching && (
-        <p role="status" className="text-[12.5px] text-ink-soft">
+        <p role="status" className="text-sm text-ink-soft">
           Reading public pages about them. It can take up to a minute.
         </p>
       )}
       {error && (
-        <p role="alert" className="text-[12.5px] font-medium text-accent">
+        <p role="alert" className="text-sm font-normal text-accent">
           {error}
         </p>
       )}
       {nothingFound && !pending && (
-        <p className="rounded-[12px] bg-paper px-3.5 py-2.5 text-[12.5px] leading-[1.5] text-ink-body">
+        <p className="rounded-xl bg-paper px-3.5 py-2.5 text-sm text-ink-body">
           Nothing reliable was found, so nothing was saved. {nothingFound}
         </p>
       )}
@@ -121,14 +121,14 @@ export function ResearchCard({
       )}
 
       {!pending && keptFacts.length === 0 && !searching && !nothingFound && (
-        <p className="text-[12.5px] leading-[1.5] text-ink-soft">
+        <p className="text-sm text-ink-soft">
           Looks for public, professional facts about them — their role, their organisation&rsquo;s pages, talks and
           news — each with the link it came from. Nothing is added until you tick it. It costs {priceInWords(typicalUsd)}
           , from your AI budget.
         </p>
       )}
 
-      <p className="text-[11.5px] leading-[1.45] text-ink-soft">
+      <p className="text-xs text-ink-soft">
         Public web only. LinkedIn, people-search sites and social media are never searched, and nothing about private
         life is kept.
       </p>
@@ -164,12 +164,12 @@ function Waiting({ set }: { set: ResearchRow }) {
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-[14px] bg-paper-tint px-4 py-3.5">
+    <div className="flex flex-col gap-3 rounded-xl bg-paper-tint px-4 py-3.5">
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
         <span className={LABEL}>Found {dateOf(set.foundAt)} · waiting for you</span>
-        <span className={`rounded-full px-[9px] py-[3px] text-[11px] font-bold ${identity.className}`}>{identity.words}</span>
+        <span className={`rounded-full px-[9px] py-[3px] text-2xs font-bold ${identity.className}`}>{identity.words}</span>
       </div>
-      <p className={`text-[12.5px] leading-[1.5] ${set.identity === "unsure" ? "font-medium text-needs-ink" : "text-ink-body"}`}>
+      <p className={`text-sm ${set.identity === "unsure" ? "font-normal text-needs-ink" : "text-ink-body"}`}>
         {set.identityWhy}
         {set.identity === "unsure" && " Check each link before you keep anything."}
       </p>
@@ -184,12 +184,12 @@ function Waiting({ set }: { set: ResearchRow }) {
                 className="mt-[3px] size-4 shrink-0 accent-[var(--color-ink-deep)]"
               />
               <span className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-[13px] leading-[1.5] text-ink">{fact.text}</span>
+                <span className="text-sm text-ink">{fact.text}</span>
                 <a
                   href={fact.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="truncate text-[11.5px] font-semibold text-ink-muted underline decoration-line-strong underline-offset-2 hover:text-ink"
+                  className="truncate text-xs font-semibold text-ink-soft link-inline decoration-line-strong"
                 >
                   {withHost(fact.title, fact.url)}
                 </a>
@@ -207,7 +207,7 @@ function Waiting({ set }: { set: ResearchRow }) {
         </button>
       </div>
       {error && (
-        <p role="alert" className="text-[12px] font-medium text-accent">
+        <p role="alert" className="text-xs font-normal text-accent">
           {error}
         </p>
       )}
@@ -230,12 +230,12 @@ function KeptFact({
   return (
     <li className="flex items-start gap-2.5">
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-[13px] leading-[1.5] text-ink-body">{fact.text}</span>
+        <span className="text-sm text-ink-body">{fact.text}</span>
         <a
           href={fact.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="truncate text-[11.5px] font-medium text-ink-muted underline decoration-line-strong underline-offset-2 hover:text-ink"
+          className="truncate text-xs font-normal text-ink-soft link-inline decoration-line-strong"
         >
           {hostOf(fact.url)} · found {dateOf(foundAt)}
         </a>
@@ -245,7 +245,7 @@ function KeptFact({
         aria-label={`Remove: ${fact.text}`}
         disabled={busy}
         onClick={() => start(async () => void (await removeFactAction(researchId, index)))}
-        className="flex size-7 shrink-0 items-center justify-center rounded-full text-ink-faint transition hover:bg-paper hover:text-ink disabled:opacity-50"
+        className="flex size-7 shrink-0 items-center justify-center rounded-full text-ink-soft transition hover:bg-paper hover:text-ink disabled:opacity-50"
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="size-3.5">
           <path d="M6 6l12 12M18 6L6 18" />

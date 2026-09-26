@@ -31,7 +31,7 @@ export default async function ContactNotFound() {
         <Link
           href="/contacts"
           aria-label="Back to contacts"
-          className="flex size-[34px] items-center justify-center rounded-[11px] bg-white text-ink-body shadow-[0_1px_2px_rgba(20,20,25,.05)] transition-colors hover:text-ink"
+          className="flex size-[34px] items-center justify-center rounded-lg bg-white text-ink-body shadow-[0_1px_2px_rgba(20,20,25,.05)] transition-colors hover:text-ink"
         >
           <svg
             aria-hidden="true"
@@ -56,13 +56,13 @@ export default async function ContactNotFound() {
           <div className="mt-5 flex flex-wrap gap-2">
             <Link
               href="/contacts"
-              className="rounded-full bg-ink-deep px-4 py-[9px] text-[12.5px] font-semibold text-white transition hover:bg-ink/85"
+              className="rounded-full bg-ink-deep px-4 py-[9px] text-sm font-semibold text-white transition hover:bg-ink/85"
             >
               All contacts
             </Link>
             <Link
               href="/seen-once/dismissed"
-              className="rounded-full bg-line-soft px-4 py-[9px] text-[12.5px] font-semibold text-ink-body transition-colors hover:bg-chip-track"
+              className="rounded-full bg-line-soft px-4 py-[9px] text-sm font-semibold text-ink-body transition-colors hover:bg-chip-track"
             >
               Dismissed contacts
             </Link>

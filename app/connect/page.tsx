@@ -99,10 +99,10 @@ export default async function ConnectPage({
         <div className="flex flex-col gap-[18px]">
           <BrandTile />
           <div className="flex flex-col gap-2.5">
-            <h1 className="text-[28px] leading-[1.15] font-bold tracking-[-0.035em] sm:text-[33px]">
+            <h1 className="text-xl font-bold tracking-[-0.035em] sm:text-2xl">
               Before you connect Gmail
             </h1>
-            <p className="max-w-[530px] text-[15.5px] leading-[1.55] text-ink-soft">
+            <p className="max-w-[530px] text-base text-ink-soft">
               Google&rsquo;s permission screen comes next, and it is written by
               lawyers. This one is written by the person who built the app.
               Read this one first.
@@ -123,7 +123,7 @@ export default async function ConnectPage({
           <Callout icon="info">{CALENDAR_NOTES[calendarNote]}</Callout>
         )}
 
-        <div className="flex flex-col gap-[22px] rounded-[18px] bg-white px-6 py-[26px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] sm:px-[30px]">
+        <div className="flex flex-col gap-[22px] rounded-xl bg-white px-6 py-[26px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] sm:px-[30px]">
           <Section title="What it reads">
             <Item icon="check" tone="info">
               Message headers — who wrote, when, and the subject line
@@ -181,7 +181,7 @@ export default async function ConnectPage({
           <form action="/api/auth/google" method="post">
             <button
               type="submit"
-              className="flex items-center gap-[9px] rounded-full bg-ink-deep px-[26px] py-3.5 text-[14.5px] font-semibold tracking-[-0.01em] text-white transition hover:bg-ink/85"
+              className="flex items-center gap-[9px] rounded-full bg-ink-deep px-[26px] py-3.5 text-base font-semibold tracking-[-0.01em] text-white transition hover:bg-ink/85"
             >
               Continue to Google
               <Icon name="arrow" className="size-4" />
@@ -249,7 +249,7 @@ export default async function ConnectPage({
               <form action="/api/auth/google/calendar" method="post">
                 <button
                   type="submit"
-                  className="flex items-center gap-[9px] rounded-full bg-white px-[26px] py-3.5 text-[14.5px] font-semibold tracking-[-0.01em] shadow-[0_1px_2px_rgba(20,20,25,.05)] transition hover:bg-paper-tint"
+                  className="flex items-center gap-[9px] rounded-full bg-white px-[26px] py-3.5 text-base font-semibold tracking-[-0.01em] shadow-[0_1px_2px_rgba(20,20,25,.05)] transition hover:bg-paper-tint"
                 >
                   Connect your calendar
                   <Icon name="arrow" className="size-4" />

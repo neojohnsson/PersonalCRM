@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
+import { RowLink } from "@/app/nav-pending";
 import { CalendarPanel } from "@/app/connect/calendar-panel";
 import { CARD, EmptyCard } from "@/app/page-parts";
+import { NowLine } from "./now-line";
 import { SignOutButton } from "@/app/sign-out-button";
 import { buildWeek, clock, mondayOf, weekLabel } from "@/lib/calendar/week";
 import { canWriteCalendar } from "@/lib/google/scopes";
@@ -182,7 +184,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
       {typeof calendarNote === "string" && CALENDAR_NOTES[calendarNote] && (
         <p
           role="status"
-          className="max-w-3xl rounded-[14px] bg-info-tint px-[18px] py-3 text-[13px] leading-[1.5] font-medium text-info-ink"
+          className="max-w-3xl rounded-xl bg-info-tint px-[18px] py-3 text-sm font-normal text-info-ink"
         >
           {CALENDAR_NOTES[calendarNote]}
         </p>
@@ -190,14 +192,14 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
 
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="flex flex-col gap-2">
-          <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.035em]">Calendar</h1>
+          <h1 className="text-2xl font-bold tracking-[-0.035em]">Calendar</h1>
           <div className="flex items-center gap-[9px]">
             <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-affirm" />
             {/* Slice 10: this said "read-only · nothing is ever created or
                 changed" until today, which stopped being true the moment the
                 app could create one. It now says what the connection actually
                 allows, which depends on what Google granted. */}
-            <p className="text-[12.5px] font-medium text-ink-quiet">
+            <p className="text-sm font-normal text-ink-soft">
               {connection.email} &middot;{" "}
               {canWriteCalendar(connection.scopes)
                 ? "events you create here go on this calendar, never with guests"
@@ -211,11 +213,11 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
           <Legend />
           <div className="flex items-center gap-1.5">
             <WeekStep monday={addDays(monday, -7)} label="Previous week" arrow="‹" />
-            <span className="px-1.5 text-[13px] font-semibold tracking-[-0.01em]">{weekLabel(monday)}</span>
+            <span className="px-1.5 text-sm font-semibold tracking-[-0.01em]">{weekLabel(monday)}</span>
             <WeekStep monday={addDays(monday, 7)} label="Next week" arrow="›" />
             <Link
               href="/calendar"
-              className="ml-1 rounded-full bg-white px-3.5 py-[7px] text-[12px] font-semibold text-ink-body shadow-[0_1px_2px_rgba(20,20,25,.05)] transition hover:bg-paper-tint"
+              className="ml-1 rounded-full bg-white px-3.5 py-[7px] text-xs font-semibold text-ink-body shadow-[0_1px_2px_rgba(20,20,25,.05)] transition hover:bg-paper-tint"
             >
               Today
             </Link>
@@ -223,27 +225,31 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-5 lg:flex-row">
+      {/* The week gets the width (UI quality pass, milestone 6): with a 296px
+          column beside it, seven days shared about 1000px and titles were cut
+          to "Linnékårens välkom…". Below 1536px the column goes under the week,
+          its two cards side by side. */}
+      <div className="flex min-h-0 flex-1 flex-col gap-5 2xl:flex-row">
         <section className={`${CARD} flex min-h-[420px] min-w-0 flex-1 flex-col overflow-hidden`}>
           {week ? (
             <WeekGrid week={week} byId={byId} touches={touchesResult.data} />
           ) : (
             <div className="flex flex-col gap-2 px-[22px] py-6">
-              <p className="text-[13.5px] font-semibold">The week couldn&rsquo;t be read</p>
-              <p className="text-[12.5px] leading-[1.5] text-ink-soft">{readProblem}</p>
+              <p className="text-sm font-semibold">The week couldn&rsquo;t be read</p>
+              <p className="text-sm text-ink-soft">{readProblem}</p>
             </div>
           )}
         </section>
 
-        <div className="flex flex-col gap-[18px] lg:w-[296px] lg:shrink-0">
+        <div className="grid gap-[18px] md:grid-cols-2 2xl:flex 2xl:w-[296px] 2xl:shrink-0 2xl:flex-col">
           {upcoming && upcoming.contactId && byId.has(upcoming.contactId) && (
             <NextWithContact event={upcoming} contact={byId.get(upcoming.contactId)!} relationships={relationships} />
           )}
 
           <section className={`${CARD} flex flex-col gap-3 px-5 py-[18px]`}>
-            <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Met, no follow-up</h2>
+            <h2 className="text-base font-bold tracking-[-0.015em]">Met, no follow-up</h2>
             {noFollowUp.length === 0 ? (
-              <p className="text-[12.5px] leading-[1.5] text-ink-soft">
+              <p className="text-sm text-ink-soft">
                 {meetingCount === 0
                   ? "No meetings with your contacts have been read yet."
                   : "Nothing outstanding: you have written to everyone you met."}
@@ -259,18 +265,18 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
                       <span
                         aria-hidden="true"
                         style={avatarColors(contact.primary_email ?? contact.id)}
-                        className="flex size-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+                        className="flex size-8 shrink-0 items-center justify-center rounded-full text-2xs font-bold"
                       >
                         {initials(name, contact.primary_email ?? name)}
                       </span>
                       <div className="flex min-w-0 flex-col gap-0.5">
-                        <Link
+                        <RowLink
                           href={`/contacts/${contact.id}`}
-                          className="truncate text-[13.5px] font-semibold tracking-[-0.01em] outline-none after:absolute after:inset-0 after:content-[''] hover:text-ink-soft"
+                          className="break-words text-sm font-semibold tracking-[-0.01em] link-action"
                         >
                           {name}
-                        </Link>
-                        <span className="text-[12px] leading-[1.45] text-ink-soft">
+                        </RowLink>
+                        <span className="text-xs text-ink-soft">
                           Met {dayMonth(meeting.started_at)}. Nothing sent since.
                         </span>
                       </div>
@@ -291,7 +297,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
               it said "no event is ever created or changed", and events can be
               created now. Nothing is changed or deleted, which is still true
               and still worth saying. */}
-          <p className="px-1 text-[11.5px] leading-[1.55] font-medium text-ink-faint">
+          <p className="px-1 text-xs font-normal text-ink-soft">
             A meeting with a contact counts toward warmth, like an exchange does. Only the time,
             title and guest addresses are read &mdash; never the description. An event you create
             here is added with no guests; nothing already in your calendar is ever changed or
@@ -318,7 +324,7 @@ function Frame({ userEmail, children }: { userEmail: string | undefined; childre
 function NotConnected() {
   return (
     <>
-      <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.035em]">Calendar</h1>
+      <h1 className="text-2xl font-bold tracking-[-0.035em]">Calendar</h1>
       <EmptyCard title="Connect your calendar">
         <p>
           A meeting with someone says more about a relationship than any email does. With your
@@ -339,7 +345,7 @@ function NotConnected() {
           <input type="hidden" name="return_to" value="/calendar" />
           <button
             type="submit"
-            className="rounded-full bg-ink-deep px-[26px] py-3 text-[13.5px] font-semibold text-white transition hover:bg-ink/85"
+            className="rounded-full bg-ink-deep px-[26px] py-3 text-sm font-semibold text-white transition hover:bg-ink/85"
           >
             Connect your calendar
           </button>
@@ -351,15 +357,17 @@ function NotConnected() {
 
 function Legend() {
   return (
-    <div className="hidden items-center gap-3.5 xl:flex">
+    // At every width (UI quality pass, milestone 6): it was only drawn above
+    // 1280px, so on a laptop the colours went unexplained.
+    <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1">
       {[
         { colour: "bg-info-tint", label: "With a contact" },
         { colour: "bg-chip", label: "Other events" },
         { colour: "bg-accent-tint", label: "Next touch" },
       ].map((item) => (
         <span key={item.label} className="flex items-center gap-1.5">
-          <span aria-hidden="true" className={`size-2.5 rounded-[3px] ${item.colour}`} />
-          <span className="text-[11.5px] font-medium text-ink-muted">{item.label}</span>
+          <span aria-hidden="true" className={`size-2.5 rounded-lg ${item.colour}`} />
+          <span className="text-xs font-normal text-ink-soft">{item.label}</span>
         </span>
       ))}
     </div>
@@ -371,7 +379,7 @@ function WeekStep({ monday, label, arrow }: { monday: string; label: string; arr
     <Link
       href={`/calendar?monday=${monday}`}
       aria-label={label}
-      className="flex size-8 items-center justify-center rounded-[11px] bg-white text-[13px] font-bold text-ink-body shadow-[0_1px_2px_rgba(20,20,25,.05)] transition hover:bg-paper-tint"
+      className="flex size-8 items-center justify-center rounded-lg bg-white text-sm font-bold text-ink-body shadow-[0_1px_2px_rgba(20,20,25,.05)] transition hover:bg-paper-tint"
     >
       {arrow}
     </Link>
@@ -399,19 +407,19 @@ function WeekGrid({
               className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 sm:flex-row sm:gap-[7px]"
             >
               <span
-                className={`text-[9.5px] font-bold tracking-[0.04em] uppercase sm:text-[10.5px] sm:tracking-[0.06em] ${
-                  day.isToday ? "text-ink" : "text-ink-ghost"
+                className={`text-2xs font-bold tracking-[0.04em] uppercase sm:text-2xs sm:tracking-[0.06em] ${
+                  day.isToday ? "text-ink" : "text-ink-meta"
                 }`}
               >
                 {day.weekday}
               </span>
               {day.isToday ? (
-                <span className="flex size-[22px] items-center justify-center rounded-full bg-ink-deep text-[12px] font-bold text-white sm:size-[26px] sm:text-[13px]">
+                <span className="flex size-[22px] items-center justify-center rounded-full bg-ink-deep text-xs font-bold text-white sm:size-[26px] sm:text-sm">
                   {day.dayOfMonth}
                 </span>
               ) : (
                 <span
-                  className={`text-[13px] font-bold tracking-[-0.02em] sm:text-[15px] ${day.isWeekend ? "text-ink-faint" : ""}`}
+                  className={`text-sm font-bold tracking-[-0.02em] sm:text-base ${day.isWeekend ? "text-ink-soft" : ""}`}
                 >
                   {day.dayOfMonth}
                 </span>
@@ -423,7 +431,7 @@ function WeekGrid({
         {/* Due: this app's own next touches, not anything from Google. */}
         <div className="flex h-9 shrink-0 items-stretch border-y border-line">
           <div className="flex w-8 shrink-0 items-center justify-end pr-1 sm:w-[52px] sm:pr-2">
-            <span className="text-[8.5px] font-bold tracking-[0.05em] text-ink-ghost uppercase sm:text-[9.5px]">Due</span>
+            <span className="text-2xs font-bold tracking-[0.05em] text-ink-meta uppercase sm:text-2xs">Due</span>
           </div>
           {week.days.map((day) => {
             const due = touches.filter((touch) => touch.due_on === day.date);
@@ -443,13 +451,20 @@ function WeekGrid({
                       href={`/contacts/${touch.contact_id}`}
                       title={touch.reason ? `${name}: ${touch.reason}` : name}
                       aria-label={name}
-                      className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[7px] bg-accent-tint px-1 py-1 sm:justify-start sm:px-2"
+                      // Hover deepens the tint (UI quality pass, milestone 3):
+                      // the accent at 15% is a step darker than the tint on
+                      // Paper and a step lighter on Night, a raise in both.
+                      className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg bg-accent-tint px-1 py-1 transition-colors hover:bg-accent/15 sm:justify-start sm:px-2"
                     >
                       <span aria-hidden="true" className="hidden size-[5px] shrink-0 rounded-full bg-accent sm:block" />
-                      <span aria-hidden="true" className="text-[10.5px] font-bold text-accent-dark sm:hidden">
+                      <span aria-hidden="true" className="text-2xs font-bold text-accent-dark sm:hidden">
                         {contact ? initials(name, contact.primary_email ?? name) : "?"}
                       </span>
-                      <span className="hidden truncate text-[11px] font-semibold text-accent-dark sm:inline">{name}</span>
+                      {/* The first name: "Lind…" said nothing. The full name and
+                          the reason are the tooltip and the accessible name. */}
+                      <span className="hidden truncate text-2xs font-semibold text-accent-dark sm:inline">
+                        {contact?.first_name?.trim() || name}
+                      </span>
                     </Link>
                   );
                 })}
@@ -458,8 +473,10 @@ function WeekGrid({
           })}
         </div>
 
-        {/* The hours fill whatever height is left, so the week always fits. */}
-        <div className="relative flex min-h-0 flex-1">
+        {/* The hours fill whatever height is left, so the week always fits.
+            my-2.5: the first and last hour labels sit half above and half
+            below their line, and were cut in half at the grid's edges. */}
+        <div className="relative my-2.5 flex min-h-0 flex-1">
           {week.hours.slice(0, -1).map((hour, index) => (
             <div
               key={hour}
@@ -473,7 +490,7 @@ function WeekGrid({
             {week.hours.map((hour, index) => (
               <span
                 key={hour}
-                className="absolute w-6 -translate-y-1/2 text-right text-[9.5px] font-semibold text-ink-ghost sm:w-11 sm:text-[10.5px]"
+                className="absolute w-6 -translate-y-1/2 text-right text-2xs font-semibold text-ink-soft sm:w-11 sm:text-2xs"
                 style={{ top: `${(index / (week.hours.length - 1)) * 100}%` }}
               >
                 {String(hour).padStart(2, "0")}
@@ -486,6 +503,7 @@ function WeekGrid({
               key={day.date}
               className={`relative min-w-0 flex-1 border-l border-chip ${day.isWeekend ? "bg-paper-tint" : ""}`}
             >
+              {day.isToday && <NowLine />}
               {week.events
                 .filter((event) => event.dayIndex === dayIndex)
                 .map((event) => {
@@ -494,7 +512,7 @@ function WeekGrid({
                     <div
                       key={event.id}
                       title={contact ? displayName(contact) : event.title}
-                      className={`absolute inset-x-px flex flex-col gap-px overflow-hidden rounded-[7px] px-1 py-1 sm:inset-x-[3px] sm:rounded-[9px] sm:px-1.5 ${
+                      className={`event-block absolute inset-x-px flex flex-col gap-px overflow-hidden rounded-lg px-1 py-1 sm:inset-x-[3px] sm:rounded-lg sm:px-1.5 ${
                         contact ? "bg-info-tint" : "bg-chip/60"
                       }`}
                       // A 15-minute meeting still has to be readable, so the
@@ -508,18 +526,23 @@ function WeekGrid({
                         minHeight: "24px",
                       }}
                     >
-                      <span className="truncate text-[11px] leading-[1.3] font-bold text-info-ink sm:hidden">
+                      <span className="truncate text-2xs font-bold text-info-ink sm:hidden">
                         {contact ? initials(displayName(contact), contact.primary_email ?? displayName(contact)) : "Event"}
                       </span>
                       <span
-                        className={`truncate text-[11.5px] leading-[1.3] font-semibold tracking-[-0.01em] ${
+                        className={`truncate text-xs font-semibold tracking-[-0.01em] ${
                           contact ? "text-info-ink sm:block" : "text-ink-body sm:block"
                         }`}
                       >
                         <span className="hidden sm:inline">{contact ? displayName(contact) : event.title}</span>
                       </span>
-                      <span className={`truncate text-[10.5px] leading-[1.3] ${contact ? "text-info" : "text-ink-faint"}`}>
+                      <span className={`event-when truncate text-2xs ${contact ? "text-info" : "text-ink-soft"}`}>
                         {event.when}
+                      </span>
+                      {/* A short event: title and time on one line, instead of
+                          two lines with the second cut in half (globals.css). */}
+                      <span className={`event-one-line truncate text-2xs font-semibold ${contact ? "text-info-ink" : "text-ink-body"}`}>
+                        {contact ? displayName(contact) : event.title} · {event.when}
                       </span>
                     </div>
                   );
@@ -549,8 +572,8 @@ function NextWithContact({
   return (
     <section className={`${CARD} flex flex-col gap-3.5 px-5 py-[18px]`}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-2.5 gap-y-1">
-        <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Next with a contact</h2>
-        <span className="text-[11.5px] font-semibold text-ink-faint">
+        <h2 className="text-base font-bold tracking-[-0.015em]">Next with a contact</h2>
+        <span className="text-xs font-semibold text-ink-soft">
           {dayMonth(event.startedAt)}, {clock(event.startedAt)}
         </span>
       </div>
@@ -559,26 +582,26 @@ function NextWithContact({
         <span
           aria-hidden="true"
           style={avatarColors(contact.primary_email ?? contact.id)}
-          className="flex size-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+          className="flex size-8 shrink-0 items-center justify-center rounded-full text-2xs font-bold"
         >
           {initials(name, contact.primary_email ?? name)}
         </span>
         <div className="flex min-w-0 flex-col gap-px">
-          <span className="truncate text-[14px] font-semibold tracking-[-0.01em]">{name}</span>
-          {contact.company && <span className="truncate text-[12px] text-ink-faint">{contact.company}</span>}
+          <span className="break-words text-base font-semibold tracking-[-0.01em]">{name}</span>
+          {contact.company && <span className="truncate text-xs text-ink-soft">{contact.company}</span>}
         </div>
       </div>
 
       {pill && (
         <span className="flex items-center gap-2 self-start rounded-full bg-chip px-3 py-1.5">
-          <span aria-hidden="true" className="size-[6px] rounded-full bg-ink-faint" />
-          <span className="text-[12px] font-bold whitespace-nowrap">{pill.text}</span>
+          <span aria-hidden="true" className="size-[6px] rounded-full bg-ink-soft" />
+          <span className="text-xs font-bold whitespace-nowrap">{pill.text}</span>
         </span>
       )}
 
       <Link
         href={`/contacts/${contact.id}`}
-        className="self-start rounded-full bg-ink-deep px-[15px] py-2 text-[12px] font-semibold text-white transition hover:bg-ink/85"
+        className="self-start rounded-full bg-ink-deep px-[15px] py-2 text-xs font-semibold text-white transition hover:bg-ink/85"
       >
         Open contact
       </Link>

@@ -30,7 +30,7 @@ export const metadata = { title: `Your data · ${APP_NAME}` };
  */
 
 const CARD =
-  "flex flex-col gap-3.5 rounded-[18px] bg-white px-[22px] pt-[18px] pb-5 shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
+  "flex flex-col gap-3.5 rounded-xl bg-white px-[22px] pt-[18px] pb-5 shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
 
 export default async function PrivacyPage() {
   const user = await requireUser();
@@ -43,18 +43,18 @@ export default async function PrivacyPage() {
     <AppShell userEmail={user.email} active="profile" headerRight={<SignOutButton />}>
       <main className="flex flex-1 flex-col gap-[18px] px-4 pt-2 pb-[30px] sm:px-[30px]">
         <div className="flex max-w-3xl flex-col gap-2">
-          <h1 className="text-[27px] leading-[1.1] font-bold tracking-[-0.035em]">Your data</h1>
-          <p className="text-[13.5px] leading-[1.55] text-ink-soft">
+          <h1 className="text-xl font-bold tracking-[-0.035em]">Your data</h1>
+          <p className="text-sm text-ink-soft">
             Everything this app has stored, counted as this page loaded. Most of it is about
             other people &mdash; people who never signed up for anything &mdash; so it is
             written to be read by them.
           </p>
-          <p className="text-[14px] font-semibold tracking-[-0.01em]">{headline(holdings)}</p>
+          <p className="text-base font-semibold tracking-[-0.01em]">{headline(holdings)}</p>
         </div>
 
         {isEmpty(holdings) && (
           <section className={`${CARD} max-w-3xl`}>
-            <p className="text-[13.5px] leading-[1.55] text-ink-soft">
+            <p className="text-sm text-ink-soft">
               Nothing is stored yet. Connect Gmail and the numbers below start filling in.
             </p>
           </section>
@@ -80,7 +80,7 @@ export default async function PrivacyPage() {
               what="The text of a conversation is sent when you ask for a summary, a draft or a promise scan — never on its own, never on sync."
               keeps="Nothing. Requests are made with storage switched off, so the text is not kept after the answer comes back."
             />
-            <p className="text-[12px] leading-[1.5] text-ink-faint">
+            <p className="text-xs text-ink-soft">
               Message bodies are never written to this app&rsquo;s database. They are read when
               something needs them and thrown away when the request ends &mdash; which is why
               there is no retention period here to set.
@@ -89,7 +89,7 @@ export default async function PrivacyPage() {
 
           <section className={CARD}>
             <CardHeading title="Take it with you" caption="Built when you ask, stored nowhere" />
-            <p className="text-[13px] leading-[1.55] text-ink-body">
+            <p className="text-sm text-ink-body">
               Every row above, as a file. The Gmail refresh token is left out on purpose &mdash;
               it is encrypted with a key that isn&rsquo;t in the file, so it could only ever be
               noise in a download that gets forwarded and saved.
@@ -97,13 +97,13 @@ export default async function PrivacyPage() {
             <div className="flex flex-wrap gap-[7px]">
               <a
                 href="/privacy/export"
-                className="rounded-full bg-ink-deep px-[15px] py-2 text-[12px] font-semibold text-white transition hover:bg-ink/85"
+                className="rounded-full bg-ink-deep px-[15px] py-2 text-xs font-semibold text-white transition hover:bg-ink/85"
               >
                 Export everything
               </a>
               <a
                 href="/privacy/export?as=csv"
-                className="rounded-full bg-line-soft px-3.5 py-2 text-[12px] font-semibold text-ink-body transition hover:bg-chip-track"
+                className="rounded-full bg-line-soft px-3.5 py-2 text-xs font-semibold text-ink-body transition hover:bg-chip-track"
               >
                 Contacts as a spreadsheet
               </a>
@@ -112,7 +112,7 @@ export default async function PrivacyPage() {
 
           <section className={CARD}>
             <CardHeading title="Delete it" caption="No undo, so each one is typed out" />
-            <p className="text-[13px] leading-[1.55] text-ink-body">
+            <p className="text-sm text-ink-body">
               Deleting one person is on their own page. These two are the bigger ones, and both
               really delete &mdash; no archive, no soft delete, nothing kept to be helpful.
             </p>
@@ -124,13 +124,13 @@ export default async function PrivacyPage() {
 
           <section className={CARD}>
             <CardHeading title="If someone asks what you hold on them" caption="They are allowed to" />
-            <p className="text-[13px] leading-[1.55] text-ink-body">
+            <p className="text-sm text-ink-body">
               Anyone in your list can ask for a copy of their record, including what the AI wrote
               about them, and can ask you to delete it. Open their page: <strong>Export this
               person</strong> gives you the copy, and <strong>Dismiss</strong> deletes them and
               their mail from here.
             </p>
-            <p className="text-[12px] leading-[1.5] text-ink-faint">
+            <p className="text-xs text-ink-soft">
               This page is the whole answer. It is counted from the database each time you open
               it, so it cannot fall out of date the way a written policy does.
             </p>
@@ -159,12 +159,12 @@ function HoldingCard({
             key={holding.table}
             className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-line-soft py-3 first:border-t-0 first:pt-0"
           >
-            <span className="w-[52px] shrink-0 text-[15px] font-bold tabular-nums">
+            <span className="w-[52px] shrink-0 text-base font-bold tabular-nums">
               {holding.count}
             </span>
             <div className="flex min-w-0 flex-1 basis-60 flex-col gap-1">
-              <span className="text-[13px] font-semibold tracking-[-0.01em]">{holding.label}</span>
-              <span className="text-[12.5px] leading-[1.5] text-ink-soft">{holding.what}</span>
+              <span className="text-sm font-semibold tracking-[-0.01em]">{holding.label}</span>
+              <span className="text-sm text-ink-soft">{holding.what}</span>
             </div>
           </li>
         ))}
@@ -176,9 +176,9 @@ function HoldingCard({
 function Away({ who, what, keeps }: { who: string; what: string; keeps: string }) {
   return (
     <div className="flex flex-col gap-1 border-t border-line-soft py-3 first:border-t-0 first:pt-0">
-      <span className="text-[13px] font-semibold tracking-[-0.01em]">{who}</span>
-      <span className="text-[12.5px] leading-[1.5] text-ink-soft">{what}</span>
-      <span className="text-[12.5px] leading-[1.5] text-ink-muted">
+      <span className="text-sm font-semibold tracking-[-0.01em]">{who}</span>
+      <span className="text-sm text-ink-soft">{what}</span>
+      <span className="text-sm text-ink-soft">
         <span className="font-semibold">They keep:</span> {keeps}
       </span>
     </div>
@@ -188,8 +188,8 @@ function Away({ who, what, keeps }: { who: string; what: string; keeps: string }
 function CardHeading({ title, caption }: { title: string; caption: string }) {
   return (
     <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-      <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">{title}</h2>
-      <span className="text-[12px] font-semibold text-ink-faint">{caption}</span>
+      <h2 className="text-base font-bold tracking-[-0.015em]">{title}</h2>
+      <span className="text-xs font-semibold text-ink-soft">{caption}</span>
     </div>
   );
 }

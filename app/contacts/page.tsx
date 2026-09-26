@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
+import { RowLink } from "@/app/nav-pending";
 import { EmptyCard, StatusLine } from "@/app/page-parts";
 import { SearchBox } from "@/app/contacts/search-box";
 import { SignOutButton } from "@/app/sign-out-button";
@@ -25,7 +26,7 @@ import {
 import { NO_MAIL, loadRelationships, type Relationship } from "@/lib/relationship/load";
 import { standingOf, type Standing } from "@/lib/relationship/standing";
 import { todayIn } from "@/lib/relationship/dates";
-import type { Band } from "@/lib/relationship/warmth";
+import { BANDS, type Band } from "@/lib/relationship/warmth";
 import { compareTurns } from "@/lib/relationship/whose-turn";
 import { supabaseError } from "@/lib/supabase/errors";
 import { readAll } from "@/lib/supabase/read-all";
@@ -58,13 +59,13 @@ const PAGE_SIZE = 50;
 const MAX_ROWS = 1_000;
 
 const CARD =
-  "rounded-[18px] bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
+  "rounded-xl bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
 
 const DARK_PILL =
-  "flex items-center gap-[7px] rounded-full bg-ink-deep px-4 py-[9px] text-[12.5px] font-semibold text-white transition hover:bg-ink/85";
+  "flex items-center gap-[7px] rounded-full bg-ink-deep px-4 py-[9px] text-sm font-semibold text-white transition hover:bg-ink/85";
 
 const WHITE_PILL =
-  "flex items-center gap-[7px] rounded-full bg-white px-[14px] py-2 text-[12.5px] shadow-[0_1px_2px_rgba(20,20,25,.04)]";
+  "flex items-center gap-[7px] rounded-full bg-white px-[14px] py-2 text-sm shadow-[0_1px_2px_rgba(20,20,25,.04)]";
 
 type ContactRow = {
   id: string;
@@ -93,13 +94,13 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
     return (
       <AppShell userEmail={user.email} headerRight={<SignOutButton />}>
         <main className="flex flex-1 flex-col gap-[22px] px-4 pt-2 pb-[26px] sm:px-[30px]">
-          <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.035em]">Contacts</h1>
+          <h1 className="text-2xl font-bold tracking-[-0.035em]">Contacts</h1>
           <EmptyCard title="Connect Gmail to begin">
             <p>
               Once Gmail is connected, everyone you&rsquo;ve written to and heard back from shows
               up here — whoever is waiting on you first.
             </p>
-            <Link href="/connect" className={`${DARK_PILL} mt-5 self-start`}>
+            <Link href="/connect" className={`${DARK_PILL} mt-5 self-center`}>
               Connect Gmail
             </Link>
           </EmptyCard>
@@ -233,18 +234,17 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
       seenOnceCount={seenOnce}
       headerRight={
         <>
-          <span className="hidden text-[13px] text-ink-faint lg:inline">{gmail.email}</span>
+          <span className="hidden text-sm text-ink-soft lg:inline">{gmail.email}</span>
           <SignOutButton />
         </>
       }
     >
       <main className="flex flex-1 flex-col gap-4 px-4 pt-2 pb-[26px] sm:px-[30px]">
-        <h1 className="sr-only">Contacts</h1>
-
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-4">
-            <h1 className="text-[24px] leading-[1.1] font-bold tracking-[-0.03em]">Contacts</h1>
-            <ListTabs contacts={totalContacts} seenOnce={seenOnce} />
+            <h1 className="text-xl font-bold tracking-[-0.03em]">Contacts</h1>
+            {/* While searching, the count is the matches, as the chips are. */}
+            <ListTabs contacts={query ? counts.all : totalContacts} seenOnce={seenOnce} />
           </div>
 
           <div className="flex w-full flex-wrap items-start gap-2 sm:w-auto">
@@ -253,8 +253,8 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
                 white pill beside Sync now it read as a dropdown, and the
                 outside test pressed it. The order is chosen in the column
                 headings below. */}
-            <span className="hidden items-center gap-1.5 self-center px-1 text-[12.5px] whitespace-nowrap lg:flex">
-              <span className="text-ink-faint">Sorted by</span>
+            <span className="hidden items-center gap-1.5 self-center px-1 text-sm whitespace-nowrap lg:flex">
+              <span className="text-ink-soft">Sorted by</span>
               <span className="font-semibold text-ink-soft">{sortLabel(sort)}</span>
             </span>
             {sync?.status === "needs_reconnect" ? (
@@ -274,15 +274,20 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
         </div>
 
         <nav aria-label="Filter contacts" className="flex flex-wrap items-center gap-[7px]">
-          {FILTERS.map(({ value, label }) => (
-            <Chip
-              key={value}
-              href={link({ filter: value === "all" ? null : value, tag: null })}
-              active={filter === value && !tag}
-              label={label}
-              count={counts[value]}
-            />
-          ))}
+          {/* A chip at 0 is hidden (UI quality pass, milestone 6): a search
+              that matched nobody showed eight chips all reading 0. "All" and
+              the chip you are on stay, so you can always see where you are. */}
+          {FILTERS.filter(({ value }) => value === "all" || counts[value] > 0 || (filter === value && !tag)).map(
+            ({ value, label }) => (
+              <Chip
+                key={value}
+                href={link({ filter: value === "all" ? null : value, tag: null })}
+                active={filter === value && !tag}
+                label={label}
+                count={counts[value]}
+              />
+            ),
+          )}
           {tags.length > 0 && <span aria-hidden="true" className="mx-[3px] h-[18px] w-px bg-line" />}
           {tags.map(({ tag: name, count }) => (
             <Chip
@@ -300,7 +305,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
           {duplicates > 0 && (
             <Link
               href="/contacts/duplicates"
-              className="text-[12.5px] font-medium text-ink-muted underline decoration-line-strong underline-offset-2 hover:text-ink"
+              className="text-sm font-normal text-ink-soft link-inline decoration-line-strong"
             >
               {countOf(duplicates, "possible duplicate")} — look at{" "}
               {duplicates === 1 ? "it" : "them"}
@@ -319,15 +324,12 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
             }
           />
         ) : query || filter !== "all" || tag ? (
-          <EmptyCard title="No contacts here">
+          <EmptyCard title="No contacts here" icon="search" action={{ href: "/contacts", label: "Show all contacts" }}>
             <p>
               {query ? `Nobody matches “${query}”` : "Nobody"}
               {filter !== "all" ? ` under ${FILTERS.find((f) => f.value === filter)!.label}` : ""}
               {tag ? ` tagged ${tag}` : ""}.
             </p>
-            <Link href="/contacts" className="mt-3 self-start font-semibold text-ink hover:text-ink-soft">
-              Show all contacts
-            </Link>
           </EmptyCard>
         ) : (
           <NoContactsYet sync={sync} seenOnce={seenOnce} />
@@ -345,8 +347,8 @@ function ListTabs({ contacts, seenOnce }: { contacts: number; seenOnce: number }
         aria-current="page"
         className="flex items-center gap-[7px] rounded-full bg-white px-[15px] py-[7px] shadow-[0_1px_2px_rgba(20,20,25,.06)]"
       >
-        <span className="text-[13px] font-semibold tracking-[-0.01em]">Contacts</span>
-        <span className="text-[11.5px] font-semibold text-ink-faint tabular-nums">
+        <span className="text-sm font-semibold tracking-[-0.01em]">Contacts</span>
+        <span className="text-xs font-semibold text-ink-soft tabular-nums">
           {contacts.toLocaleString("en-GB")}
         </span>
       </span>
@@ -354,8 +356,9 @@ function ListTabs({ contacts, seenOnce }: { contacts: number; seenOnce: number }
         href="/seen-once"
         className="flex items-center gap-[7px] rounded-full px-[15px] py-[7px] transition-colors hover:bg-white/60"
       >
-        <span className="text-[13px] font-medium text-ink-soft">Seen once</span>
-        <span className="text-[11.5px] font-semibold text-ink-hush tabular-nums">
+        {/* ink-body, not ink-soft: soft is 4.05:1 on the grey track, under AA. */}
+        <span className="text-sm font-normal text-ink-body">Seen once</span>
+        <span className="text-xs font-semibold text-ink-body tabular-nums">
           {seenOnce.toLocaleString("en-GB")}
         </span>
       </Link>
@@ -368,10 +371,10 @@ function Chip({ href, active, label, count }: { href: string; active: boolean; l
     <Link
       href={href}
       aria-current={active ? "true" : undefined}
-      className={`rounded-full px-[13px] py-1.5 text-[12px] tabular-nums transition-colors ${
+      className={`rounded-full px-[13px] py-1.5 text-xs tabular-nums transition-colors ${
         active
           ? "bg-ink-deep font-semibold text-white"
-          : "bg-white font-medium text-ink-body shadow-[0_1px_2px_rgba(20,20,25,.04)] hover:bg-paper-tint"
+          : "bg-white font-normal text-ink-body shadow-[0_1px_2px_rgba(20,20,25,.04)] hover:bg-paper-tint"
       }`}
     >
       {label} {count.toLocaleString("en-GB")}
@@ -379,17 +382,16 @@ function Chip({ href, active, label, count }: { href: string; active: boolean; l
   );
 }
 
-const WARMTH_TEXT: Record<Band, string> = {
-  warm: "text-affirm",
-  cooling: "text-cooling",
-  cold: "text-ink-quiet",
-};
-
 const WARMTH_BAR: Record<Band, string> = {
   warm: "bg-affirm",
   cooling: "bg-cooling",
-  cold: "bg-ink-ghost",
+  cold: "bg-ink-soft",
 };
+
+/** "Warmth 32 of 100, cold. Warm from 60, cooling from 35." The bands are the calculation's own. */
+function warmthTitle(score: number, band: Band): string {
+  return `Warmth ${score} of 100, ${band}. Warm from ${BANDS.warm}, cooling from ${BANDS.cooling}.`;
+}
 
 function ContactTable({
   items,
@@ -405,7 +407,7 @@ function ContactTable({
   sortHref: (next: SortKey | null) => string;
   moreHref: string | null;
 }) {
-  const heading = "px-2 pt-[11px] pb-[9px] text-[10.5px] font-bold tracking-[0.07em] text-ink-ghost uppercase";
+  const heading = "px-2 py-2.5 text-2xs font-bold tracking-[0.07em] text-ink-meta uppercase";
 
   return (
     <div className={`${CARD} overflow-hidden`}>
@@ -471,30 +473,30 @@ function ContactTable({
 
             return (
               // The name's link stretches over the whole row (after:inset-0).
-              <tr key={contact.id} className="relative h-[38px] border-t border-line-soft transition-colors hover:bg-paper-tint">
+              <tr key={contact.id} className="row-hover relative h-[38px] border-t border-line-soft">
                 <td className="py-0 pr-2 pl-[22px]">
                   <div className="flex min-w-0 items-center gap-[11px]">
                     <span
                       aria-hidden="true"
                       style={avatarColors(contact.primary_email ?? contact.id)}
-                      className="flex size-6 shrink-0 items-center justify-center rounded-full text-[9.5px] font-bold"
+                      className="flex size-6 shrink-0 items-center justify-center rounded-full text-2xs font-bold"
                     >
                       {initials(hasName ? name : null, contact.primary_email ?? contact.first_name ?? "?")}
                     </span>
-                    <Link
+                    <RowLink
                       href={`/contacts/${contact.id}`}
-                      className="truncate text-[13.5px] font-semibold tracking-[-0.01em] outline-none after:absolute after:inset-0 after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-ink/20 focus-visible:after:ring-inset"
+                      className="break-words text-base font-semibold tracking-[-0.01em]"
                     >
                       {name}
-                    </Link>
+                    </RowLink>
                   </div>
                 </td>
                 {/* One line, ending in "…" if it still doesn't fit; the full name on hover. */}
                 <td
                   title={contact.company ?? undefined}
-                  className="hidden truncate px-2 text-[12.5px] text-ink-muted lg:table-cell"
+                  className="hidden truncate px-2 text-sm text-ink-soft lg:table-cell"
                 >
-                  {contact.company ?? <span className="text-ink-hush">—</span>}
+                  {contact.company ?? <span className="text-ink-soft">—</span>}
                 </td>
                 {/* Slice 9a: the label is the bucket that counted the row, so a
                     row can never say YOUR TURN while its page says Nothing
@@ -504,27 +506,29 @@ function ContactTable({
                 </td>
                 <td className="hidden px-2 md:table-cell">
                   {warmth ? (
-                    <div className="flex items-center gap-[9px]" title={`Warmth ${warmth.score}, ${warmth.band}`}>
-                      <span className={`w-5 text-[12.5px] font-semibold tabular-nums ${WARMTH_TEXT[warmth.band]}`}>
-                        {warmth.score}
-                      </span>
-                      <span aria-hidden="true" className="h-[3px] w-[52px] overflow-hidden rounded-full bg-line">
+                    // The bar alone (UI quality pass, milestone 6, the user's
+                    // choice): the number beside it said the same thing twice.
+                    // The number and what the colours mean are in the tooltip,
+                    // and are what a screen reader hears.
+                    <div className="flex items-center" title={warmthTitle(warmth.score, warmth.band)}>
+                      <span aria-hidden="true" className="h-1 w-[64px] overflow-hidden rounded-full bg-line">
                         <span className={`block h-full ${WARMTH_BAR[warmth.band]}`} style={{ width: `${warmth.score}%` }} />
                       </span>
+                      <span className="sr-only">{warmthTitle(warmth.score, warmth.band)}</span>
                     </div>
                   ) : (
-                    <span className="text-[12px] text-ink-hush">—</span>
+                    <span className="text-xs text-ink-soft">—</span>
                   )}
                 </td>
                 <td
-                  className={`pr-[22px] pl-2 text-right text-[12px] font-semibold tabular-nums ${
-                    turn.kind === "yours" ? "text-accent" : "text-ink-muted"
+                  className={`pr-[22px] pl-2 text-right text-xs font-semibold tabular-nums ${
+                    turn.kind === "yours" ? "text-accent" : "text-ink-soft"
                   }`}
                 >
                   {contact.last_contact_at ? (
                     <time dateTime={contact.last_contact_at}>{daysAgo(contact.last_contact_at)}</time>
                   ) : (
-                    <span className="text-ink-hush">—</span>
+                    <span className="text-ink-soft">—</span>
                   )}
                 </td>
               </tr>
@@ -534,11 +538,11 @@ function ContactTable({
       </table>
 
       <div aria-live="polite" className="flex items-center justify-between border-t border-line-soft px-[22px] py-2.5">
-        <span className="text-[11.5px] font-medium text-ink-ghost">
+        <span className="text-xs font-normal text-ink-soft">
           Showing {items.length.toLocaleString("en-GB")} of {countOf(total, "contact")}
         </span>
         {moreHref && (
-          <Link href={moreHref} scroll={false} className="text-[11.5px] font-semibold text-ink-muted hover:text-ink">
+          <Link href={moreHref} scroll={false} className="text-xs font-semibold text-ink-soft hover:text-ink">
             Load more
           </Link>
         )}
@@ -560,16 +564,15 @@ function NoContactsYet({ sync, seenOnce }: { sync: SyncSummary | null; seenOnce:
 
   if (sync?.status === "synced") {
     return (
-      <EmptyCard title="No contacts yet">
+      <EmptyCard
+        title="No contacts yet"
+        icon="people"
+        action={seenOnce > 0 ? { href: "/seen-once", label: `Review ${countOf(seenOnce, "person", "people")}` } : undefined}
+      >
         <p>
           Nobody in the last {days} days both wrote to you and got a reply.
           {seenOnce > 0 && " People who only wrote once are waiting in Seen once."}
         </p>
-        {seenOnce > 0 && (
-          <Link href="/seen-once" className="mt-3 self-start font-semibold text-ink hover:text-ink-soft">
-            Review {countOf(seenOnce, "person", "people")}
-          </Link>
-        )}
       </EmptyCard>
     );
   }
@@ -597,22 +600,33 @@ function NoContactsYet({ sync, seenOnce }: { sync: SyncSummary | null; seenOnce:
  * (slice 9a). The accent is kept for "Your turn" alone: it is the only one
  * that is asking for something.
  */
+/*
+ * One badge, varying only in colour (UI quality pass, milestone 6). There
+ * were three styles in one column -- YOUR TURN in small bold capitals, the
+ * rest in sentence case -- and the capitals, a smaller size, sat 1.5px lower
+ * than the rest of the row. Every pair clears AA in both themes (lowest:
+ * amber on grey in Paper, 4.62:1).
+ */
 const BUCKET_LABELS: Record<Exclude<ListFilter, "all">, { text: string; className: string }> = {
-  yours: {
-    text: "Your turn",
-    className: "text-[10.5px] font-bold tracking-[0.06em] text-accent uppercase",
-  },
-  theirs: { text: "Their turn", className: "text-[12px] font-medium text-ink-muted" },
-  quiet: { text: "Going quiet", className: "text-[12px] font-medium text-cooling" },
-  closed: { text: "No open thread", className: "text-[12px] font-medium text-ink-hush" },
-  settled: { text: "Nothing owed", className: "text-[12px] font-medium text-ink-muted" },
-  planned: { text: "Planned", className: "text-[12px] font-medium text-info-ink" },
-  muted: { text: "Just a contact", className: "text-[12px] font-medium text-ink-hush" },
+  yours: { text: "Your turn", className: "bg-accent-tint text-accent" },
+  theirs: { text: "Their turn", className: "bg-chip text-ink-body" },
+  quiet: { text: "Going quiet", className: "bg-chip text-cooling" },
+  closed: { text: "No open thread", className: "bg-chip text-ink-body" },
+  settled: { text: "Nothing owed", className: "bg-chip text-ink-body" },
+  planned: { text: "Planned", className: "bg-info-tint text-info-ink" },
+  muted: { text: "Just a contact", className: "bg-chip text-ink-body" },
 };
 
 function BucketLabel({ bucket }: { bucket: Exclude<ListFilter, "all"> }) {
   const label = BUCKET_LABELS[bucket];
-  return <span className={label.className}>{label.text}</span>;
+  return (
+    // A block, not inline: an inline badge lines up with the cell's own line
+    // of text and sat 1.7px below the rest of the row; a block is centred by
+    // the cell itself.
+    <span className={`flex w-fit rounded-full px-2 py-0.5 text-xs font-semibold ${label.className}`}>
+      {label.text}
+    </span>
+  );
 }
 
 /**
@@ -647,14 +661,14 @@ function SortHeading({
   return (
     <th scope="col" aria-sort={active ? "other" : "none"} className={`${className} ${side}`}>
       {active ? (
-        <span className={`inline-flex items-center gap-1 ${align === "right" ? "flex-row-reverse" : ""} text-ink-muted`}>
+        <span className={`inline-flex items-center gap-1 ${align === "right" ? "flex-row-reverse" : ""} text-ink-soft`}>
           {children}
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" className="size-2">
             <path d="M6 9l6 6 6-6" />
           </svg>
         </span>
       ) : (
-        <Link href={href} className="transition-colors hover:text-ink-muted">
+        <Link href={href} className="transition-colors hover:text-ink-soft">
           {children}
         </Link>
       )}

@@ -72,7 +72,7 @@ export function ContactMenu({
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label="More actions"
-        className="flex size-[34px] items-center justify-center rounded-[11px] bg-white text-ink-soft shadow-[0_1px_2px_rgba(20,20,25,.05)] transition-colors hover:text-ink"
+        className="flex size-[34px] items-center justify-center rounded-lg bg-white text-ink-soft shadow-[0_1px_2px_rgba(20,20,25,.05)] transition-colors hover:text-ink"
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="size-[17px]">
           <circle cx="5.5" cy="12" r="1.5" />
@@ -99,6 +99,7 @@ export function ContactMenu({
             >
               <Link href={`/contacts/${contactId}/edit`} className={ITEM}>
                 <span className={LINE_INK}>Edit their details</span>
+                <span className={NOTE}>Name, company, role, email addresses and phone.</span>
               </Link>
 
               {threadId && (
@@ -170,14 +171,14 @@ export function ContactMenu({
  * gutters, above the bottom bar.
  */
 const PANEL =
-  "z-20 flex flex-col rounded-[18px] bg-white shadow-[0_1px_2px_rgba(20,20,25,.06),0_12px_32px_rgba(20,20,25,.14)] max-sm:fixed max-sm:inset-x-4 max-sm:bottom-[84px] sm:absolute sm:top-full sm:right-0 sm:mt-2";
+  "z-20 flex flex-col rounded-xl bg-white shadow-[0_1px_2px_rgba(20,20,25,.06),0_12px_32px_rgba(20,20,25,.14)] max-sm:fixed max-sm:inset-x-4 max-sm:bottom-[84px] sm:absolute sm:top-full sm:right-0 sm:mt-2";
 
 const ITEM =
   "flex w-full flex-col items-start gap-0.5 px-[18px] py-2.5 text-left transition-colors hover:bg-paper-tint";
-const LINE = "text-[13px] font-semibold";
+const LINE = "text-sm font-semibold";
 const LINE_INK = `${LINE} text-ink`;
 const LINE_DANGER = `${LINE} text-danger`;
-const NOTE = "text-[11.5px] leading-[1.45] text-ink-soft";
+const NOTE = "text-xs text-ink-soft";
 
 /**
  * One menu row that runs a Server Action and then offers Undo (slice 9b,
@@ -252,12 +253,12 @@ function DeleteConfirm({
       aria-label={`Delete ${name}`}
       className={`${PANEL} gap-2.5 px-5 py-[17px] sm:w-[340px]`}
     >
-      <h2 className="text-[14.5px] font-bold tracking-[-0.015em] break-words">Delete {name}?</h2>
-      <p className="text-[12.5px] leading-[1.5] text-ink-soft">
+      <h2 className="text-base font-bold tracking-[-0.015em] break-words">Delete {name}?</h2>
+      <p className="text-sm text-ink-soft">
         The contact is deleted — notes, tags, next touch — and so is the mail they sent you. Only
         their address is kept, so new mail from them is skipped.
       </p>
-      <p className="text-[12.5px] leading-[1.5] text-ink-soft">
+      <p className="text-sm text-ink-soft">
         You can undo it from Seen once → Dismissed, and their mail is read back in from Gmail — but
         notes, tags and the next touch don&rsquo;t come back.
       </p>
@@ -265,7 +266,7 @@ function DeleteConfirm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-full bg-line-soft px-[14px] py-2 text-[12px] font-semibold text-ink-body transition-colors hover:bg-chip-track"
+          className="rounded-full bg-line-soft px-[14px] py-2 text-xs font-semibold text-ink-body transition-colors hover:bg-chip-track"
         >
           Cancel
         </button>
@@ -283,7 +284,7 @@ function ConfirmButton({ action }: { action: () => Promise<void> }) {
       type="submit"
       formAction={action}
       disabled={pending}
-      className="rounded-full bg-danger px-[14px] py-2 text-[12px] font-semibold text-white transition-colors hover:bg-danger-dark disabled:cursor-default disabled:opacity-50"
+      className="rounded-full bg-danger px-[14px] py-2 text-xs font-semibold text-white transition-colors hover:bg-danger-dark disabled:cursor-default disabled:opacity-50"
     >
       {pending ? "Deleting…" : "Delete contact and their mail"}
     </button>

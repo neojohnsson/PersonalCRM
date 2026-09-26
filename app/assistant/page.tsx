@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/app/app-shell";
+import { RowLink } from "@/app/nav-pending";
 import { CARD } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
 import { AssistantChat } from "./chat";
@@ -198,23 +199,34 @@ export default async function AssistantPage() {
   const cap = limitsOf(plan, "assistant", assistantMonthlyCapUsd()).capUsd;
   const meter = questions
     ? { label: allowanceLine(questions, "assistant"), share: questions.allowed > 0 ? questions.used / questions.allowed : 1 }
-    : { label: `$${spent.toFixed(2)} of $${cap.toFixed(0)} this month`, share: cap > 0 ? Math.min(1, spent / cap) : 1 };
+    : // Named for what it covers (UI quality pass, milestone 6): a contact's
+      // page shows the other budget, and two dollar lines with no names read
+      // as one number that changed.
+      { label: `Assistant budget: $${spent.toFixed(2)} of $${cap.toFixed(0)} this month`, share: cap > 0 ? Math.min(1, spent / cap) : 1 };
 
   return (
     <AppShell userEmail={user.email} active="assistant" headerRight={<SignOutButton />}>
       <main className="flex flex-1 flex-col gap-5 px-4 pt-2 pb-[30px] sm:px-[30px]">
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
           <div className="flex flex-col gap-[7px]">
-            <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.035em]">Assistant</h1>
-            <p className="text-[12.5px] font-medium text-ink-soft">
+            <h1 className="text-2xl font-bold tracking-[-0.035em]">Assistant</h1>
+            <p className="text-sm font-normal text-ink-soft">
               Everything the app worked out, and one place to ask for the rest.
             </p>
           </div>
-          <p className="pb-1 text-[13px] font-medium text-ink-soft">{weekdayDayMonth(now)}</p>
+          <p className="pb-1 text-sm font-normal text-ink-soft">{weekdayDayMonth(now)}</p>
         </div>
 
-        <div className="flex flex-col gap-[18px] lg:flex-row">
-          <WhoNeedsYou entries={brief} />
+        {/* Content-driven, not three equal columns (UI quality pass,
+            milestone 5): three cards stretched to the tallest, so a card with
+            one sentence was 440px of blank with its footer at the bottom, and
+            at 1150-1250px names were cut to "Linda Jöns…". Who needs you has
+            the left; This week and Things to decide stack on the right, each as
+            tall as its content, and the 1fr row takes the slack. */}
+        <div className="flex flex-col gap-[18px] lg:grid lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-5">
+          <div className="lg:row-span-2">
+            <WhoNeedsYou entries={brief} />
+          </div>
           <ThisWeek
             connected={calendar !== null}
             meetings={meetings}
@@ -254,7 +266,7 @@ function WhoNeedsYou({ entries }: { entries: BriefEntry<ContactRow>[] }) {
       <CardHeading dot="bg-accent" title="Who needs you" count={needYou > 0 ? `${needYou} this week` : null} />
 
       {shown.length === 0 ? (
-        <p className="px-5 pb-5 text-[12.5px] leading-[1.5] text-ink-soft">
+        <p className="px-5 pb-5 text-sm text-ink-soft">
           Nobody is waiting on you this week. When someone writes and you haven&rsquo;t answered, they
           show up here.
         </p>
@@ -263,24 +275,26 @@ function WhoNeedsYou({ entries }: { entries: BriefEntry<ContactRow>[] }) {
           {shown.map((entry, index) => (
             <li
               key={entry.contact.id}
-              className={`relative flex items-center gap-3 px-5 py-2.5 transition-colors hover:bg-paper-tint ${index === 0 ? "bg-paper-tint" : ""}`}
+              className={`row-hover relative flex items-center gap-3 px-5 py-2.5 ${index === 0 ? "bg-paper-tint" : ""}`}
             >
               <Avatar contact={entry.contact} />
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <div className="flex min-w-0 items-baseline gap-2">
-                  <Link
+                {/* A name is never cut short (UI quality pass, milestone 5): it
+                    wraps, and the company drops below it when there is no room. */}
+                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                  <RowLink
                     href={`/contacts/${entry.contact.id}`}
-                    className="truncate text-[14px] font-semibold tracking-[-0.01em] after:absolute after:inset-0 after:content-['']"
+                    className="break-words text-base font-semibold tracking-[-0.01em]"
                   >
                     {displayName(entry.contact)}
-                  </Link>
+                  </RowLink>
                   {entry.contact.company && (
-                    <span className="hidden min-w-0 truncate text-[12.5px] text-ink-soft sm:inline">
+                    <span className="hidden min-w-0 break-words text-sm text-ink-soft sm:inline">
                       {entry.contact.company}
                     </span>
                   )}
                 </div>
-                <span className="text-[12.5px] leading-[1.45] text-ink-soft">{entry.because}</span>
+                <span className="text-sm text-ink-soft">{entry.because}</span>
               </div>
               {/* Waiting on them offers nothing to draft (slice 9a): the next
                   move is theirs. The first row's button is the design's black
@@ -289,7 +303,7 @@ function WhoNeedsYou({ entries }: { entries: BriefEntry<ContactRow>[] }) {
               {!entry.waitingOnThem && (
                 <Link
                   href={`/contacts/${entry.contact.id}#draft`}
-                  className={`relative z-10 shrink-0 rounded-full px-[13px] py-[7px] text-[12px] font-semibold transition ${
+                  className={`relative z-10 shrink-0 rounded-full px-[13px] py-[7px] text-xs font-semibold transition ${
                     index === 0 ? "bg-ink-deep text-white hover:bg-ink/85" : "bg-chip text-ink hover:bg-chip-track"
                   }`}
                 >
@@ -302,14 +316,14 @@ function WhoNeedsYou({ entries }: { entries: BriefEntry<ContactRow>[] }) {
       )}
 
       <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-chip px-5 pt-3 pb-4">
-        <span className="text-[12px] font-medium text-ink-soft">
+        <span className="text-xs font-normal text-ink-soft">
           {waiting > 0
             ? `Waiting on them: ${waiting === 1 ? "1 person" : `${waiting} people`}, nothing for you to do`
             : entries.length > shown.length
               ? `${entries.length - shown.length} more this week`
               : "That's everyone this week"}
         </span>
-        <Link href="/" className="text-[12px] font-semibold text-accent hover:text-accent-dark">
+        <Link href="/" className="text-xs font-semibold text-accent hover:text-accent-dark">
           All of today on Home
         </Link>
       </div>
@@ -344,16 +358,16 @@ function ThisWeek({
 
       {!connected ? (
         <div className="flex flex-col gap-2 px-5 pb-5">
-          <p className="text-[12.5px] leading-[1.5] text-ink-soft">
+          <p className="text-sm text-ink-soft">
             Connect your calendar and the people you are meeting this week show up here, with what
             is open with each of them.
           </p>
-          <Link href="/calendar" className="self-start text-[12px] font-semibold text-accent hover:text-accent-dark">
+          <Link href="/calendar" className="self-start text-xs font-semibold text-accent hover:text-accent-dark">
             Connect it on Calendar
           </Link>
         </div>
       ) : shown.length === 0 ? (
-        <p className="px-5 pb-4 text-[12.5px] leading-[1.5] text-ink-soft">
+        <p className="px-5 pb-4 text-sm text-ink-soft">
           No meetings with your contacts for the rest of this week.
         </p>
       ) : (
@@ -376,17 +390,17 @@ function ThisWeek({
             return (
               <li
                 key={`${meeting.contact_id}-${meeting.started_at}`}
-                className={`relative flex items-start gap-3 px-5 py-2.5 ${index === 0 ? "bg-paper-tint" : ""}`}
+                className={`row-hover relative flex items-start gap-3 px-5 py-2.5 ${index === 0 ? "bg-paper-tint" : ""}`}
               >
                 <MeetingBadge startedAt={meeting.started_at} isToday={isToday} />
                 <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
-                  <Link
+                  <RowLink
                     href={`/contacts/${contact.id}`}
-                    className="truncate text-[13.5px] font-semibold tracking-[-0.01em] after:absolute after:inset-0 after:content-['']"
+                    className="break-words text-sm font-semibold tracking-[-0.01em]"
                   >
                     {displayName(contact)}
-                  </Link>
-                  <span className="text-[12px] leading-[1.45] text-ink-soft">
+                  </RowLink>
+                  <span className="text-xs text-ink-soft">
                     {pill ? pill.text : "Nothing open with them."}
                   </span>
                 </div>
@@ -398,13 +412,13 @@ function ThisWeek({
 
       {metNoFollowUp && (
         <div className="mt-auto flex flex-col gap-2 border-t border-chip px-5 pt-3.5 pb-4">
-          <span className="text-[12.5px] font-semibold">
+          <span className="text-sm font-semibold">
             You met {displayName(metNoFollowUp.contact)} on {dayMonth(metNoFollowUp.endedAt)} and never
             wrote after.
           </span>
           <Link
             href={`/contacts/${metNoFollowUp.contact.id}#draft`}
-            className="self-start rounded-full bg-ink-deep px-[13px] py-[7px] text-[12px] font-semibold text-white transition hover:bg-ink/85"
+            className="self-start rounded-full bg-ink-deep px-[13px] py-[7px] text-xs font-semibold text-white transition hover:bg-ink/85"
           >
             Draft a follow-up
           </Link>
@@ -422,17 +436,17 @@ function MeetingBadge({ startedAt, isToday }: { startedAt: string; isToday: bool
       timeZone: "Europe/Stockholm",
     }).format(new Date(startedAt));
     return (
-      <div className="flex w-[42px] shrink-0 flex-col items-center rounded-[10px] bg-info-tint py-[5px] text-info-ink">
-        <span className="text-[11px] leading-[1.2] font-bold">{time}</span>
-        <span className="text-[9.5px] font-semibold tracking-[0.05em] uppercase">Today</span>
+      <div className="flex w-[42px] shrink-0 flex-col items-center rounded-lg bg-info-tint py-[5px] text-info-ink">
+        <span className="text-2xs font-bold">{time}</span>
+        <span className="text-2xs font-semibold tracking-[0.05em] uppercase">Today</span>
       </div>
     );
   }
   const { day, month } = dateBadge(todayIn("Europe/Stockholm", new Date(startedAt)));
   return (
-    <div className="flex w-[42px] shrink-0 flex-col items-center rounded-[10px] bg-chip py-[5px]">
-      <span className="text-[14px] leading-[1.1] font-bold">{day}</span>
-      <span className="text-[9.5px] font-semibold tracking-[0.05em] text-ink-soft uppercase">{month}</span>
+    <div className="flex w-[42px] shrink-0 flex-col items-center rounded-lg bg-chip py-[5px]">
+      <span className="text-base font-bold">{day}</span>
+      <span className="text-2xs font-semibold tracking-[0.05em] text-ink-soft uppercase">{month}</span>
     </div>
   );
 }
@@ -445,7 +459,7 @@ function ThingsToDecide({ rows }: { rows: DecideRow[] }) {
       <CardHeading dot="bg-decide" title="Things to decide" count={rows.length > 0 ? String(rows.length) : null} />
 
       {rows.length === 0 ? (
-        <p className="px-5 pb-4 text-[12.5px] leading-[1.5] text-ink-soft">
+        <p className="px-5 pb-4 text-sm text-ink-soft">
           Nothing waiting on a decision: no duplicates, summaries, promises or names to look at.
         </p>
       ) : (
@@ -456,12 +470,12 @@ function ThingsToDecide({ rows }: { rows: DecideRow[] }) {
               className={`flex items-center gap-3 px-5 py-[11px] ${index === 0 ? "bg-paper-tint" : ""}`}
             >
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="text-[13.5px] font-semibold tracking-[-0.01em]">{row.title}</span>
-                <span className="text-[12px] leading-[1.45] text-ink-soft">{row.detail}</span>
+                <span className="text-sm font-semibold tracking-[-0.01em]">{row.title}</span>
+                <span className="text-xs text-ink-soft">{row.detail}</span>
               </div>
               <Link
                 href={row.href}
-                className="shrink-0 rounded-full bg-chip px-[13px] py-[7px] text-[12px] font-semibold transition-colors hover:bg-chip-track"
+                className="shrink-0 rounded-full bg-chip px-[13px] py-[7px] text-xs font-semibold transition-colors hover:bg-chip-track"
               >
                 {row.action}
               </Link>
@@ -471,7 +485,7 @@ function ThingsToDecide({ rows }: { rows: DecideRow[] }) {
       )}
 
       <div className="mt-auto border-t border-chip px-5 pt-3 pb-4">
-        <span className="text-[12px] font-medium text-ink-soft">
+        <span className="text-xs font-normal text-ink-soft">
           The Assistant never merges or deletes. Those stay yours.
         </span>
       </div>
@@ -500,9 +514,9 @@ function SpendStrip({
   const share = Math.min(1, meter.share);
 
   return (
-    <div className="flex flex-wrap items-center gap-x-[18px] gap-y-2 rounded-[14px] bg-white px-[18px] py-[11px] shadow-[0_1px_2px_rgba(20,20,25,.04)]">
+    <div className="flex flex-wrap items-center gap-x-[18px] gap-y-2 rounded-xl bg-white px-[18px] py-[11px] shadow-[0_1px_2px_rgba(20,20,25,.04)]">
       <div className="flex shrink-0 items-center gap-2.5">
-        <span className="text-[12px] font-semibold text-ink-body">
+        <span className="text-xs font-semibold text-ink-body">
           {meter.label}
         </span>
         <span
@@ -520,24 +534,24 @@ function SpendStrip({
         <div className="flex min-w-0 basis-full flex-wrap items-center gap-x-[9px] gap-y-1 sm:basis-0 sm:flex-1">
           <DoneMark undone={latest.undoneAt !== null} />
           <span
-            className={`min-w-0 text-[12.5px] ${latest.undoneAt ? "text-ink-faint line-through" : "text-ink-body"}`}
+            className={`min-w-0 text-sm ${latest.undoneAt ? "text-ink-soft line-through" : "text-ink-body"}`}
           >
             {latest.summary}
           </span>
-          <span className="shrink-0 text-[12px] text-ink-soft">{timeAgo(latest.createdAt, now)}</span>
+          <span className="shrink-0 text-xs text-ink-soft">{timeAgo(latest.createdAt, now)}</span>
           {latest.undoneAt ? (
-            <span className="shrink-0 text-[12px] font-semibold text-ink-soft">Undone</span>
+            <span className="shrink-0 text-xs font-semibold text-ink-soft">Undone</span>
           ) : (
             <UndoButton actionId={latest.id} label={latest.summary} />
           )}
         </div>
       ) : (
-        <span className="min-w-0 basis-full text-[12.5px] text-ink-soft sm:basis-0 sm:flex-1">
+        <span className="min-w-0 basis-full text-sm text-ink-soft sm:basis-0 sm:flex-1">
           Nothing done yet. What the Assistant does on its own will show here, with Undo.
         </span>
       )}
       {latest && (
-        <Link href="/assistant/activity" className="shrink-0 text-[12.5px] font-semibold">
+        <Link href="/assistant/activity" className="link-action shrink-0 text-sm font-semibold">
           Everything it did
         </Link>
       )}
@@ -551,8 +565,8 @@ function CardHeading({ dot, title, count }: { dot: string; title: string; count:
   return (
     <div className="flex items-center gap-2.5 px-5 pt-[17px] pb-3">
       <span aria-hidden="true" className={`size-[7px] shrink-0 rounded-full ${dot}`} />
-      <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">{title}</h2>
-      {count && <span className="text-[12px] font-semibold text-ink-soft">{count}</span>}
+      <h2 className="text-base font-bold tracking-[-0.015em]">{title}</h2>
+      {count && <span className="text-xs font-semibold text-ink-soft">{count}</span>}
     </div>
   );
 }
@@ -563,7 +577,7 @@ function Avatar({ contact }: { contact: ContactRow }) {
     <span
       aria-hidden="true"
       style={avatarColors(contact.primary_email ?? contact.id)}
-      className="flex size-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+      className="flex size-8 shrink-0 items-center justify-center rounded-full text-2xs font-bold"
     >
       {initials(hasName ? displayName(contact) : null, contact.primary_email ?? displayName(contact))}
     </span>

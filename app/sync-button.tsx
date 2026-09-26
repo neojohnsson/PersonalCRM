@@ -58,7 +58,7 @@ export function SyncButton({ onDone, onCard = false }: { onDone?: () => void; on
         // White, like the design's sort pill: the dark pill beside it is
         // "Add contact", the page's main action. On an Assistant card, which
         // is white itself, it is the card's dark main button instead.
-        className={`flex items-center gap-[7px] rounded-full px-4 py-[9px] text-[12.5px] font-semibold tabular-nums transition disabled:opacity-70 ${
+        className={`flex items-center gap-[7px] rounded-full px-4 py-[9px] text-sm font-semibold tabular-nums transition disabled:opacity-70 ${
           onCard
             ? "bg-ink-deep text-white hover:bg-ink/85"
             : "bg-white text-ink shadow-[0_1px_2px_rgba(20,20,25,.04)] hover:bg-paper-tint"
@@ -80,7 +80,7 @@ export function SyncButton({ onDone, onCard = false }: { onDone?: () => void; on
         {isSyncing ? "Syncing…" : "Sync now"}
       </button>
       {failed && (
-        <p role="alert" className="text-[12px] font-medium text-accent">
+        <p role="alert" className="text-xs font-normal text-accent">
           Couldn&rsquo;t reach the server. Try again.
         </p>
       )}

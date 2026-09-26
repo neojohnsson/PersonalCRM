@@ -54,14 +54,14 @@ export function NameSuggestionRow({
     });
 
   return (
-    <div className="flex max-w-[640px] flex-wrap items-center gap-x-3 gap-y-2 rounded-[14px] bg-info-tint px-[15px] py-2.5">
+    <div className="flex max-w-[640px] flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-info-tint px-[15px] py-2.5">
       <div className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-[12.5px] font-semibold text-info-ink">
+        <span className="text-sm font-semibold text-info-ink">
           {suggestion.kind === "swap"
             ? `Shown as “${shownAs}” — did you mean “${suggested}”?`
             : `No name yet. Their address suggests “${suggested}”.`}
         </span>
-        <span className="text-[11.5px] leading-[1.45] text-info-ink/80">{suggestion.why}</span>
+        <span className="text-xs text-info-ink/80">{suggestion.why}</span>
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
@@ -69,13 +69,13 @@ export function NameSuggestionRow({
           type="button"
           onClick={accept}
           disabled={pending}
-          className="rounded-full bg-info-ink px-[13px] py-3 text-[12px] font-semibold text-white transition hover:bg-info-ink/85 disabled:cursor-default disabled:opacity-60 sm:py-1.5"
+          className="rounded-full bg-info-ink px-[13px] py-3 text-xs font-semibold text-white transition hover:bg-info-ink/85 disabled:cursor-default disabled:opacity-60 sm:py-1.5"
         >
           {pending ? "Saving…" : `Use ${suggested}`}
         </button>
         <Link
           href={`/contacts/${contactId}/edit`}
-          className="rounded-full px-2 py-3 text-[12px] font-semibold text-info-ink underline decoration-info-ink/30 underline-offset-2 hover:decoration-info-ink sm:py-1.5"
+          className="rounded-full px-2 py-3 text-xs font-semibold text-info-ink underline decoration-info-ink/30 underline-offset-2 hover:decoration-info-ink sm:py-1.5"
         >
           Edit instead
         </Link>

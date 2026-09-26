@@ -11,6 +11,22 @@
 /*
  * Palette lifted from the design canvas in design/. Kept as tokens so the
  * screens the design agent produces and the screens built here stay in step.
+ *
+ * The text greys are the exception (UI quality pass, milestone 1, 2026-09-25).
+ * The design had eight, and five of them failed WCAG AA (4.5:1) on white while
+ * carrying real content: calendar hours, form labels, table headers, the sync
+ * line. Darkened until they passed, six greys all landed near #737579, which
+ * nobody can tell apart -- the ramp itself was the bug. So there are four text
+ * greys, each clearing AA on white AND on paper (#f6f6f4, the real background
+ * of most screens), and two greys for things that are not text:
+ *
+ *   ink        #1a1b1e  17.22 / 15.91   primary
+ *   ink-body   #4a4c52   8.58 /  7.93   secondary, body copy
+ *   ink-soft   #6f7177   4.88 /  4.51   tertiary: meta, captions, placeholders
+ *   ink-meta   #6b6d73   5.17 /  4.78   the smallest text, 10 to 11px labels
+ *   line, line-strong                   borders, dividers -- never text
+ *
+ * #6b6d73 is the floor: anything lighter fails on paper.
  */
 :root {
   --background: #ffffff;
@@ -18,6 +34,10 @@
 
   --theme-paper: #f6f6f4;
   --theme-paper-tint: #faf9f7;
+  /* A row under the pointer or holding keyboard focus (UI quality pass,
+     milestone 3). paper-tint was 1.03:1 on white, which nobody could see;
+     this is about 1.1: visible, and still quiet. */
+  --theme-row-hover: #f3f3f0;
   --theme-chip: #f1f1ef;
   --theme-chip-track: #eaeae7;
   --theme-white: #ffffff;
@@ -25,11 +45,7 @@
   --theme-ink-deep: #17181a;
   --theme-ink-body: #4a4c52;
   --theme-ink-soft: #6f7177;
-  --theme-ink-faint: #9c9ea4;
-  --theme-ink-quiet: #8a8c92;
-  --theme-ink-muted: #82848a;
-  --theme-ink-ghost: #b0b2b8;
-  --theme-ink-hush: #b9bbc0;
+  --theme-ink-meta: #6b6d73;
   --theme-line: #ecece9;
   --theme-line-soft: #f4f4f2;
   --theme-line-strong: #d8d8d4;
@@ -41,11 +57,16 @@
   --theme-info-ink: #2c5c96;
   --theme-info-tint: #e8eef7;
   --theme-rail-active: #303237;
-  --theme-rail-icon: #75777e;
+  /* #75777e was enough for an icon, but the rail's items carry words now
+     (UI quality pass, milestone 3), and a word needs 4.5:1: this is 5.36. */
+  --theme-rail-icon: #8b8d94;
   --theme-rail-avatar: #4a4d54;
   /* The sidebar's own colour, apart from ink-deep: Night makes the dark
      buttons a raised grey, and the sidebar must stay dark. */
   --theme-rail: #17181a;
+  /* The rail's right-hand line: none in Paper, where dark on light is edge
+     enough; Night gives it one (UI quality pass, milestone 2). */
+  --theme-rail-edge: transparent;
   /* The design's six avatar pairs (lib/format.ts), as variables so a theme
      can mute them. */
   --avatar-1-bg: #e8eef7;
@@ -61,7 +82,10 @@
   --avatar-6-bg: #faf0e4;
   --avatar-6-ink: #8a5a1e;
   --theme-affirm: #15803d;
-  --theme-cooling: #a5811f;
+  /* The design's #a5811f was 3.65:1 on white: "Going quiet" and a warmth of
+     50 are text, so the amber is darkened to pass AA on white, paper and chips
+     (5.22 / 4.83 / 4.62) and still reads as the same amber. */
+  --theme-cooling: #876814;
   --theme-radio-ring: #c5c7cc;
   --theme-switch-off: #e4e4e1;
   --theme-danger: #b42318;
@@ -111,6 +135,50 @@ html {
   }
 }
 
+/*
+ * The type and shape scale (UI quality pass, milestone 4, 2026-09-25).
+ *
+ * One page used ten font sizes and a contacts row six of them; the app had
+ * twenty-three, most a half-step apart (12, 12.5, 13, 13.5), which reads as
+ * inconsistency rather than hierarchy and gave line heights like 14.25px.
+ * Now there are seven steps, each with a line height on the 4px grid:
+ *
+ *   2xs  11/16  small labels, badges
+ *   xs   12/16  captions, meta
+ *   sm   13/20  body in lists and cards
+ *   base 15/24  body to read: the contacts table, a contact's page
+ *   lg   18/24  card headings
+ *   xl   24/32  section and contact headings
+ *   2xl  30/36  page titles -- a step the audit's suggested six did not
+ *               have: they stopped at 24, which would have shrunk every page
+ *               title by a fifth
+ *
+ * Three radii: 8 (inputs, chips, small things), 12 (cards), and the pill.
+ * Tailwind's other sizes and radii are switched off, so a value off the scale
+ * does not build: tests/styles.test.ts.
+ */
+@theme {
+  --text-*: initial;
+  --text-2xs: 11px;
+  --text-2xs--line-height: 16px;
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 13px;
+  --text-sm--line-height: 20px;
+  --text-base: 15px;
+  --text-base--line-height: 24px;
+  --text-lg: 18px;
+  --text-lg--line-height: 24px;
+  --text-xl: 24px;
+  --text-xl--line-height: 32px;
+  --text-2xl: 30px;
+  --text-2xl--line-height: 36px;
+
+  --radius-*: initial;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -118,7 +186,9 @@ html {
 
   --color-ink: var(--theme-ink);
   --color-ink-soft: var(--theme-ink-soft);
-  --color-ink-faint: var(--theme-ink-faint);
+  /* The smallest text: 10 to 11px labels. Slightly darker than ink-soft,
+     because small type needs more contrast to be read, not less. */
+  --color-ink-meta: var(--theme-ink-meta);
   --color-paper: var(--theme-paper);
   --color-line: var(--theme-line);
   --color-accent: var(--theme-accent);
@@ -129,12 +199,6 @@ html {
 
   /* The near-black of the sidebar and the dark pill buttons. */
   --color-ink-deep: var(--theme-ink-deep);
-  /* Secondary text steps from ContactList / Main: status line, cells, headings. */
-  --color-ink-quiet: var(--theme-ink-quiet);
-  --color-ink-muted: var(--theme-ink-muted);
-  --color-ink-ghost: var(--theme-ink-ghost);
-  /* The faint count on an inactive tab, and the search placeholder. */
-  --color-ink-hush: var(--theme-ink-hush);
   /* The grey track behind ContactList's Contacts / Seen once tabs. */
   --color-chip-track: var(--theme-chip-track);
 
@@ -154,6 +218,7 @@ html {
   /* Row dividers and the hover tint of the table. */
   --color-line-soft: var(--theme-line-soft);
   --color-paper-tint: var(--theme-paper-tint);
+  --color-row-hover: var(--theme-row-hover);
 
   /* Profile: an unselected radio's ring, and a switch that's off. */
   --color-radio-ring: var(--theme-radio-ring);
@@ -181,6 +246,7 @@ html {
   --color-rail-icon: var(--theme-rail-icon);
   --color-rail-avatar: var(--theme-rail-avatar);
   --color-rail: var(--theme-rail);
+  --color-rail-edge: var(--theme-rail-edge);
   /* The logo tile stays white in every theme: the rail is dark in all of
      them, and Night's .bg-white repaint made the "C" disappear. */
   --color-rail-logo: #ffffff;
@@ -196,9 +262,15 @@ html {
  *   page     #161618   the canvas
  *   surface  #1e1f22   every card, the bar, the menus
  *   raised   #28292d   chips, bubbles, hover, the selected row, dark buttons
- *   line     #2a2b2f   one border colour, just visible; #34363b for outlines
+ *   line     #34363c   one border colour; #3f4147 for outlines
  *
  * No shadow anywhere: on dark, a shadow reads as a hard rim, not depth.
+ *
+ * Structure without shadows (UI quality pass, milestone 2, 2026-09-25): a
+ * card on the page is 1.10:1, which nobody sees, so every card gets a 1px
+ * edge in the one line colour instead (the rule below the tokens), and the
+ * rail gets its own darker tone and a right-hand line. The line was #2a2b2f,
+ * 1.17:1 on a card; #34363c is 1.36:1, visible without being sharp.
  */
 :root[data-theme="night"] {
   color-scheme: dark;
@@ -207,22 +279,24 @@ html {
   --theme-paper: #161618;
   --theme-white: #1e1f22;
   --theme-paper-tint: #232427;
+  --theme-row-hover: #26272b;
   --theme-chip: #28292d;
   --theme-chip-track: #28292d;
-  --theme-line: #2a2b2f;
-  --theme-line-soft: #2a2b2f;
-  --theme-line-strong: #34363b;
+  --theme-line: #34363c;
+  --theme-line-soft: #34363c;
+  --theme-line-strong: #3f4147;
   --theme-ink: #ececec;
   --theme-ink-body: #c8c8cc;
+  /* The same four text roles. Meta is measured on the RAISED tone, not the
+     card: the month on a date tile sits on #28292d, where the audit's
+     #87888d was 4.11:1. #909196 clears 4.5 on every Night surface (lowest,
+     the chip: 4.62). */
   --theme-ink-soft: #a0a1a6;
-  --theme-ink-faint: #85868c;
-  --theme-ink-quiet: #909197;
-  --theme-ink-muted: #97989d;
-  --theme-ink-ghost: #75767c;
-  --theme-ink-hush: #6b6c72;
+  --theme-ink-meta: #909196;
   /* The dark pill buttons: raised grey with white words, not a hole. */
   --theme-ink-deep: #33343a;
-  --theme-rail: #111112;
+  --theme-rail: #0d0d0f;
+  --theme-rail-edge: #2c2d32;
   --theme-rail-active: #28292d;
   --theme-rail-icon: #8e8f95;
   --theme-rail-avatar: #3a3b40;
@@ -258,28 +332,9 @@ html {
   --avatar-5-ink: #8fcfc9;
   --avatar-6-bg: #32291d;
   --avatar-6-ink: #e2bd84;
-}
-
-:root[data-theme="studio"] {
-  --theme-paper: #f4f8f5;
-  --theme-paper-tint: #edf5f0;
-  --theme-chip: #e6f0eb;
-  --theme-chip-track: #dcebe3;
-  --theme-accent: #d44f69;
-  --theme-accent-dark: #a9334c;
-  --theme-accent-tint: #fff0f3;
-  --theme-accent-soft: #ed7690;
-  --theme-info: #376fc5;
-  --theme-info-ink: #2d5da8;
-  --theme-info-tint: #eaf1ff;
-  --theme-rail-active: #253e39;
-  --theme-rail-icon: #78918a;
-  --theme-rail-avatar: #4c7569;
-}
-
-:root[data-theme="studio"] .assistant-composer {
-  border-color: #cfe3d7;
-  box-shadow: 0 1px 2px rgb(20 20 25 / 0.04), 0 8px 24px rgb(212 79 105 / 0.12);
+  /* The scrollbar: Paper's light-grey thumb was left on the dark page. */
+  --scrollbar-thumb: #3a3b40;
+  --scrollbar-thumb-hover: #4a4b51;
 }
 
 /* Night's surfaces: every white card and paper strip takes Night's tones. */
@@ -293,14 +348,44 @@ html {
 
 /* No shadows in Night: Tailwind's shadow utilities all draw through
    --tw-shadow, so emptying it removes every one without naming them.
-   Focus rings are drawn separately and stay. */
+   Focus rings are drawn separately and stay. So do inset rings: an outline
+   is drawn with inset-ring-*, never with an inset shadow, or Night would
+   erase it with the shadows (the Profile radios lost theirs until 2026-09-25). */
 :root[data-theme="night"] * {
   --tw-shadow: 0 0 #0000 !important;
+}
+
+/* ...and in their place, an edge. Every white surface that had a shadow --
+   the cards, menus, chips and buttons that sat on the page by their shadow
+   in Paper -- gets a 1px line in Night's one line colour, drawn inside it so
+   nothing moves. One rule rather than a class on each of 79 elements. Left
+   out: a surface that already has a full border (the theme menu), which
+   would otherwise get two. */
+:root[data-theme="night"] .bg-white[class*="shadow-"]:not([class~="border"]) {
+  --tw-inset-ring-shadow: inset 0 0 0 1px var(--theme-line);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/*
+ * Asked for less motion (UI quality pass, milestone 6): 35 elements had
+ * transitions and none listened. Every transition and animation becomes
+ * instant -- they still end where they would have, so nothing is left half
+ * faded -- and smooth scrolling stops. Delays are kept: the steady pending
+ * bar still waits its 100ms before it shows.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /*
@@ -312,5 +397,167 @@ body {
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
+  }
+
+  /*
+   * One focus ring for everything (UI quality pass, milestone 3). Before,
+   * a few buttons drew an accent ring, inputs a ring of ink at 10% (about
+   * 1.1:1 on white, invisible), and the rest fell back to the browser's own
+   * outline, a different colour on every element. Now anything focused from
+   * the keyboard gets the same 2px accent ring, 2px out: about 5:1 on white
+   * and 6:1 on Night's cards, above the 3:1 WCAG 2.4.11 asks for.
+   *
+   * Nothing turns it off without drawing its own: tests/focus.test.ts.
+   */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+/*
+ * "Going there", from the press until the page changes (UI quality pass,
+ * milestone 3; app/nav-pending.tsx). Before, a press changed nothing on
+ * screen until the new page arrived. Both wait 100ms before showing, so a
+ * fast navigation does not flash them.
+ *
+ *   nav-pending  a short bar under a navigation item's word, pulsing
+ *   row-pending  a row that opens a contact fades a little
+ *
+ * In the components layer, so a Tailwind class on the element can still move
+ * it: an unlayered rule beats every utility, whatever the order.
+ */
+@layer components {
+  .nav-pending {
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    width: 18px;
+    height: 2px;
+    margin-left: -9px;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .nav-pending.is-pending {
+    animation: nav-pending 0.9s ease-in-out 0.1s infinite;
+  }
+
+  /* Covers the row: the link is not positioned, so the row is what it fills. */
+  .row-pending {
+    position: absolute;
+    inset: 0;
+    background: var(--theme-white);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .row-pending.is-pending {
+    animation: row-pending 0.2s ease-out 0.1s forwards;
+  }
+
+  /* Asked for less motion: a steady bar, after the same wait, not a pulse. */
+  @media (prefers-reduced-motion: reduce) {
+    .nav-pending.is-pending {
+      animation: nav-pending-steady 0s linear 0.1s forwards;
+    }
+  }
+}
+
+@keyframes nav-pending {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.9; }
+}
+@keyframes nav-pending-steady {
+  to { opacity: 0.7; }
+}
+@keyframes row-pending {
+  to { opacity: 0.55; }
+}
+
+/*
+ * A link that makes its whole row clickable (a contact in a list; RowLink in
+ * app/nav-pending.tsx is the way to use it). The link itself draws no ring:
+ * its ::after covers the row and draws the shared one, just inside the row so
+ * a neighbour does not cover it. The row has to be `relative`.
+ */
+/*
+ * A calendar event (app/calendar/page.tsx): below 40px tall -- a 30-minute
+ * meeting -- two lines do not fit and the time was cut in half, so it shows
+ * one line, "Title · 09:00 – 09:30" (UI quality pass, milestone 6). A size
+ * container, because what matters is each block's own height.
+ */
+.event-block {
+  container-type: size;
+}
+.event-block .event-one-line {
+  display: none;
+}
+@container (max-height: 40px) {
+  .event-block > span {
+    display: none;
+  }
+  .event-block > .event-one-line {
+    display: block;
+  }
+}
+
+/*
+ * A list row you can open (it holds a RowLink): the same tint under the
+ * pointer and when its link has keyboard focus, so the two states agree.
+ */
+@utility row-hover {
+  transition: background-color 150ms;
+  &:hover,
+  &:focus-within {
+    background-color: var(--color-row-hover);
+  }
+}
+
+@utility stretched-link {
+  outline: none;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+  }
+  &:focus-visible::after {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+  }
+}
+
+/*
+ * Hover, one rule per kind of link (UI quality pass, milestone 3). Buttons
+ * and rows already answered the pointer; these were the links that did not.
+ * Only on a device that can hover, as Tailwind's own hover: is, so a tap on a
+ * phone does not leave a link stuck underlined.
+ *
+ * link-action: a word or two that does something, in a card ("Open
+ * contact"). The colour says it is a link; hovering underlines it.
+ */
+@utility link-action {
+  text-underline-offset: 2px;
+  @media (hover: hover) {
+    &:hover {
+      text-decoration-line: underline;
+    }
+  }
+}
+
+/*
+ * link-inline: a link inside a sentence. Always underlined, because colour
+ * alone does not mark a link in running text (WCAG 1.4.1), and darker on
+ * hover. The underline's colour is left to the caller: cards use
+ * decoration-line-strong, the legal pages the text's own.
+ */
+@utility link-inline {
+  text-decoration-line: underline;
+  text-underline-offset: 2px;
+  @media (hover: hover) {
+    &:hover {
+      color: var(--color-ink);
+    }
   }
 }

@@ -51,7 +51,7 @@ function Submit({
       formAction={action}
       disabled={pending}
       aria-label={label}
-      className={`rounded-full px-[14px] py-2 text-[12px] font-semibold whitespace-nowrap transition-colors disabled:cursor-default disabled:opacity-50 ${BUTTON[variant]}`}
+      className={`rounded-full px-[14px] py-2 text-xs font-semibold whitespace-nowrap transition-colors disabled:cursor-default disabled:opacity-50 ${BUTTON[variant]}`}
     >
       {children}
     </button>

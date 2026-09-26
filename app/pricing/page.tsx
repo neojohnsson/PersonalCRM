@@ -41,8 +41,8 @@ export default async function PricingPage({ searchParams }: PageProps<"/pricing"
         <div className="flex flex-col gap-[18px]">
           <BrandTile />
           <div className="flex flex-col gap-2.5">
-            <h1 className="text-[28px] leading-[1.15] font-bold tracking-[-0.035em] sm:text-[33px]">Plans</h1>
-            <p className="max-w-[560px] text-[15.5px] leading-[1.55] text-ink-soft">
+            <h1 className="text-xl font-bold tracking-[-0.035em] sm:text-2xl">Plans</h1>
+            <p className="max-w-[560px] text-base text-ink-soft">
               Whose turn it is, warmth and next touch are free, always. The plans add the AI: summaries,
               drafts, the Assistant and web research. Prices a month, VAT included. Cancel whenever you like;
               nothing you made is deleted.
@@ -51,7 +51,7 @@ export default async function PricingPage({ searchParams }: PageProps<"/pricing"
         </div>
 
         {paid === "1" && (
-          <p role="status" className="rounded-[14px] bg-info-tint px-4 py-3 text-[13.5px] leading-[1.5] text-info-ink">
+          <p role="status" className="rounded-xl bg-info-tint px-4 py-3 text-sm text-info-ink">
             Thank you. Stripe is confirming the payment, and your plan changes as soon as it does, usually within a
             minute. Reload this page to see it.
           </p>
@@ -70,17 +70,17 @@ export default async function PricingPage({ searchParams }: PageProps<"/pricing"
           ))}
         </div>
 
-        <p className="px-1 text-[13px] leading-[1.55] text-ink-quiet">
+        <p className="px-1 text-sm text-ink-soft">
           {mine ? (
             <>
               You&rsquo;re on {mine.label}.{" "}
-              <Link href="/profile" className="font-semibold text-ink-soft underline underline-offset-2">
+              <Link href="/profile" className="font-semibold text-ink-soft link-inline">
                 See what you&rsquo;ve used this month
               </Link>
             </>
           ) : (
             <>
-              <Link href="/login" className="font-semibold text-ink-soft underline underline-offset-2">
+              <Link href="/login" className="font-semibold text-ink-soft link-inline">
                 Sign in
               </Link>{" "}
               to start on Free. Invite only for now: Google keeps the app in testing mode.
@@ -90,20 +90,20 @@ export default async function PricingPage({ searchParams }: PageProps<"/pricing"
 
         {/* Managed Payments (lib/stripe/checkout.ts): the person should know
             who they are buying from before the card page says so. */}
-        <p className="px-1 text-[12.5px] leading-[1.55] text-ink-quiet">
+        <p className="px-1 text-sm text-ink-soft">
           Plans are sold through Link, Stripe&rsquo;s reseller: Link takes the payment, handles VAT and receipts, and
           your right to withdraw from the purchase under EU consumer law. Cancelling or changing plan is always on the
           Manage or cancel button in your profile.
         </p>
 
-        <nav className="flex flex-wrap gap-x-4 gap-y-1 px-1 text-[13px] text-ink-quiet" aria-label="Legal pages">
-          <Link href="/terms" className="underline underline-offset-2 hover:text-ink">
+        <nav className="flex flex-wrap gap-x-4 gap-y-1 px-1 text-sm text-ink-soft" aria-label="Legal pages">
+          <Link href="/terms" className="link-inline">
             Terms
           </Link>
-          <Link href="/privacy-policy" className="underline underline-offset-2 hover:text-ink">
+          <Link href="/privacy-policy" className="link-inline">
             Privacy policy
           </Link>
-          <Link href="/sub-processors" className="underline underline-offset-2 hover:text-ink">
+          <Link href="/sub-processors" className="link-inline">
             Sub-processors
           </Link>
         </nav>
@@ -120,28 +120,28 @@ function PlanCard(props: ButtonProps) {
   return (
     <section
       aria-label={plan.label}
-      className={`flex flex-col gap-[18px] rounded-[18px] bg-white px-6 py-[22px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] ${
+      className={`flex flex-col gap-[18px] rounded-xl bg-white px-6 py-[22px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] ${
         mine ? "ring-2 ring-info" : ""
       }`}
     >
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center gap-2">
-          <h2 className="text-[17px] font-bold tracking-[-0.02em]">{plan.label}</h2>
+          <h2 className="text-lg font-bold tracking-[-0.02em]">{plan.label}</h2>
           {mine && (
-            <span className="rounded-full bg-info-tint px-2 py-0.5 text-[10.5px] font-semibold text-info-ink">
+            <span className="rounded-full bg-info-tint px-2 py-0.5 text-2xs font-semibold text-info-ink">
               Your plan
             </span>
           )}
         </div>
         <p className="flex items-baseline gap-1.5">
-          <span className="text-[28px] font-bold tracking-[-0.035em]">{price} kr</span>
-          <span className="text-[13px] text-ink-soft">a month</span>
+          <span className="text-xl font-bold tracking-[-0.035em]">{price} kr</span>
+          <span className="text-sm text-ink-soft">a month</span>
         </p>
       </div>
       <ul className="flex flex-col gap-[9px]">
         {includes(plan).map((line) => (
           <Item key={line.text} icon={line.yes ? "check" : "cross"} tone={line.yes ? "info" : "muted"}>
-            <span className={line.yes ? "" : "text-ink-faint"}>{line.text}</span>
+            <span className={line.yes ? "" : "text-ink-soft"}>{line.text}</span>
           </Item>
         ))}
       </ul>
@@ -151,9 +151,9 @@ function PlanCard(props: ButtonProps) {
 }
 
 const SOLID =
-  "w-full rounded-full bg-ink-deep px-4 py-2.5 text-[13.5px] font-semibold text-white transition hover:bg-ink/85";
+  "w-full rounded-full bg-ink-deep px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-ink/85";
 const GHOST =
-  "w-full rounded-full bg-line-soft px-4 py-2.5 text-[13.5px] font-semibold text-ink-body transition-colors hover:bg-chip-track";
+  "w-full rounded-full bg-line-soft px-4 py-2.5 text-sm font-semibold text-ink-body transition-colors hover:bg-chip-track";
 
 /**
  * One button per card, or none: Free is where everybody starts, so it has

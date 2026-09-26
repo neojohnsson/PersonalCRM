@@ -57,7 +57,7 @@ export default function TermsPage() {
         <p>
           The people in your contacts never signed up for anything. You decide who is stored and what is written about
           them, so you are responsible for that information, and we process it for you (see the{" "}
-          <Link href="/privacy-policy" className="font-semibold underline underline-offset-2">
+          <Link href="/privacy-policy" className="font-semibold link-inline">
             privacy policy
           </Link>
           ). Keep what you write fair: assume the person could one day read it.
@@ -108,7 +108,7 @@ export default function TermsPage() {
       <Part title="Leaving">
         <p>
           You can export everything and delete your account at any time, from{" "}
-          <Link href="/privacy" className="font-semibold underline underline-offset-2">
+          <Link href="/privacy" className="font-semibold link-inline">
             Your data
           </Link>
           . Deleting is real: the Gmail and Calendar permissions are withdrawn at Google, a paid plan ends at once

@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { BackLink } from "@/app/back-link";
 import { AppShell } from "@/app/app-shell";
+import { EmptyCard } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
 import { APP_NAME } from "@/lib/app-config";
 import { requireUser } from "@/lib/auth";
@@ -28,9 +30,6 @@ export const metadata = { title: `Seen once · ${APP_NAME}` };
 
 const PAGE_SIZE = 50;
 const MAX_ROWS = 1_000;
-
-const CARD =
-  "rounded-[18px] bg-white shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]";
 
 export default async function SeenOncePage({ searchParams }: PageProps<"/seen-once">) {
   const user = await requireUser();
@@ -78,7 +77,7 @@ export default async function SeenOncePage({ searchParams }: PageProps<"/seen-on
       headerRight={
         <>
           {gmailResult.data && (
-            <span className="hidden text-[13px] text-ink-faint lg:inline">
+            <span className="hidden text-sm text-ink-soft lg:inline">
               {gmailResult.data.email}
             </span>
           )}
@@ -89,11 +88,11 @@ export default async function SeenOncePage({ searchParams }: PageProps<"/seen-on
       <main className="flex flex-1 flex-col gap-4 px-4 pt-2.5 pb-7 sm:px-[30px]">
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div className="flex flex-col gap-2">
-            <Link href="/contacts" className="text-[12.5px] font-medium text-ink-soft sm:hidden">
-              ← Contacts
-            </Link>
-            <h1 className="text-[28px] leading-[1.1] font-bold tracking-[-0.035em]">Seen once</h1>
-            <p className="max-w-[640px] text-[13.5px] leading-[1.5] text-ink-soft">
+            <div className="sm:hidden">
+              <BackLink href="/contacts">Contacts</BackLink>
+            </div>
+            <h1 className="text-xl font-bold tracking-[-0.035em]">Seen once</h1>
+            <p className="max-w-[640px] text-sm text-ink-soft">
               {countOf(total, "person", "people")} wrote to you, or you wrote to them, but never
               both. They stay out of your contact list until you say otherwise — one exchange in
               each direction is what makes someone a contact.
@@ -103,7 +102,7 @@ export default async function SeenOncePage({ searchParams }: PageProps<"/seen-on
           <div className="flex shrink-0 items-center gap-2">
             <Link
               href="/seen-once/dismissed"
-              className="rounded-full bg-white px-[15px] py-2 text-[12.5px] font-medium text-ink-soft shadow-[0_1px_2px_rgba(20,20,25,.04)] transition-colors hover:text-ink"
+              className="rounded-full bg-white px-[15px] py-2 text-sm font-normal text-ink-soft shadow-[0_1px_2px_rgba(20,20,25,.04)] transition-colors hover:text-ink"
             >
               Dismissed
             </Link>
@@ -116,11 +115,11 @@ export default async function SeenOncePage({ searchParams }: PageProps<"/seen-on
                 strokeWidth={1.9}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="size-[15px] text-ink-faint"
+                className="size-[15px] text-ink-soft"
               >
                 <path d="M5 6h14M8 12h8M10.5 18h3" />
               </svg>
-              <span className="text-[12.5px] text-ink-faint">Newest first</span>
+              <span className="text-sm text-ink-soft">Newest first</span>
             </div>
           </div>
         </div>
@@ -133,20 +132,23 @@ export default async function SeenOncePage({ searchParams }: PageProps<"/seen-on
             moreHref={people.length < total && limit < MAX_ROWS ? `/seen-once?show=${limit + PAGE_SIZE}` : null}
           />
         ) : (
-          <section className={`${CARD} flex max-w-xl flex-col px-[22px] py-6 sm:px-8`}>
-            <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">Nobody waiting</h2>
-            <p className="mt-2 text-[13.5px] leading-[1.55] text-ink-soft">
+          <EmptyCard
+            title="Nobody waiting"
+            icon="inbox"
+            action={gmailResult.data ? { href: "/contacts", label: "See your contacts" } : { href: "/connect", label: "Connect Gmail" }}
+          >
+            <p>
               {gmailResult.data
                 ? `Everyone you've exchanged mail with in the last ${lookbackDays()} days is a contact or has been dismissed.`
                 : "Connect Gmail, and people who wrote to you once — or you wrote to once — show up here."}
             </p>
             {filtered > 0 && (
-              <p className="mt-2 text-[12.5px] text-ink-faint">
+              <p className="mt-2">
                 {countOf(filtered, "automated message")} were filtered out — newsletters, no-reply,
                 calendar invites.
               </p>
             )}
-          </section>
+          </EmptyCard>
         )}
       </main>
     </AppShell>

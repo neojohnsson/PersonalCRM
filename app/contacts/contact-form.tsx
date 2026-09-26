@@ -89,7 +89,9 @@ export function ContactForm({
         ? form.current?.querySelector<HTMLElement>(`[name="${names[0]}"]`)
         : form.current?.querySelector<HTMLElement>('[role="alert"]');
     target?.scrollIntoView({ behavior: "smooth", block: "center" });
-    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) target.focus();
+    // The field, or the banner when the error is the whole form's: focus must
+    // land somewhere a keyboard can carry on from (UI quality pass, milestone 6).
+    target?.focus({ preventScroll: true });
   }, [state]);
 
   function setEmail(index: number, value: string) {
@@ -110,25 +112,26 @@ export function ContactForm({
       action={formAction}
       noValidate
       onInput={() => setDirty(true)}
-      className="flex max-w-2xl flex-col gap-4"
+      // Centred, in three groups, with the buttons held at the bottom of the
+      // screen (UI quality pass, milestone 5): it was six cards for ten
+      // fields, left-aligned in a wide page, with Save below the fold.
+      className="mx-auto flex w-full max-w-2xl flex-col gap-4"
     >
       {errors.form && (
         <p
           role="alert"
-          className="flex items-start gap-3 rounded-[14px] bg-accent-tint px-[18px] py-[15px] text-[13.5px] leading-[1.55] text-alert-ink"
+          tabIndex={-1}
+          className="flex items-start gap-3 rounded-xl bg-accent-tint px-[18px] py-[15px] text-sm text-alert-ink"
         >
           {errors.form}
         </p>
       )}
 
-      <Section title="Name">
+      <Section title="Who they are">
         <div className="grid gap-3 sm:grid-cols-2">
           <TextInput name="first_name" label="First name" values={values} errors={errors} />
           <TextInput name="last_name" label="Last name" values={values} errors={errors} />
         </div>
-      </Section>
-
-      <Section title="Work">
         <div className="grid gap-3 sm:grid-cols-2">
           <TextInput name="company" label="Company" values={values} errors={errors} />
           <TextInput name="role" label="Role" values={values} errors={errors} />
@@ -160,7 +163,7 @@ export function ContactForm({
                 className={`${INPUT} min-w-0 flex-1`}
               />
               {index === 0 ? (
-                emails.length > 1 && <span className="text-[11.5px] font-semibold text-ink-faint">Primary</span>
+                emails.length > 1 && <span className="text-xs font-semibold text-ink-soft">Primary</span>
               ) : (
                 <SmallButton onClick={() => makePrimary(index)}>Make primary</SmallButton>
               )}
@@ -180,21 +183,18 @@ export function ContactForm({
         <TextInput name="phone" label="Phone" type="tel" values={values} errors={errors} />
       </Section>
 
-      <Section title="How you know them">
+      <Section title="About them">
         <TextArea
           name="how_known"
           label="How you know them"
-          hideLabel
           rows={3}
           values={values}
           errors={errors}
           placeholder="Met after the guest lecture at LNU in March"
         />
-      </Section>
 
-      <Section title="Tags">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="tags" className="sr-only">
+          <label htmlFor="tags" className={LABEL}>
             Tags
           </label>
           <input
@@ -209,22 +209,25 @@ export function ContactForm({
           {errors.tags ? (
             <FieldError id="tags-error" message={errors.tags} />
           ) : (
-            <p id="tags-hint" className="text-[12px] text-ink-faint">
+            <p id="tags-hint" className="text-xs text-ink-soft">
               Separate tags with commas.
             </p>
           )}
         </div>
+
+        {/* #notes: the contact page's "Add note" lands here. */}
+        <div id="notes" className="scroll-mt-4">
+          <TextArea name="notes" label="Notes" rows={6} values={values} errors={errors} />
+        </div>
       </Section>
 
-      <Section title="Notes" id="notes">
-        <TextArea name="notes" label="Notes" hideLabel rows={6} values={values} errors={errors} />
-      </Section>
-
-      <div className="flex items-center gap-4">
+      {/* Held at the bottom of the screen while the form scrolls; on a phone,
+          above the bottom bar (58px, plus the safe area) rather than under it. */}
+      <div className="sticky bottom-[calc(58px+env(safe-area-inset-bottom))] z-20 -mx-4 flex items-center gap-4 border-t border-line bg-paper px-4 py-3 sm:bottom-0 sm:mx-0 sm:rounded-xl sm:border sm:px-[22px]">
         <button
           type="submit"
           disabled={pending}
-          className="rounded-full bg-ink-deep px-[22px] py-3 text-[14px] font-semibold tracking-[-0.01em] text-white transition hover:bg-ink/85 disabled:opacity-60"
+          className="rounded-full bg-ink-deep px-[22px] py-3 text-base font-semibold tracking-[-0.01em] text-white transition hover:bg-ink/85 disabled:opacity-60"
         >
           {pending ? "Saving…" : "Save contact"}
         </button>
@@ -236,7 +239,7 @@ export function ContactForm({
               event.preventDefault();
             }
           }}
-          className="text-[14px] font-medium text-ink-soft hover:text-ink"
+          className="text-base font-normal text-ink-soft hover:text-ink"
         >
           Cancel
         </Link>
@@ -245,18 +248,22 @@ export function ContactForm({
   );
 }
 
-const LABEL = "text-[10.5px] font-bold tracking-[0.07em] text-ink-ghost uppercase";
+const NAME_FIELDS = new Set<TextField>(["first_name", "last_name", "company"]);
+
+// A field's label: sentence case at 12px (UI quality pass, milestone 6), as
+// Profile's are -- 10px grey capitals were the hardest words on the page.
+const LABEL = "text-xs font-semibold text-ink-soft";
 
 const INPUT =
-  "w-full rounded-[11px] border border-line-strong bg-white px-3 py-2.5 text-[14px] text-ink outline-none transition placeholder:text-ink-hush focus:border-ink-faint focus:ring-2 focus:ring-ink/10 aria-invalid:border-accent";
+  "w-full rounded-lg border border-line-strong bg-white px-3 py-2.5 text-base text-ink transition placeholder:text-ink-soft focus:border-ink-soft aria-invalid:border-accent";
 
 function Section({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
   return (
     <section
       id={id}
-      className="flex flex-col gap-3 rounded-[18px] bg-white px-[22px] py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]"
+      className="flex flex-col gap-3 rounded-xl bg-white px-[22px] py-[18px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)]"
     >
-      <h2 className="text-[14.5px] font-bold tracking-[-0.015em]">{title}</h2>
+      <h2 className="text-base font-bold tracking-[-0.015em]">{title}</h2>
       {children}
     </section>
   );
@@ -290,6 +297,10 @@ function TextInput({
         defaultValue={values[name]}
         maxLength={LIMITS[name]}
         placeholder={placeholder}
+        // Names and company names are not dictionary words (UI quality pass,
+        // milestone 6): no spellcheck under them, and no browser autofill of
+        // your own details into somebody else's contact.
+        {...(NAME_FIELDS.has(name) ? { spellCheck: false, autoComplete: "off" } : {})}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${name}-error` : undefined}
         className={INPUT}
@@ -331,7 +342,9 @@ function TextArea({
         placeholder={placeholder}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${name}-error` : undefined}
-        className={`${INPUT} resize-y leading-[1.6]`}
+        className={`${INPUT} resize-none field-sizing-content`}
+        // Grows with its text; rows is ignored once it does, so it keeps a floor.
+        style={{ minHeight: `${rows * 24 + 22}px` }}
       />
       <FieldError id={`${name}-error`} message={error} />
     </div>
@@ -341,7 +354,7 @@ function TextArea({
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
   return (
-    <p id={id} role="alert" className="text-[12.5px] font-medium text-accent">
+    <p id={id} role="alert" className="text-sm font-normal text-accent">
       {message}
     </p>
   );
@@ -360,7 +373,7 @@ function SmallButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full bg-line-soft px-3 py-1.5 text-[12px] font-semibold text-ink-body transition-colors hover:bg-chip-track ${className}`}
+      className={`rounded-full bg-line-soft px-3 py-1.5 text-xs font-semibold text-ink-body transition-colors hover:bg-chip-track ${className}`}
     >
       {children}
     </button>

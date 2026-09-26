@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/app/back-link";
 import { AppShell } from "@/app/app-shell";
 import { EmptyCard } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
@@ -29,11 +29,9 @@ export default async function DuplicatesPage() {
     <AppShell userEmail={user.email} active="contacts" headerRight={<SignOutButton />}>
       <main className="flex flex-1 flex-col gap-4 px-4 pt-2 pb-[26px] sm:px-[30px]">
         <div className="flex flex-col gap-2">
-          <Link href="/contacts" className="text-[12.5px] font-medium text-ink-soft hover:text-ink">
-            ← Contacts
-          </Link>
-          <h1 className="text-[28px] leading-[1.1] font-bold tracking-[-0.035em]">Possible duplicates</h1>
-          <p className="max-w-[640px] text-[13.5px] leading-[1.5] text-ink-soft">
+          <BackLink href="/contacts">Contacts</BackLink>
+          <h1 className="text-xl font-bold tracking-[-0.035em]">Possible duplicates</h1>
+          <p className="max-w-[640px] text-sm text-ink-soft">
             The same person often has two addresses: you write to one and they answer from
             another. Nothing is merged until you press a button, and a merge can&rsquo;t be undone.
           </p>
@@ -41,7 +39,7 @@ export default async function DuplicatesPage() {
 
         {pairs.length > 0 ? (
           <>
-            <p className="text-[12.5px] font-medium text-ink-quiet">
+            <p className="text-sm font-normal text-ink-soft">
               {countOf(pairs.length, "pair")} to look at
             </p>
             <ul className="flex flex-col gap-4">
@@ -53,15 +51,12 @@ export default async function DuplicatesPage() {
             </ul>
           </>
         ) : (
-          <EmptyCard title="No duplicates found">
+          <EmptyCard title="No duplicates found" icon="done" action={{ href: "/contacts", label: "Back to contacts" }}>
             <p>
               Nobody in your contacts looks like the same person twice. The check runs on names,
               phone numbers and the names inside email addresses — never on a shared first name or
               a shared company.
             </p>
-            <Link href="/contacts" className="mt-3 self-start font-semibold text-ink hover:text-ink-soft">
-              Back to contacts
-            </Link>
           </EmptyCard>
         )}
       </main>

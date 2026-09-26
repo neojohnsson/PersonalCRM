@@ -44,10 +44,10 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         <div className="flex flex-col gap-[18px]">
           <BrandTile />
           <div className="flex flex-col gap-2.5">
-            <h1 className="text-[28px] leading-[1.15] font-bold tracking-[-0.035em] sm:text-[33px]">
+            <h1 className="text-xl font-bold tracking-[-0.035em] sm:text-2xl">
               Who&rsquo;s waiting on you?
             </h1>
-            <p className="text-[15.5px] leading-[1.55] text-ink-soft">
+            <p className="text-base text-ink-soft">
               {APP_NAME} finds the people you actually talk to in Gmail, and
               tells you whose turn it is to write.
             </p>
@@ -60,7 +60,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           </Callout>
         )}
 
-        <div className="flex flex-col gap-[22px] rounded-[18px] bg-white px-6 py-[26px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] sm:px-[30px]">
+        <div className="flex flex-col gap-[22px] rounded-xl bg-white px-6 py-[26px] shadow-[0_1px_2px_rgba(20,20,25,.04),0_6px_16px_rgba(20,20,25,.05)] sm:px-[30px]">
           <SignInButton />
 
           <Divider />
@@ -77,7 +77,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           </Section>
         </div>
 
-        <p className="px-1 text-[13px] leading-[1.55] text-ink-quiet">
+        <p className="px-1 text-sm text-ink-soft">
           Invite only for now. Google keeps the app in testing mode, so your
           Google account has to be added as a tester first.
         </p>

@@ -140,7 +140,7 @@ function DraftCard({ proposal, onSettled }: { proposal: Extract<Proposal, { kind
     >
       {stage.at === "offer" && (
         <>
-          <p className="text-[12.5px] leading-[1.5] text-ink-body">
+          <p className="text-sm text-ink-body">
             Written from your latest thread with {proposal.name} when you press it
             {proposal.tone ? `, in a ${proposal.tone} tone` : ""}. {costLine(proposal.typicalUsd)}
           </p>
@@ -154,17 +154,17 @@ function DraftCard({ proposal, onSettled }: { proposal: Extract<Proposal, { kind
       {stage.at === "written" && (
         <>
           <Inset>
-            {stage.subject && <span className="text-[13px] font-semibold">{stage.subject}</span>}
+            {stage.subject && <span className="text-sm font-semibold">{stage.subject}</span>}
             {editing ? (
               <textarea
                 aria-label={`Your reply to ${proposal.name}`}
                 value={stage.body}
                 onChange={(event) => setStage({ ...stage, body: event.target.value })}
                 rows={8}
-                className="w-full resize-y rounded-[10px] border border-line-strong bg-white px-3 py-2 text-[12.5px] leading-[1.55] text-ink"
+                className="w-full min-h-24 resize-none field-sizing-content rounded-lg border border-line-strong bg-white px-3 py-2 text-sm text-ink"
               />
             ) : (
-              <p className="line-clamp-6 text-[12.5px] leading-[1.55] whitespace-pre-wrap text-ink-body">{stage.body}</p>
+              <p className="line-clamp-6 text-sm whitespace-pre-wrap text-ink-body">{stage.body}</p>
             )}
           </Inset>
           <Buttons>
@@ -182,14 +182,14 @@ function DraftCard({ proposal, onSettled }: { proposal: Extract<Proposal, { kind
 
       {stage.at === "saved" && (
         <>
-          <p className="text-[12.5px] leading-[1.5] text-ink-body">
+          <p className="text-sm text-ink-body">
             In your Gmail drafts. Read it there once more, and send it when you&rsquo;re ready.
           </p>
           <Cost usd={stage.costUsd} what="Writing it" />
         </>
       )}
 
-      {stage.at === "gone" && <p className="text-[12.5px] leading-[1.5] text-ink-soft">{stage.words}</p>}
+      {stage.at === "gone" && <p className="text-sm text-ink-soft">{stage.words}</p>}
     </Card>
   );
 }
@@ -241,9 +241,9 @@ function EventCard({ proposal, onSettled }: { proposal: Extract<Proposal, { kind
       <Inset row>
         <DateTile date={date} />
         <div className="flex min-w-0 flex-col gap-[3px]">
-          <span className="text-[13px] font-semibold">{title}</span>
-          <span className="text-[12.5px] text-ink-body">{when(date, time, minutes)} · your own calendar</span>
-          <span className="text-[12px] text-ink-soft">No guests</span>
+          <span className="text-sm font-semibold">{title}</span>
+          <span className="text-sm text-ink-body">{when(date, time, minutes)} · your own calendar</span>
+          <span className="text-xs text-ink-soft">No guests</span>
         </div>
       </Inset>
 
@@ -279,13 +279,13 @@ function EventCard({ proposal, onSettled }: { proposal: Extract<Proposal, { kind
 
       {stage.at === "created" &&
         (stage.link ? (
-          <a href={stage.link} target="_blank" rel="noreferrer" className="self-start text-[12.5px] font-semibold text-info-ink">
+          <a href={stage.link} target="_blank" rel="noreferrer" className="link-action self-start text-sm font-semibold text-info-ink">
             Open it in Google Calendar
           </a>
         ) : (
-          <p className="text-[12.5px] text-ink-body">In your Google Calendar.</p>
+          <p className="text-sm text-ink-body">In your Google Calendar.</p>
         ))}
-      {stage.at === "gone" && <p className="text-[12.5px] text-ink-soft">Not created.</p>}
+      {stage.at === "gone" && <p className="text-sm text-ink-soft">Not created.</p>}
     </Card>
   );
 }
@@ -318,7 +318,7 @@ function SummaryCard({ proposal, onSettled }: { proposal: Extract<Proposal, { ki
     >
       {stage.at === "offer" && (
         <>
-          <p className="text-[12.5px] leading-[1.5] text-ink-body">
+          <p className="text-sm text-ink-body">
             Written from your mail with {proposal.name}, each line linked to the message it came from.{" "}
             {costLine(proposal.typicalUsd)}
           </p>
@@ -338,13 +338,13 @@ function SummaryCard({ proposal, onSettled }: { proposal: Extract<Proposal, { ki
       )}
       {stage.at === "written" && (
         <>
-          <Link href={`/contacts/${proposal.contactId}`} className="self-start text-[12.5px] font-semibold text-info-ink">
+          <Link href={`/contacts/${proposal.contactId}`} className="link-action self-start text-sm font-semibold text-info-ink">
             Check it on {proposal.name.split(" ")[0]}&rsquo;s page
           </Link>
           <Cost usd={stage.costUsd} what="Writing it" />
         </>
       )}
-      {stage.at === "gone" && <p className="text-[12.5px] text-ink-soft">Not written.</p>}
+      {stage.at === "gone" && <p className="text-sm text-ink-soft">Not written.</p>}
     </Card>
   );
 }
@@ -375,7 +375,7 @@ function ScanCard({ proposal, onSettled }: { proposal: Extract<Proposal, { kind:
     >
       {stage.at === "offer" && (
         <>
-          <p className="text-[12.5px] leading-[1.5] text-ink-body">
+          <p className="text-sm text-ink-body">
             Reads recent mail for things you or they said would happen.{" "}
             {`It costs ${priceInWords(proposal.typicalUsd)} for each contact it reads, from your AI budget.`}
           </p>
@@ -395,14 +395,14 @@ function ScanCard({ proposal, onSettled }: { proposal: Extract<Proposal, { kind:
       )}
       {stage.at === "read" && (
         <>
-          <p className="text-[12.5px] leading-[1.5] text-ink-body">{stage.message}</p>
-          <Link href="/assistant/promises" className="self-start text-[12.5px] font-semibold text-info-ink">
+          <p className="text-sm text-ink-body">{stage.message}</p>
+          <Link href="/assistant/promises" className="link-action self-start text-sm font-semibold text-info-ink">
             Decide on them
           </Link>
           <Cost usd={stage.costUsd} what="Reading" />
         </>
       )}
-      {stage.at === "gone" && <p className="text-[12.5px] text-ink-soft">Not read.</p>}
+      {stage.at === "gone" && <p className="text-sm text-ink-soft">Not read.</p>}
     </Card>
   );
 }
@@ -478,27 +478,27 @@ function NamesCard({ names, onSettled }: { names: NameGuess[]; onSettled: Settle
       small="Worked out from each address by the app's own rules, not by the AI. Nothing is renamed until you press."
       error={null}
     >
-      <ul className="flex max-h-[360px] flex-col overflow-y-auto rounded-[12px] bg-paper">
+      <ul className="flex max-h-[360px] flex-col overflow-y-auto rounded-xl bg-paper">
         {rows.map((row) => (
           <li
             key={row.contactId}
             className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white px-[13px] py-2.5 first:border-t-0"
           >
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="text-[13px]">
-                <span className={row.state === "renamed" ? "text-ink-faint line-through" : "text-ink-body"}>
+              <span className="text-sm">
+                <span className={row.state === "renamed" ? "text-ink-soft line-through" : "text-ink-body"}>
                   {row.now}
                 </span>
-                <span aria-hidden="true" className="px-1.5 text-ink-faint">→</span>
+                <span aria-hidden="true" className="px-1.5 text-ink-soft">→</span>
                 <span className="sr-only"> to </span>
                 <strong className="font-semibold">{row.suggested}</strong>
               </span>
-              <span className="text-[11.5px] text-ink-soft">{row.why}</span>
-              {row.problem && <span className="text-[11.5px] font-medium text-accent">{row.problem}</span>}
+              <span className="text-xs text-ink-soft">{row.why}</span>
+              {row.problem && <span className="text-xs font-normal text-accent">{row.problem}</span>}
             </div>
             {row.state === "renamed" ? (
               <span className="flex shrink-0 items-center gap-2">
-                <span className="text-[12px] font-semibold text-affirm">Renamed</span>
+                <span className="text-xs font-semibold text-affirm">Renamed</span>
                 <Quiet onClick={() => undo(row)} disabled={pending}>Undo</Quiet>
               </span>
             ) : (
@@ -525,7 +525,7 @@ function NamesCard({ names, onSettled }: { names: NameGuess[]; onSettled: Settle
           </Quiet>
         </Buttons>
       )}
-      {declined && <p className="text-[12.5px] text-ink-soft">Not renamed. The guesses stay on each contact&rsquo;s page.</p>}
+      {declined && <p className="text-sm text-ink-soft">Not renamed. The guesses stay on each contact&rsquo;s page.</p>}
     </Card>
   );
 }
@@ -573,17 +573,17 @@ function EditCard({
     >
       <Inset>
         {proposal.changes.map((change) => (
-          <div key={change.field} className="flex flex-wrap items-baseline gap-x-2 text-[13px]">
-            <span className="w-full shrink-0 text-[12px] font-semibold text-ink-soft sm:w-[130px]">
+          <div key={change.field} className="flex flex-wrap items-baseline gap-x-2 text-sm">
+            <span className="w-full shrink-0 text-xs font-semibold text-ink-soft sm:w-[130px]">
               {FIELD_LABELS[change.field]}
             </span>
-            <span className={stage === "saved" ? "text-ink-faint line-through" : "text-ink-body"}>
-              {change.before ?? <em className="text-ink-faint">empty</em>}
+            <span className={stage === "saved" ? "text-ink-soft line-through" : "text-ink-body"}>
+              {change.before ?? <em className="text-ink-soft">empty</em>}
             </span>
-            <span aria-hidden="true" className="text-ink-faint">→</span>
+            <span aria-hidden="true" className="text-ink-soft">→</span>
             <span className="sr-only"> to </span>
             <strong className="font-semibold">
-              {change.after ?? <em className="font-normal text-ink-faint">empty</em>}
+              {change.after ?? <em className="font-normal text-ink-soft">empty</em>}
             </strong>
           </div>
         ))}
@@ -609,7 +609,7 @@ function EditCard({
       )}
       {stage === "saved" && (
         <Buttons>
-          <Link href={`/contacts/${proposal.contactId}`} className="text-[12.5px] font-semibold text-info-ink">
+          <Link href={`/contacts/${proposal.contactId}`} className="link-action text-sm font-semibold text-info-ink">
             Open {proposal.name}
           </Link>
           <Quiet
@@ -620,8 +620,8 @@ function EditCard({
           </Quiet>
         </Buttons>
       )}
-      {stage === "undone" && <p className="text-[12.5px] text-ink-soft">Put back as it was.</p>}
-      {stage === "no" && <p className="text-[12.5px] text-ink-soft">Not changed.</p>}
+      {stage === "undone" && <p className="text-sm text-ink-soft">Put back as it was.</p>}
+      {stage === "no" && <p className="text-sm text-ink-soft">Not changed.</p>}
     </Card>
   );
 }
@@ -661,9 +661,9 @@ function NewContactCard({ values, onSettled }: { values: NewContact; onSettled: 
         {rows
           .filter(([, value]) => value)
           .map(([label, value]) => (
-            <div key={label} className="flex flex-wrap items-baseline gap-x-2 text-[13px]">
-              <span className="w-full shrink-0 text-[12px] font-semibold text-ink-soft sm:w-[130px]">{label}</span>
-              <span className="min-w-0 font-medium break-words">{value}</span>
+            <div key={label} className="flex flex-wrap items-baseline gap-x-2 text-sm">
+              <span className="w-full shrink-0 text-xs font-semibold text-ink-soft sm:w-[130px]">{label}</span>
+              <span className="min-w-0 font-normal break-words">{value}</span>
             </div>
           ))}
       </Inset>
@@ -684,11 +684,11 @@ function NewContactCard({ values, onSettled }: { values: NewContact; onSettled: 
         </Buttons>
       )}
       {stage.at === "added" && (
-        <Link href={`/contacts/${stage.id}`} className="self-start text-[12.5px] font-semibold text-info-ink">
+        <Link href={`/contacts/${stage.id}`} className="link-action self-start text-sm font-semibold text-info-ink">
           Open {name}
         </Link>
       )}
-      {stage.at === "no" && <p className="text-[12.5px] text-ink-soft">Not added.</p>}
+      {stage.at === "no" && <p className="text-sm text-ink-soft">Not added.</p>}
     </Card>
   );
 }
@@ -731,11 +731,11 @@ function SummaryReviewCard({
       small="Check it against the emails before you approve it — the AI can be wrong about people. Its suggestions for the contact are on their page."
       error={null}
     >
-      <span className="text-[11.5px] font-medium text-ink-faint">
+      <span className="text-xs font-normal text-ink-soft">
         As of {asOf} · written by the AI, {stage === "approved" ? "approved by you" : "not approved yet"}
       </span>
       {stage !== "discarded" && (
-        <div className="rounded-[12px] bg-paper px-[13px] py-[11px]">
+        <div className="rounded-xl bg-paper px-[13px] py-[11px]">
           <Parts summary={summary} gmailEmail={proposal.gmailEmail} />
         </div>
       )}
@@ -747,17 +747,17 @@ function SummaryReviewCard({
           <Quiet onClick={() => decide("discarded")} disabled={pending}>
             Discard
           </Quiet>
-          <Link href={`/contacts/${summary.contact_id}`} className="text-[12.5px] font-semibold text-info-ink">
+          <Link href={`/contacts/${summary.contact_id}`} className="link-action text-sm font-semibold text-info-ink">
             Edit it on their page
           </Link>
         </Buttons>
       )}
       {stage === "approved" && (
-        <Link href={`/contacts/${summary.contact_id}`} className="self-start text-[12.5px] font-semibold text-info-ink">
+        <Link href={`/contacts/${summary.contact_id}`} className="link-action self-start text-sm font-semibold text-info-ink">
           Open {name}
         </Link>
       )}
-      {stage === "discarded" && <p className="text-[12.5px] text-ink-soft">Discarded. Nothing was saved to them.</p>}
+      {stage === "discarded" && <p className="text-sm text-ink-soft">Discarded. Nothing was saved to them.</p>}
     </Card>
   );
 }
@@ -797,7 +797,7 @@ function PromisesCard({ promises, onSettled }: { promises: PendingPromise[]; onS
           decided[promise.id] ? (
             <li
               key={promise.id}
-              className="flex items-center gap-2 border-t border-line-soft px-[22px] py-3 text-[12.5px] first:border-t-0"
+              className="flex items-center gap-2 border-t border-line-soft px-[22px] py-3 text-sm first:border-t-0"
             >
               <strong className="font-semibold">{promise.name}</strong>
               <span className="text-ink-soft">{decided[promise.id]}</span>
@@ -847,7 +847,7 @@ function SeenOnceCard({ people, onSettled }: { people: SeenOncePerson[]; onSettl
       small="Dismiss forgets the mail they sent and skips them from now on. Changed your mind? Undo it on the Dismissed page."
       error={null}
     >
-      <ul className="flex max-h-[380px] flex-col overflow-y-auto rounded-[12px] bg-paper">
+      <ul className="flex max-h-[380px] flex-col overflow-y-auto rounded-xl bg-paper">
         {people.map((person) => {
           const done = decided[person.email];
           return (
@@ -856,15 +856,15 @@ function SeenOnceCard({ people, onSettled }: { people: SeenOncePerson[]; onSettl
               className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-white px-[13px] py-2.5 first:border-t-0"
             >
               <div className="flex min-w-0 flex-1 basis-48 flex-col gap-0.5">
-                <span className="truncate text-[13px] font-semibold">{person.name ?? person.email}</span>
-                <span className="truncate text-[11.5px] text-ink-soft">
+                <span className="truncate text-sm font-semibold">{person.name ?? person.email}</span>
+                <span className="truncate text-xs text-ink-soft">
                   {person.name ? `${person.email} · ` : ""}
                   {person.fromThem} from them, {person.fromYou} from you
                   {person.subject ? ` · “${person.subject}”` : ""}
                 </span>
               </div>
               {done ? (
-                <span className={`text-[12px] font-semibold ${done === "added" ? "text-affirm" : "text-ink-soft"}`}>
+                <span className={`text-xs font-semibold ${done === "added" ? "text-affirm" : "text-ink-soft"}`}>
                   {done === "added" ? "Added as a contact" : "Dismissed"}
                 </span>
               ) : (
@@ -892,7 +892,7 @@ function SeenOnceCard({ people, onSettled }: { people: SeenOncePerson[]; onSettl
         </Buttons>
       )}
       {Object.values(decided).includes("dismissed") && (
-        <Link href="/seen-once/dismissed" className="self-start text-[12.5px] font-semibold text-info-ink">
+        <Link href="/seen-once/dismissed" className="link-action self-start text-sm font-semibold text-info-ink">
           The Dismissed page
         </Link>
       )}
@@ -917,7 +917,7 @@ function SyncCard({ lastSyncedAt, onSettled }: { lastSyncedAt: string | null; on
       small="It reads who wrote to whom and when, and the subject line — never the words of a message. Keep this tab open until it finishes."
       error={null}
     >
-      <p className="text-[12.5px] leading-[1.5] text-ink-body">
+      <p className="text-sm text-ink-body">
         {done
           ? "Synced. The cards above are up to date."
           : lastSyncedAt
@@ -986,7 +986,7 @@ function ResearchOfferCard({
     >
       {stage.at === "offer" && (
         <>
-          <p className="text-[12.5px] leading-[1.5] text-ink-body">
+          <p className="text-sm text-ink-body">
             Public, professional facts about {proposal.name}, each with the link it came from.{" "}
             {costLine(proposal.typicalUsd)}
           </p>
@@ -1007,14 +1007,14 @@ function ResearchOfferCard({
         </>
       )}
       {stage.at === "found" && (
-        <Link href={`/contacts/${proposal.contactId}`} className="self-start text-[12.5px] font-semibold text-info-ink">
+        <Link href={`/contacts/${proposal.contactId}`} className="link-action self-start text-sm font-semibold text-info-ink">
           {stage.count === 1 ? "1 fact waits" : `${stage.count} facts wait`} on {first}&rsquo;s page — tick what to keep
         </Link>
       )}
       {stage.at === "nothing" && (
-        <p className="text-[12.5px] leading-[1.5] text-ink-body">Nothing reliable was found, so nothing was saved. {stage.why}</p>
+        <p className="text-sm text-ink-body">Nothing reliable was found, so nothing was saved. {stage.why}</p>
       )}
-      {stage.at === "no" && <p className="text-[12.5px] text-ink-soft">Not searched.</p>}
+      {stage.at === "no" && <p className="text-sm text-ink-soft">Not searched.</p>}
     </Card>
   );
 }
@@ -1042,18 +1042,18 @@ function Card({
 }) {
   const pill = PILL[state];
   return (
-    <div className="flex min-w-0 flex-col gap-2.5 rounded-[16px] border border-line px-4 py-3.5">
+    <div className="flex min-w-0 flex-col gap-2.5 rounded-xl border border-line px-4 py-3.5">
       <div className="flex items-center gap-[9px]">
-        <h3 className="text-[13.5px] font-bold tracking-[-0.01em]">{title}</h3>
-        <span className={`rounded-full px-[9px] py-[3px] text-[11px] font-bold ${pill.className}`}>{pill.words}</span>
+        <h3 className="text-sm font-bold tracking-[-0.01em]">{title}</h3>
+        <span className={`rounded-full px-[9px] py-[3px] text-2xs font-bold ${pill.className}`}>{pill.words}</span>
       </div>
       {children}
       {error && (
-        <p role="alert" className="text-[12px] leading-[1.45] font-medium text-accent">
+        <p role="alert" className="text-xs font-normal text-accent">
           {error}
         </p>
       )}
-      <p className="text-[11.5px] leading-[1.45] text-ink-soft">{small}</p>
+      <p className="text-xs text-ink-soft">{small}</p>
     </div>
   );
 }
@@ -1061,7 +1061,7 @@ function Card({
 function Inset({ row = false, children }: { row?: boolean; children: ReactNode }) {
   return (
     <div
-      className={`flex min-w-0 rounded-[12px] bg-paper px-[13px] py-[11px] ${row ? "items-start gap-3" : "flex-col gap-1.5"}`}
+      className={`flex min-w-0 rounded-xl bg-paper px-[13px] py-[11px] ${row ? "items-start gap-3" : "flex-col gap-1.5"}`}
     >
       {children}
     </div>
@@ -1074,7 +1074,7 @@ function Buttons({ children }: { children: ReactNode }) {
 
 type ButtonProps = { onClick: () => void; disabled?: boolean; children: ReactNode };
 
-const BUTTON = "rounded-full px-[15px] py-[9px] text-[12.5px] font-semibold transition disabled:opacity-60";
+const BUTTON = "rounded-full px-[15px] py-[9px] text-sm font-semibold transition disabled:opacity-60";
 
 function Primary({ onClick, disabled, children }: ButtonProps) {
   return (
@@ -1105,11 +1105,11 @@ function Quiet({ onClick, disabled, children }: ButtonProps) {
   );
 }
 
-const INPUT = "rounded-[10px] border border-line-strong bg-white px-2.5 py-[7px] text-[12.5px]";
+const INPUT = "rounded-lg border border-line-strong bg-white px-2.5 py-[7px] text-sm";
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex flex-col gap-1 text-[11.5px] font-semibold text-ink-body">
+    <label className="flex flex-col gap-1 text-xs font-semibold text-ink-body">
       {label}
       {children}
     </label>
@@ -1121,9 +1121,9 @@ function DateTile({ date }: { date: string }) {
   const day = new Date(`${date}T12:00:00Z`);
   const valid = !Number.isNaN(day.getTime());
   return (
-    <div className="flex w-11 shrink-0 flex-col items-center rounded-[10px] bg-info-tint py-1.5">
-      <span className="text-[15px] leading-[1.1] font-bold text-info-ink">{valid ? day.getUTCDate() : "?"}</span>
-      <span className="text-[9.5px] font-semibold tracking-[0.05em] text-info-ink uppercase">
+    <div className="flex w-11 shrink-0 flex-col items-center rounded-lg bg-info-tint py-1.5">
+      <span className="text-base font-bold text-info-ink">{valid ? day.getUTCDate() : "?"}</span>
+      <span className="text-2xs font-semibold tracking-[0.05em] text-info-ink uppercase">
         {valid ? day.toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" }) : ""}
       </span>
     </div>
@@ -1150,7 +1150,7 @@ function costLine(typicalUsd: number | null): string {
 function Cost({ usd, what }: { usd: number | null; what: string }) {
   if (usd === null) return null;
   return (
-    <p className="text-[11.5px] text-ink-soft">
+    <p className="text-xs text-ink-soft">
       {what} cost ${usd < 0.01 ? usd.toFixed(4) : usd.toFixed(2)}.
     </p>
   );

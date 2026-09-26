@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FIRST_HOUR, LAST_HOUR, buildWeek, clock, mondayOf, weekLabel } from "@/lib/calendar/week";
+import { FIRST_HOUR, LAST_HOUR, buildWeek, clock, mondayOf, nowPercent, weekLabel } from "@/lib/calendar/week";
 import type { GoogleEvent } from "@/lib/google/calendar";
 
 /**
@@ -145,6 +145,22 @@ describe("placing an event", () => {
 });
 
 describe("clock", () => {
+  it("puts now where an event starting now would go, and nowhere outside the hours", () => {
+    // UI quality pass, milestone 6: the page about today had no line for now.
+    // 09:00 UTC is 11:00 in Stockholm: three hours into 08-18, 30% down.
+    expect(nowPercent(new Date("2026-09-22T09:00:00Z"))).toBeCloseTo(30);
+    expect(nowPercent(new Date("2026-09-22T05:30:00Z"))).toBeNull();
+    expect(nowPercent(new Date("2026-09-22T17:00:00Z"))).toBeNull();
+    // The same place an event starting at that minute gets.
+    const week = buildWeek(
+      "2026-09-21",
+      [{ id: "e", status: "confirmed", start: { dateTime: "2026-09-22T11:15:00+02:00" }, end: { dateTime: "2026-09-22T12:00:00+02:00" } }] as GoogleEvent[],
+      new Map(),
+      new Date("2026-09-22T12:00:00Z"),
+    );
+    expect(nowPercent(new Date("2026-09-22T09:15:00Z"))).toBeCloseTo(week.events[0].topPercent);
+  });
+
   it("prints a 24-hour time in the reader's zone", () => {
     expect(clock(new Date("2026-09-22T09:00:00Z"))).toBe("11:00");
     expect(clock(new Date("2026-09-22T09:00:00Z"), "UTC")).toBe("09:00");
