@@ -144,6 +144,72 @@ export async function saveDraftToGmail(
   return data[0];
 }
 
+/** The address isn't one of this contact's, or the contact isn't the caller's. */
+export class AddressNotOnContact extends Error {
+  constructor() {
+    super("That address isn't on this contact any more.");
+    this.name = "AddressNotOnContact";
+  }
+}
+
+/**
+ * "Save to Gmail drafts" on the Assistant's new-email card (2026-09-26): an
+ * email that answers nothing, to somebody there may be no mail with yet. The
+ * Assistant wrote the words from what you asked for, you edited them in the
+ * card, and pressing Save is the approval (AGENTS.md).
+ *
+ * Unlike a reply, nothing is kept in the app before or after: the text waits
+ * only in the card, as the conversation does, and once Gmail has the draft
+ * the app keeps nothing about it. So no row, and no clash with a contact's
+ * one waiting reply draft (migration 0014).
+ *
+ * The address is checked here, at the press, not only when the Assistant
+ * offered it: it must still be one of this contact's, read through your own
+ * rights, so nobody can aim a draft at an address they typed or at another
+ * person's contact. **It creates a draft. It never sends.**
+ */
+export async function saveNewEmailToGmail(
+  db: SupabaseClient,
+  userId: string,
+  contactId: string,
+  email: { to: string; subject: string; body: string },
+  options: SaveDraftOptions = {},
+): Promise<{ gmailDraftId: string }> {
+  const text = email.body.replace(/\r\n?/g, "\n").trim();
+  const subject = email.subject.replace(/\s+/g, " ").trim();
+  if (!text) throw new Error("A draft can't be empty.");
+  if (text.length > MAX_BODY_CHARS) throw new Error("That draft is too long to save.");
+  if (!subject) throw new Error("A new email needs a subject.");
+  if (subject.length > 500) throw new Error("That subject is too long.");
+
+  const [addressResult, gmailResult] = await Promise.all([
+    db
+      .from("contact_emails")
+      .select("email")
+      .eq("user_id", userId)
+      .eq("contact_id", contactId)
+      .eq("email", email.to.trim().toLowerCase())
+      .maybeSingle<{ email: string }>(),
+    db.from("google_accounts").select("scopes").eq("user_id", userId).maybeSingle(),
+  ]);
+  if (addressResult.error) throw supabaseError(addressResult.error, "Couldn't check the address");
+  if (gmailResult.error) throw supabaseError(gmailResult.error, "Couldn't check the Gmail connection");
+  if (!addressResult.data) throw new AddressNotOnContact();
+  if (!canDraft((gmailResult.data?.scopes as string[] | undefined) ?? [])) throw new DraftsNotAllowedHere();
+
+  const token = await (options.accessToken ?? getAccessToken)(db, userId);
+  const raw = buildReplyMessage({
+    to: addressResult.data.email,
+    subject,
+    body: text,
+    inReplyTo: null,
+    references: null,
+  });
+
+  const created = await createDraft(token, { raw, threadId: null });
+  return { gmailDraftId: created.id };
+}
+
 /** Discard: the pending draft is deleted. Nothing was ever in Gmail. */
 export async function discardDraft(db: SupabaseClient, userId: string, draftId: string): Promise<void> {
   const now = new Date().toISOString();

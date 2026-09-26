@@ -155,7 +155,9 @@ describe("what the Assistant did", () => {
   });
 
   it("refuses a kind the Assistant is not allowed to do", async () => {
-    for (const kind of ["delete_contact", "merge", "send", "draft", "event"]) {
+    // contact_creation: let in by an unmerged branch's migration, put back
+    // out by 0029_contact_creation_dropped.sql (fails until that is run).
+    for (const kind of ["delete_contact", "merge", "send", "draft", "event", "contact_creation"]) {
       const { error } = await alice.db.from("assistant_actions").insert(action(alice, { kind }));
       expect(error, kind).not.toBeNull();
     }

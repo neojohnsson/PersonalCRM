@@ -123,6 +123,7 @@ describe("the tools the Assistant is given", () => {
       mark_conversation_done: "act",
       set_reminders: "act",
       propose_draft: "propose",
+      propose_new_email: "propose",
       propose_event: "propose",
       propose_summary: "propose",
       propose_promise_scan: "propose",
@@ -214,6 +215,72 @@ describe("a proposal", () => {
       .eq("user_id", alice.user.id);
     expect(after).toBe(before);
     expect(spentAfter).toBe(spentBefore);
+  });
+
+  it("for a new email writes nothing, calls nobody, and goes to the contact's own address", async () => {
+    const calls: string[] = [];
+    const realFetch = globalThis.fetch;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>(async (input, init) => {
+        const url = String(input instanceof Request ? input.url : input);
+        if (url.includes("googleapis.com") || url.includes("openai.com")) calls.push(url);
+        return realFetch(input, init);
+      }),
+    );
+    const { data: address } = await alice.db
+      .from("contact_emails")
+      .select("email")
+      .eq("contact_id", alice.karinId)
+      .single();
+    const drafts = async () =>
+      (await admin.from("contact_drafts").select("id", { count: "exact", head: true }).eq("user_id", alice.user.id)).count;
+    const before = await drafts();
+
+    const outcome = await call(alice, "propose_new_email", {
+      contact_id: alice.karinId,
+      to: null,
+      subject: "  Fika   next week? ",
+      body: "Hej Karin, are you free for a fika next week?",
+    });
+
+    expect(outcome).toMatchObject({
+      tier: "propose",
+      proposal: { kind: "new_email", name: "Karin Lindqvist", to: address!.email, subject: "Fika next week?" },
+    });
+    expect(calls).toEqual([]);
+    expect(await drafts()).toBe(before);
+  });
+
+  it("for a new email refuses an address that is not the contact's, and somebody else's contact", async () => {
+    const email = { subject: "Hej", body: "Hej!" };
+    expect(
+      await call(alice, "propose_new_email", { contact_id: alice.karinId, to: "someone@else.se", ...email }),
+    ).toMatchObject({ refused: expect.stringMatching(/not one of this contact's/) });
+    // Bob, naming Alice's contact and even her address: RLS finds nothing.
+    const { data: address } = await alice.db.from("contact_emails").select("email").eq("contact_id", alice.karinId).single();
+    expect(
+      await call(bob, "propose_new_email", { contact_id: alice.karinId, to: address!.email, ...email }),
+    ).toMatchObject({ refused: expect.stringMatching(/No such contact/) });
+  });
+
+  it("for a reply, with no mail to reply to, says so and points to a new email", async () => {
+    const { data: quiet, error } = await alice.db
+      .from("contacts")
+      .insert({ user_id: alice.user.id, first_name: "Olle", source: "manual" })
+      .select("id")
+      .single();
+    if (error) throw error;
+    await alice.db
+      .from("contact_emails")
+      .insert({ user_id: alice.user.id, contact_id: quiet.id, email: `olle-${randomUUID().slice(0, 8)}@example.se`, is_primary: true });
+
+    expect(await call(alice, "propose_draft", { contact_id: quiet.id, tone: null })).toMatchObject({
+      refused: expect.stringMatching(/no mail with this contact to reply to.*propose_new_email/),
+    });
+    expect(
+      await call(alice, "propose_new_email", { contact_id: quiet.id, to: null, subject: "Hej", body: "Hej Olle!" }),
+    ).toMatchObject({ tier: "propose", proposal: { kind: "new_email", name: "Olle" } });
   });
 
   it("for an event refuses a day that has passed, with the reason", async () => {

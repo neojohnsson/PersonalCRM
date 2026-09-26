@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  AddressNotOnContact,
   DraftNotFound,
   DraftsNotAllowedHere,
   NewerDraftExists,
@@ -11,6 +12,7 @@ import {
   pendingDraft,
   restoreDraft,
   saveDraftToGmail,
+  saveNewEmailToGmail,
 } from "@/lib/ai/draft-save";
 import { GmailApiError } from "@/lib/google/gmail";
 import { buildReplyMessage, decodeRawMessage, encodeHeader } from "@/lib/google/message";
@@ -80,7 +82,7 @@ const b64 = (text: string) => Buffer.from(text).toString("base64url");
 /** Fake Gmail: reads messages, and records what a draft request was given. */
 function fakeGmail(options: { draftStatus?: number } = {}) {
   const realFetch = globalThis.fetch;
-  const drafts: { raw: string; threadId: string }[] = [];
+  const drafts: { raw: string; threadId?: string }[] = [];
 
   vi.stubGlobal(
     "fetch",
@@ -288,6 +290,74 @@ describe("saveDraftToGmail", () => {
     const id = await makePending();
     await discardDraft(db, alice.id, id);
     expect(await pendingDraft(db, alice.id, karinId)).toBeNull();
+  });
+
+  /**
+   * The Assistant's new-email card (2026-09-26): an email that answers
+   * nothing. The address is checked at the press, through the caller's own
+   * rights, and the app keeps no row of it.
+   */
+  describe("a new email", () => {
+    const email = { to: "KARIN@fortnox.se ", subject: "  Fika   i oktober? ", body: " Hej Karin,\r\n\r\nHar du tid för en fika?  " };
+    const rows = async () =>
+      (await admin.from("contact_drafts").select("id", { count: "exact", head: true }).eq("user_id", alice.id)).count;
+
+    it("becomes a Gmail draft on its own, with no thread and no reply headers, and leaves no row", async () => {
+      const drafts = fakeGmail();
+      const before = await rows();
+
+      expect(await saveNewEmailToGmail(db, alice.id, karinId, email, { accessToken: fakeToken })).toEqual({
+        gmailDraftId: "r-1",
+      });
+
+      expect(drafts).toHaveLength(1);
+      expect(drafts[0].threadId).toBeUndefined();
+      const { headers, body } = decodeRawMessage(drafts[0].raw);
+      expect(headers).toContain("To: karin@fortnox.se");
+      expect(headers).toContain("Subject: Fika i oktober?");
+      expect(headers).not.toContain("In-Reply-To");
+      expect(headers).not.toContain("References");
+      expect(body).toBe("Hej Karin,\n\nHar du tid för en fika?");
+      expect(await rows()).toBe(before);
+    });
+
+    it("refuses an address that is not the contact's, and sends Gmail nothing", async () => {
+      const drafts = fakeGmail();
+      await expect(
+        saveNewEmailToGmail(db, alice.id, karinId, { ...email, to: "someone@else.se" }, { accessToken: fakeToken }),
+      ).rejects.toBeInstanceOf(AddressNotOnContact);
+      expect(drafts).toEqual([]);
+    });
+
+    it("lets nobody else aim a draft at your contact, even naming you and the right address", async () => {
+      const drafts = fakeGmail();
+      for (const userId of [bob.id, alice.id]) {
+        await expect(saveNewEmailToGmail(bobDb, userId, karinId, email, { accessToken: fakeToken })).rejects.toBeInstanceOf(
+          AddressNotOnContact,
+        );
+      }
+      expect(drafts).toEqual([]);
+    });
+
+    it("sends nothing without the draft permission, and refuses an empty one", async () => {
+      const drafts = fakeGmail();
+      await expect(
+        saveNewEmailToGmail(db, alice.id, karinId, { ...email, body: "  " }, { accessToken: fakeToken }),
+      ).rejects.toThrow(/can't be empty/);
+      await expect(
+        saveNewEmailToGmail(db, alice.id, karinId, { ...email, subject: " " }, { accessToken: fakeToken }),
+      ).rejects.toThrow(/needs a subject/);
+
+      await db.from("google_accounts").update({ scopes: [GMAIL_READONLY] }).eq("user_id", alice.id);
+      await expect(saveNewEmailToGmail(db, alice.id, karinId, email, { accessToken: fakeToken })).rejects.toBeInstanceOf(
+        DraftsNotAllowedHere,
+      );
+      await db
+        .from("google_accounts")
+        .update({ scopes: [GMAIL_READONLY, GMAIL_COMPOSE] })
+        .eq("user_id", alice.id);
+      expect(drafts).toEqual([]);
+    });
   });
 
   /**

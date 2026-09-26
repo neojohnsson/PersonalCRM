@@ -1,6 +1,6 @@
 import { AiNotConfigured } from "@/lib/ai/config";
 import { DraftsNotAllowed } from "@/lib/ai/draft";
-import { DraftNotFound, DraftsNotAllowedHere, NewerDraftExists } from "@/lib/ai/draft-save";
+import { AddressNotOnContact, DraftNotFound, DraftsNotAllowedHere, NewerDraftExists } from "@/lib/ai/draft-save";
 import { OpenAiError, OpenAiNoAnswer } from "@/lib/ai/openai";
 import { NoThreadToReplyTo } from "@/lib/ai/reply";
 import { AiCapReached, limitMessage } from "@/lib/ai/spend";
@@ -24,6 +24,7 @@ export function explainDraftFailure(error: unknown): string | null {
   if (error instanceof NoThreadToReplyTo) return "There's no mail with this contact to reply to yet.";
   if (error instanceof DraftNotFound) return "That draft isn't waiting any more — it was saved or discarded elsewhere.";
   if (error instanceof NewerDraftExists) return error.message;
+  if (error instanceof AddressNotOnContact) return "That address isn't on this contact any more, so nothing was saved.";
   if (error instanceof AiNotConfigured) return "The AI isn't set up on this server: an OpenAI key is missing.";
   if (error instanceof GmailReconnectRequired) return "Gmail access has expired. Reconnect Gmail, then try again.";
   if (error instanceof OpenAiNoAnswer) return "The AI gave no usable answer, so nothing was saved. Try again.";

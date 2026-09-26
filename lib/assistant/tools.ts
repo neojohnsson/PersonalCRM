@@ -6,7 +6,7 @@ import { countDuplicates } from "@/lib/contacts/duplicate-list";
 import { suggestName } from "@/lib/contacts/name-suggestion";
 import { ilikePattern, normaliseQuery } from "@/lib/contacts/search";
 import { countPendingPromises, loadPendingPromises, type PendingPromise } from "@/lib/ai/promise-list";
-import { participantNamer } from "@/lib/ai/thread";
+import { loadThreadMessages, participantNamer } from "@/lib/ai/thread";
 import { loadResearch } from "@/lib/research/decide";
 import { hasResearch } from "@/lib/research/entitlement";
 import { getAccessToken } from "@/lib/google/tokens";
@@ -75,6 +75,7 @@ export type ToolTier = "read" | "act" | "propose";
  */
 export type Proposal =
   | { kind: "draft"; contactId: string; name: string; tone: Tone | null; typicalUsd: number | null }
+  | { kind: "new_email"; contactId: string; name: string; to: string; subject: string; body: string }
   | {
       kind: "event";
       contactId: string | null;
@@ -593,11 +594,65 @@ const TOOLS: Tool[] = [
       const id = contactIdOf(args);
       const name = await contactName(ctx, id);
       if (!name) return notFound("propose");
+      // The same rule the draft itself follows (lib/ai/reply.ts): a reply
+      // needs mail to answer. Said here, before a card that could only fail.
+      if ((await loadThreadMessages(ctx.db, ctx.userId, id)).length === 0) {
+        return {
+          tier: "propose",
+          refused: "There is no mail with this contact to reply to. Offer a new email with propose_new_email instead.",
+        };
+      }
       const tone = TONES.includes(args.tone as Tone) ? (args.tone as Tone) : null;
       return {
         tier: "propose",
         result: "Shown to the person as a card.",
         proposal: { kind: "draft", contactId: id, name, tone, typicalUsd: await typicalCostUsd(ctx.db, ctx.userId, "draft") },
+      };
+    },
+  },
+  {
+    // 2026-09-26: an email that is not a reply, for somebody there is no mail
+    // with -- or a new subject with somebody there is. The words are the
+    // model's own, from what the person asked for, so there is no second AI
+    // call and nothing to price. They wait in an editable card; only the
+    // person's press saves them, through the draft panel's own action.
+    name: "propose_new_email",
+    tier: "propose",
+    description:
+      "Offer a new email to a contact -- not a reply -- written from what the person asked you to say. " +
+      "Nothing is saved: the person sees the email in a card, edits it, and presses Save to Gmail drafts. It is never sent.",
+    parameters: object({
+      contact_id: contactId,
+      to: nullableText("One of this contact's addresses, only if the person asked for that one. Null for their main address."),
+      subject: text("A short subject line."),
+      body: text("The whole email, in the person's voice, ready for them to edit. Plain text."),
+    }),
+    run: async (ctx, args) => {
+      const id = contactIdOf(args);
+      const name = await contactName(ctx, id);
+      if (!name) return notFound("propose");
+      const subject = str(args.subject).replace(/\s+/g, " ").trim();
+      const body = str(args.body).trim();
+      if (!subject || !body) return { tier: "propose", refused: "A new email needs a subject and some words." };
+
+      const asked = str(args.to).trim().toLowerCase();
+      const { data, error } = await ctx.db
+        .from("contact_emails")
+        .select("email, is_primary")
+        .eq("user_id", ctx.userId)
+        .eq("contact_id", id);
+      if (error) throw supabaseError(error, "Couldn't load the contact's addresses");
+      const to = asked ? data.find((row) => row.email === asked)?.email : data.find((row) => row.is_primary)?.email ?? data[0]?.email;
+      if (!to) {
+        return {
+          tier: "propose",
+          refused: asked ? "That address is not one of this contact's." : "This contact has no email address.",
+        };
+      }
+      return {
+        tier: "propose",
+        result: "Shown to the person as an editable card. Nothing is saved or sent until they press Save to Gmail drafts.",
+        proposal: { kind: "new_email", contactId: id, name, to, subject, body },
       };
     },
   },

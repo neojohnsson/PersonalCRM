@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PRICE_SAMPLE, costSinceUsd, priceInWords, typicalCostUsd } from "@/lib/assistant/price";
@@ -110,6 +111,15 @@ describe("the price on a card", () => {
   });
 });
 
+/** Every source file under a folder. */
+function sourceFiles(dir: string): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) return sourceFiles(path);
+    return /\.(ts|tsx)$/.test(name) ? [path] : [];
+  });
+}
+
 describe("pressing a card", () => {
   const cards = readFileSync("app/assistant/needs-you.tsx", "utf8");
   const actions = readFileSync("app/assistant/actions.ts", "utf8");
@@ -118,7 +128,22 @@ describe("pressing a card", () => {
     expect(cards).toMatch(/import \{[^}]*saveDraftAction[^}]*\} from "@\/app\/contacts\/\[id\]\/draft-actions"/);
     // Writing it lands pending; nothing in the Assistant's actions reaches Gmail itself.
     expect(actions).toContain("generateDraft(");
-    expect(actions).not.toMatch(/saveDraftToGmail|createDraft\(/);
+    expect(actions).not.toMatch(/saveDraftToGmail|saveNewEmailToGmail|createDraft\(/);
+  });
+
+  it("saves a new email through the draft panel's actions file too, never the Assistant's own", () => {
+    // 2026-09-26. An unmerged branch had the Assistant's actions build the
+    // message and call Gmail itself; this test is what caught it.
+    expect(cards).toMatch(/import \{[^}]*saveNewEmailAction[^}]*\} from "@\/app\/contacts\/\[id\]\/draft-actions"/);
+    expect(actions).not.toMatch(/buildReplyMessage|@\/lib\/google\/gmail/);
+  });
+
+  it("has exactly one file that asks Gmail for a draft", () => {
+    const callers = sourceFiles("app")
+      .concat(sourceFiles("lib"))
+      .filter((file) => /\bcreateDraft\(/.test(readFileSync(file, "utf8")))
+      .filter((file) => !file.endsWith(join("lib", "google", "gmail.ts")));
+    expect(callers).toEqual([join("lib", "ai", "draft-save.ts")]);
   });
 
   it("creates an event through the Calendar page's own action, which has no field for a guest", () => {
