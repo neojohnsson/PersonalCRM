@@ -9,8 +9,9 @@ import {
   discardDraft,
   restoreDraft,
   saveDraftToGmail,
+  saveNewEmailToGmail,
 } from "@/lib/ai/draft-save";
-import { TONES, type Tone } from "@/lib/ai/draft-types";
+import { MAX_BODY_CHARS, TONES, type Tone } from "@/lib/ai/draft-types";
 import { requireUser } from "@/lib/auth";
 import { isUuid } from "@/lib/contacts/contact-form";
 import { createClient } from "@/lib/supabase/server";
@@ -67,6 +68,38 @@ export async function saveDraftAction(draftId: string, previous: DraftState, for
   }
 
   refresh();
+  return { error: null };
+}
+
+/**
+ * "Save to Gmail drafts" on the Assistant's new-email card: an email that is
+ * not a reply (2026-09-26). Here, beside the reply's own Save, so that every
+ * press that makes a Gmail draft comes through this file and lib/ai/draft-save.ts
+ * -- the Assistant's own actions never reach Gmail (tests/assistant-price.test.ts).
+ *
+ * Nothing is refreshed: the app keeps no row for a new email, so no page
+ * shows anything different afterwards.
+ */
+export async function saveNewEmailAction(
+  contactId: string,
+  email: { to: string; subject: string; body: string },
+): Promise<DraftState> {
+  const user = await requireUser();
+  if (!isUuid(contactId)) notFound();
+  const { to, subject, body } = email ?? {};
+  if (typeof to !== "string" || typeof subject !== "string" || typeof body !== "string") notFound();
+  if (!body.trim()) return { error: "The email is empty." };
+  if (!subject.trim()) return { error: "Give the email a subject." };
+  if (body.length > MAX_BODY_CHARS) return { error: "That email is too long to save." };
+  if (subject.length > 500) return { error: "That subject is too long." };
+
+  try {
+    await saveNewEmailToGmail(await createClient(), user.id, contactId, { to, subject, body });
+  } catch (error) {
+    const reason = explainDraftFailure(error);
+    if (reason === null) throw error;
+    return { error: reason };
+  }
   return { error: null };
 }
 

@@ -11,7 +11,7 @@ import {
 } from "@/app/assistant/actions";
 import { createCalendarEvent } from "@/app/connect/calendar-actions";
 import { acceptSuggestedName, setContactName } from "@/app/contacts/[id]/actions";
-import { discardDraftAction, saveDraftAction } from "@/app/contacts/[id]/draft-actions";
+import { discardDraftAction, saveDraftAction, saveNewEmailAction } from "@/app/contacts/[id]/draft-actions";
 import { approveSummaryAction, discardSummaryAction } from "@/app/contacts/[id]/summary-actions";
 import { Parts } from "@/app/contacts/[id]/summary-card";
 import { PromiseCard } from "@/app/assistant/promises/promise-card";
@@ -48,6 +48,11 @@ import { FIELD_LABELS, type FieldChange, type NewContact } from "@/lib/contacts/
  *     could be out of date by then.
  *   - the summary, promise-scan, better-names and contact cards have no
  *     design; they reuse this one.
+ *   - the new-email card (2026-09-26) has no design either; it is the draft
+ *     card written out already, since the Assistant wrote it in the chat and
+ *     it costs nothing more. It does show "To": there is no thread to take an
+ *     address from, so the one shown is the one it goes to -- checked again
+ *     as one of the contact's when you press (lib/ai/draft-save.ts).
  */
 
 type Settle = (note: string) => void;
@@ -56,6 +61,8 @@ export function NeedsYouCard({ proposal, onSettled }: { proposal: Proposal; onSe
   switch (proposal.kind) {
     case "draft":
       return <DraftCard proposal={proposal} onSettled={onSettled} />;
+    case "new_email":
+      return <NewEmailCard proposal={proposal} onSettled={onSettled} />;
     case "event":
       return <EventCard proposal={proposal} onSettled={onSettled} />;
     case "summary":
@@ -190,6 +197,91 @@ function DraftCard({ proposal, onSettled }: { proposal: Extract<Proposal, { kind
       )}
 
       {stage.at === "gone" && <p className="text-sm text-ink-soft">{stage.words}</p>}
+    </Card>
+  );
+}
+
+// ── A new email ────────────────────────────────────────────────────────────
+
+function NewEmailCard({ proposal, onSettled }: { proposal: Extract<Proposal, { kind: "new_email" }>; onSettled: Settle }) {
+  const [stage, setStage] = useState<"offer" | "saved" | "gone">("offer");
+  const [subject, setSubject] = useState(proposal.subject);
+  const [body, setBody] = useState(proposal.body);
+  const [editing, setEditing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  const first = proposal.name.split(" ")[0];
+
+  // What is in the boxes when you press is what Gmail gets, edits included.
+  function save() {
+    setError(null);
+    start(async () => {
+      const result = await saveNewEmailAction(proposal.contactId, { to: proposal.to, subject, body });
+      if (result?.error) return setError(result.error);
+      setStage("saved");
+      onSettled(`The person saved the new email to ${proposal.name} to their Gmail drafts. It is not sent.`);
+    });
+  }
+
+  function decline() {
+    setStage("gone");
+    onSettled(`The person said no to the new email to ${proposal.name}.`);
+  }
+
+  return (
+    <Card
+      title={`A new email to ${first}`}
+      state={stage === "saved" ? "done" : stage === "gone" ? "no" : "needs"}
+      small="It lands as a draft in Gmail. You press send there — this app has no send button."
+      error={error}
+    >
+      {stage === "offer" && (
+        <>
+          <Inset>
+            <span className="text-xs text-ink-soft">To {proposal.to}</span>
+            {editing ? (
+              <>
+                <input
+                  aria-label={`Subject of your email to ${proposal.name}`}
+                  value={subject}
+                  onChange={(event) => setSubject(event.target.value)}
+                  maxLength={500}
+                  className="w-full rounded-lg border border-line-strong bg-white px-3 py-2 text-sm font-semibold text-ink"
+                />
+                <textarea
+                  aria-label={`Your email to ${proposal.name}`}
+                  value={body}
+                  onChange={(event) => setBody(event.target.value)}
+                  rows={8}
+                  className="w-full min-h-24 resize-none field-sizing-content rounded-lg border border-line-strong bg-white px-3 py-2 text-sm text-ink"
+                />
+              </>
+            ) : (
+              <>
+                <span className="text-sm font-semibold">{subject}</span>
+                <p className="line-clamp-6 text-sm whitespace-pre-wrap text-ink-body">{body}</p>
+              </>
+            )}
+          </Inset>
+          <Buttons>
+            <Primary onClick={save} disabled={pending || !body.trim() || !subject.trim()}>
+              {pending ? "Saving…" : "Save to Gmail"}
+            </Primary>
+            {!editing && (
+              <Secondary onClick={() => setEditing(true)} disabled={pending}>Edit it first</Secondary>
+            )}
+            <Quiet onClick={decline} disabled={pending}>No</Quiet>
+          </Buttons>
+        </>
+      )}
+
+      {stage === "saved" && (
+        <p className="text-sm text-ink-body">
+          In your Gmail drafts. Read it there once more, and send it when you&rsquo;re ready.
+        </p>
+      )}
+
+      {stage === "gone" && <p className="text-sm text-ink-soft">Not saved. Nothing reached Gmail.</p>}
     </Card>
   );
 }

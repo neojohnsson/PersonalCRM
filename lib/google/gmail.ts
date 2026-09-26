@@ -170,16 +170,18 @@ async function gmailPost<T>(accessToken: string, path: string, body: unknown): P
 }
 
 /**
- * Create a draft in a thread. The only request in the app that writes to
- * Gmail, and it writes a draft — never a sent message (AGENTS.md). Needs the
- * gmail.compose permission.
+ * Create a draft: in a thread for a reply, or on its own for a new email
+ * (no threadId). The only request in the app that writes to Gmail, and it
+ * writes a draft — never a sent message (AGENTS.md). Needs the gmail.compose
+ * permission. Called from lib/ai/draft-save.ts and nowhere else
+ * (tests/assistant-price.test.ts).
  */
 export async function createDraft(
   accessToken: string,
-  draft: { raw: string; threadId: string },
+  draft: { raw: string; threadId: string | null },
 ): Promise<{ id: string; message?: { id: string; threadId: string } }> {
   return gmailPost(accessToken, "/drafts", {
-    message: { raw: draft.raw, threadId: draft.threadId },
+    message: draft.threadId ? { raw: draft.raw, threadId: draft.threadId } : { raw: draft.raw },
   });
 }
 
