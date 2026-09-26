@@ -2,6 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import { ShellFrame } from "@/app/shell-frame";
+import { useRememberedEmail } from "@/app/shell-memory";
+import { SignOutButton } from "@/app/sign-out-button";
 import { visiblePages, type ActivePage } from "@/lib/nav";
 
 /**
@@ -19,17 +21,22 @@ import { visiblePages, type ActivePage } from "@/lib/nav";
  * load fast, so they get none.
  *
  * Every plan includes the Assistant (lib/plans/plans.ts), so the frame shows
- * all five pages; the avatar waits for the real page, which knows who you are.
+ * all five pages. The frame's own parts are drawn as the page will draw them
+ * -- Profile ("You" on a phone), the avatar with the letters of the address
+ * the last page left (app/shell-memory.tsx), and Sign out -- so nothing in it
+ * blinks out while a page loads. The Gmail address beside Sign out is not:
+ * only some pages show it, so the skeleton cannot know whether to.
  */
 
 const SHELL_PAGES = visiblePages(true);
 
 export function RouteSkeleton() {
   const path = usePathname() ?? "/";
+  const email = useRememberedEmail();
   const shape = shapeFor(path);
   if (!shape) return null;
   return (
-    <ShellFrame pages={SHELL_PAGES} active={shape.active} userEmail={undefined}>
+    <ShellFrame pages={SHELL_PAGES} active={shape.active} userEmail={email} headerRight={<SignOutButton />}>
       <main className="flex flex-1 flex-col gap-[18px] px-4 pt-2 pb-[30px] sm:px-[30px]" aria-busy="true">
         <span role="status" className="sr-only">
           Loading

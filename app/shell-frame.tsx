@@ -145,34 +145,36 @@ export function ShellFrame({
 
           <div className="flex-grow" />
 
-          {userEmail && (
-            // Opens Profile, as in design/Profile.dc.html, which also shows its
-            // active state: a lighter tile behind the avatar with a white ring.
-            // The rail's white focus ring, as on NavItem.
-            <Link
-              href="/profile"
-              aria-current={active === "profile" ? "page" : undefined}
-              className={`group relative mt-1.5 flex size-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-rail ${
-                active === "profile" ? "bg-rail-active" : "hover:bg-rail-active"
+          {/* Opens Profile, as in design/Profile.dc.html, which also shows its
+              active state: a lighter tile behind the avatar with a white ring.
+              The rail's white focus ring, as on NavItem.
+
+              Always drawn: every screen with this frame is signed in. Only the
+              letters need the address, which a loading skeleton may not have
+              yet (app/shell-memory.tsx) -- the tile stays put without them. */}
+          <Link
+            href="/profile"
+            aria-current={active === "profile" ? "page" : undefined}
+            className={`group relative mt-1.5 flex size-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-rail ${
+              active === "profile" ? "bg-rail-active" : "hover:bg-rail-active"
+            }`}
+          >
+            <span
+              // A rounded square like the logo tile, not the design's circle:
+              // changed at the user's request, 2026-09-16.
+              className={`flex items-center justify-center rounded-lg bg-rail-avatar ${
+                active === "profile" ? "size-7 ring-[1.5px] ring-white" : "size-[30px]"
               }`}
             >
-              <span
-                // A rounded square like the logo tile, not the design's circle:
-                // changed at the user's request, 2026-09-16.
-                className={`flex items-center justify-center rounded-lg bg-rail-avatar ${
-                  active === "profile" ? "size-7 ring-[1.5px] ring-white" : "size-[30px]"
-                }`}
-              >
-                <span className="text-2xs font-bold text-white">{initials(null, userEmail)}</span>
-                <span className="sr-only">Profile</span>
-              </span>
-              <HoverLabel>{`Profile · ${userEmail}`}</HoverLabel>
-              {/* Under the tile, not across the avatar: there is no word to sit
-                  under. White, as the bar is drawn in the text's colour and
-                  this link has none of its own on the dark rail. */}
-              <NavPending className="-bottom-1.5 text-white" />
-            </Link>
-          )}
+              {userEmail && <span className="text-2xs font-bold text-white">{initials(null, userEmail)}</span>}
+              <span className="sr-only">Profile</span>
+            </span>
+            <HoverLabel>{userEmail ? `Profile · ${userEmail}` : "Profile"}</HoverLabel>
+            {/* Under the tile, not across the avatar: there is no word to sit
+                under. White, as the bar is drawn in the text's colour and
+                this link has none of its own on the dark rail. */}
+            <NavPending className="-bottom-1.5 text-white" />
+          </Link>
         </aside>
 
         {/* Room for the bottom bar, which is fixed and would otherwise cover the
@@ -191,7 +193,7 @@ export function ShellFrame({
           </div>
         </div>
 
-        <BottomBar active={active} pages={pages} seenOnceCount={seenOnceCount} userEmail={userEmail} />
+        <BottomBar active={active} pages={pages} seenOnceCount={seenOnceCount} />
       </div>
     </ToastProvider>
   );
@@ -227,12 +229,10 @@ function BottomBar({
   active,
   pages,
   seenOnceCount,
-  userEmail,
 }: {
   active: ActivePage;
   pages: VisiblePages;
   seenOnceCount: number;
-  userEmail: string | undefined;
 }) {
   return (
     <nav
@@ -258,12 +258,11 @@ function BottomBar({
             {ICONS[page.key]}
           </BottomItem>
         ))}
-      {userEmail && (
-        <BottomItem href="/profile" label="You" active={active === "profile"}>
-          <circle cx="12" cy="8.5" r="3.6" />
-          <path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" />
-        </BottomItem>
-      )}
+      {/* Always drawn, as the rail's avatar is: it needs no address at all. */}
+      <BottomItem href="/profile" label="You" active={active === "profile"}>
+        <circle cx="12" cy="8.5" r="3.6" />
+        <path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" />
+      </BottomItem>
     </nav>
   );
 }
