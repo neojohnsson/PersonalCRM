@@ -161,7 +161,7 @@ function DraftCard({ proposal, onSettled }: { proposal: Extract<Proposal, { kind
                 value={stage.body}
                 onChange={(event) => setStage({ ...stage, body: event.target.value })}
                 rows={8}
-                className="w-full resize-y rounded-lg border border-line-strong bg-white px-3 py-2 text-sm text-ink"
+                className="w-full min-h-24 resize-none field-sizing-content rounded-lg border border-line-strong bg-white px-3 py-2 text-sm text-ink"
               />
             ) : (
               <p className="line-clamp-6 text-sm whitespace-pre-wrap text-ink-body">{stage.body}</p>

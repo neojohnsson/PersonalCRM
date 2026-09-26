@@ -89,6 +89,7 @@ export function EmptyCard({
     >
       <span aria-hidden="true" className="mb-3.5 flex size-10 items-center justify-center rounded-full bg-chip text-ink-soft">
         <svg
+          aria-hidden="true"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/app/back-link";
 import { AppShell } from "@/app/app-shell";
 import { EmptyCard } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
@@ -29,9 +29,7 @@ export default async function DuplicatesPage() {
     <AppShell userEmail={user.email} active="contacts" headerRight={<SignOutButton />}>
       <main className="flex flex-1 flex-col gap-4 px-4 pt-2 pb-[26px] sm:px-[30px]">
         <div className="flex flex-col gap-2">
-          <Link href="/contacts" className="text-sm font-normal text-ink-soft hover:text-ink">
-            ← Contacts
-          </Link>
+          <BackLink href="/contacts">Contacts</BackLink>
           <h1 className="text-xl font-bold tracking-[-0.035em]">Possible duplicates</h1>
           <p className="max-w-[640px] text-sm text-ink-soft">
             The same person often has two addresses: you write to one and they answer from

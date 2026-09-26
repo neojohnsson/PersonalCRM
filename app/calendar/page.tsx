@@ -3,6 +3,7 @@ import { AppShell } from "@/app/app-shell";
 import { RowLink } from "@/app/nav-pending";
 import { CalendarPanel } from "@/app/connect/calendar-panel";
 import { CARD, EmptyCard } from "@/app/page-parts";
+import { NowLine } from "./now-line";
 import { SignOutButton } from "@/app/sign-out-button";
 import { buildWeek, clock, mondayOf, weekLabel } from "@/lib/calendar/week";
 import { canWriteCalendar } from "@/lib/google/scopes";
@@ -224,7 +225,11 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-5 lg:flex-row">
+      {/* The week gets the width (UI quality pass, milestone 6): with a 296px
+          column beside it, seven days shared about 1000px and titles were cut
+          to "Linnékårens välkom…". Below 1536px the column goes under the week,
+          its two cards side by side. */}
+      <div className="flex min-h-0 flex-1 flex-col gap-5 2xl:flex-row">
         <section className={`${CARD} flex min-h-[420px] min-w-0 flex-1 flex-col overflow-hidden`}>
           {week ? (
             <WeekGrid week={week} byId={byId} touches={touchesResult.data} />
@@ -236,7 +241,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
           )}
         </section>
 
-        <div className="flex flex-col gap-[18px] lg:w-[296px] lg:shrink-0">
+        <div className="grid gap-[18px] md:grid-cols-2 2xl:flex 2xl:w-[296px] 2xl:shrink-0 2xl:flex-col">
           {upcoming && upcoming.contactId && byId.has(upcoming.contactId) && (
             <NextWithContact event={upcoming} contact={byId.get(upcoming.contactId)!} relationships={relationships} />
           )}
@@ -352,7 +357,9 @@ function NotConnected() {
 
 function Legend() {
   return (
-    <div className="hidden items-center gap-3.5 xl:flex">
+    // At every width (UI quality pass, milestone 6): it was only drawn above
+    // 1280px, so on a laptop the colours went unexplained.
+    <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1">
       {[
         { colour: "bg-info-tint", label: "With a contact" },
         { colour: "bg-chip", label: "Other events" },
@@ -453,7 +460,11 @@ function WeekGrid({
                       <span aria-hidden="true" className="text-2xs font-bold text-accent-dark sm:hidden">
                         {contact ? initials(name, contact.primary_email ?? name) : "?"}
                       </span>
-                      <span className="hidden truncate text-2xs font-semibold text-accent-dark sm:inline">{name}</span>
+                      {/* The first name: "Lind…" said nothing. The full name and
+                          the reason are the tooltip and the accessible name. */}
+                      <span className="hidden truncate text-2xs font-semibold text-accent-dark sm:inline">
+                        {contact?.first_name?.trim() || name}
+                      </span>
                     </Link>
                   );
                 })}
@@ -462,8 +473,10 @@ function WeekGrid({
           })}
         </div>
 
-        {/* The hours fill whatever height is left, so the week always fits. */}
-        <div className="relative flex min-h-0 flex-1">
+        {/* The hours fill whatever height is left, so the week always fits.
+            my-2.5: the first and last hour labels sit half above and half
+            below their line, and were cut in half at the grid's edges. */}
+        <div className="relative my-2.5 flex min-h-0 flex-1">
           {week.hours.slice(0, -1).map((hour, index) => (
             <div
               key={hour}
@@ -490,6 +503,7 @@ function WeekGrid({
               key={day.date}
               className={`relative min-w-0 flex-1 border-l border-chip ${day.isWeekend ? "bg-paper-tint" : ""}`}
             >
+              {day.isToday && <NowLine />}
               {week.events
                 .filter((event) => event.dayIndex === dayIndex)
                 .map((event) => {
@@ -498,7 +512,7 @@ function WeekGrid({
                     <div
                       key={event.id}
                       title={contact ? displayName(contact) : event.title}
-                      className={`absolute inset-x-px flex flex-col gap-px overflow-hidden rounded-lg px-1 py-1 sm:inset-x-[3px] sm:rounded-lg sm:px-1.5 ${
+                      className={`event-block absolute inset-x-px flex flex-col gap-px overflow-hidden rounded-lg px-1 py-1 sm:inset-x-[3px] sm:rounded-lg sm:px-1.5 ${
                         contact ? "bg-info-tint" : "bg-chip/60"
                       }`}
                       // A 15-minute meeting still has to be readable, so the
@@ -522,8 +536,13 @@ function WeekGrid({
                       >
                         <span className="hidden sm:inline">{contact ? displayName(contact) : event.title}</span>
                       </span>
-                      <span className={`truncate text-2xs ${contact ? "text-info" : "text-ink-soft"}`}>
+                      <span className={`event-when truncate text-2xs ${contact ? "text-info" : "text-ink-soft"}`}>
                         {event.when}
+                      </span>
+                      {/* A short event: title and time on one line, instead of
+                          two lines with the second cut in half (globals.css). */}
+                      <span className={`event-one-line truncate text-2xs font-semibold ${contact ? "text-info-ink" : "text-ink-body"}`}>
+                        {contact ? displayName(contact) : event.title} · {event.when}
                       </span>
                     </div>
                   );

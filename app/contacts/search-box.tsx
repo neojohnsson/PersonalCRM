@@ -99,6 +99,10 @@ export function SearchBox({ query }: { query: string }) {
         type="search"
         defaultValue={query}
         maxLength={MAX_QUERY_LENGTH}
+        // A name is not a word in the dictionary: no red squiggle under every
+        // search, and no browser suggestions over the results.
+        spellCheck={false}
+        autoComplete="off"
         placeholder="Search name, company, tag"
         onChange={() => {
           clearTimeout(timer.current);

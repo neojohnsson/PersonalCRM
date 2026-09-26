@@ -26,7 +26,7 @@ import {
 import { NO_MAIL, loadRelationships, type Relationship } from "@/lib/relationship/load";
 import { standingOf, type Standing } from "@/lib/relationship/standing";
 import { todayIn } from "@/lib/relationship/dates";
-import type { Band } from "@/lib/relationship/warmth";
+import { BANDS, type Band } from "@/lib/relationship/warmth";
 import { compareTurns } from "@/lib/relationship/whose-turn";
 import { supabaseError } from "@/lib/supabase/errors";
 import { readAll } from "@/lib/supabase/read-all";
@@ -240,12 +240,11 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
       }
     >
       <main className="flex flex-1 flex-col gap-4 px-4 pt-2 pb-[26px] sm:px-[30px]">
-        <h1 className="sr-only">Contacts</h1>
-
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-4">
             <h1 className="text-xl font-bold tracking-[-0.03em]">Contacts</h1>
-            <ListTabs contacts={totalContacts} seenOnce={seenOnce} />
+            {/* While searching, the count is the matches, as the chips are. */}
+            <ListTabs contacts={query ? counts.all : totalContacts} seenOnce={seenOnce} />
           </div>
 
           <div className="flex w-full flex-wrap items-start gap-2 sm:w-auto">
@@ -275,15 +274,20 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
         </div>
 
         <nav aria-label="Filter contacts" className="flex flex-wrap items-center gap-[7px]">
-          {FILTERS.map(({ value, label }) => (
-            <Chip
-              key={value}
-              href={link({ filter: value === "all" ? null : value, tag: null })}
-              active={filter === value && !tag}
-              label={label}
-              count={counts[value]}
-            />
-          ))}
+          {/* A chip at 0 is hidden (UI quality pass, milestone 6): a search
+              that matched nobody showed eight chips all reading 0. "All" and
+              the chip you are on stay, so you can always see where you are. */}
+          {FILTERS.filter(({ value }) => value === "all" || counts[value] > 0 || (filter === value && !tag)).map(
+            ({ value, label }) => (
+              <Chip
+                key={value}
+                href={link({ filter: value === "all" ? null : value, tag: null })}
+                active={filter === value && !tag}
+                label={label}
+                count={counts[value]}
+              />
+            ),
+          )}
           {tags.length > 0 && <span aria-hidden="true" className="mx-[3px] h-[18px] w-px bg-line" />}
           {tags.map(({ tag: name, count }) => (
             <Chip
@@ -378,17 +382,16 @@ function Chip({ href, active, label, count }: { href: string; active: boolean; l
   );
 }
 
-const WARMTH_TEXT: Record<Band, string> = {
-  warm: "text-affirm",
-  cooling: "text-cooling",
-  cold: "text-ink-soft",
-};
-
 const WARMTH_BAR: Record<Band, string> = {
   warm: "bg-affirm",
   cooling: "bg-cooling",
   cold: "bg-ink-soft",
 };
+
+/** "Warmth 32 of 100, cold. Warm from 60, cooling from 35." The bands are the calculation's own. */
+function warmthTitle(score: number, band: Band): string {
+  return `Warmth ${score} of 100, ${band}. Warm from ${BANDS.warm}, cooling from ${BANDS.cooling}.`;
+}
 
 function ContactTable({
   items,
@@ -404,7 +407,7 @@ function ContactTable({
   sortHref: (next: SortKey | null) => string;
   moreHref: string | null;
 }) {
-  const heading = "px-2 pt-[11px] pb-[9px] text-2xs font-bold tracking-[0.07em] text-ink-meta uppercase";
+  const heading = "px-2 py-2.5 text-2xs font-bold tracking-[0.07em] text-ink-meta uppercase";
 
   return (
     <div className={`${CARD} overflow-hidden`}>
@@ -503,13 +506,15 @@ function ContactTable({
                 </td>
                 <td className="hidden px-2 md:table-cell">
                   {warmth ? (
-                    <div className="flex items-center gap-[9px]" title={`Warmth ${warmth.score}, ${warmth.band}`}>
-                      <span className={`w-5 text-sm font-semibold tabular-nums ${WARMTH_TEXT[warmth.band]}`}>
-                        {warmth.score}
-                      </span>
-                      <span aria-hidden="true" className="h-[3px] w-[52px] overflow-hidden rounded-full bg-line">
+                    // The bar alone (UI quality pass, milestone 6, the user's
+                    // choice): the number beside it said the same thing twice.
+                    // The number and what the colours mean are in the tooltip,
+                    // and are what a screen reader hears.
+                    <div className="flex items-center" title={warmthTitle(warmth.score, warmth.band)}>
+                      <span aria-hidden="true" className="h-1 w-[64px] overflow-hidden rounded-full bg-line">
                         <span className={`block h-full ${WARMTH_BAR[warmth.band]}`} style={{ width: `${warmth.score}%` }} />
                       </span>
+                      <span className="sr-only">{warmthTitle(warmth.score, warmth.band)}</span>
                     </div>
                   ) : (
                     <span className="text-xs text-ink-soft">—</span>
@@ -595,22 +600,33 @@ function NoContactsYet({ sync, seenOnce }: { sync: SyncSummary | null; seenOnce:
  * (slice 9a). The accent is kept for "Your turn" alone: it is the only one
  * that is asking for something.
  */
+/*
+ * One badge, varying only in colour (UI quality pass, milestone 6). There
+ * were three styles in one column -- YOUR TURN in small bold capitals, the
+ * rest in sentence case -- and the capitals, a smaller size, sat 1.5px lower
+ * than the rest of the row. Every pair clears AA in both themes (lowest:
+ * amber on grey in Paper, 4.62:1).
+ */
 const BUCKET_LABELS: Record<Exclude<ListFilter, "all">, { text: string; className: string }> = {
-  yours: {
-    text: "Your turn",
-    className: "text-2xs font-bold tracking-[0.06em] text-accent uppercase",
-  },
-  theirs: { text: "Their turn", className: "text-xs font-normal text-ink-soft" },
-  quiet: { text: "Going quiet", className: "text-xs font-normal text-cooling" },
-  closed: { text: "No open thread", className: "text-xs font-normal text-ink-soft" },
-  settled: { text: "Nothing owed", className: "text-xs font-normal text-ink-soft" },
-  planned: { text: "Planned", className: "text-xs font-normal text-info-ink" },
-  muted: { text: "Just a contact", className: "text-xs font-normal text-ink-soft" },
+  yours: { text: "Your turn", className: "bg-accent-tint text-accent" },
+  theirs: { text: "Their turn", className: "bg-chip text-ink-body" },
+  quiet: { text: "Going quiet", className: "bg-chip text-cooling" },
+  closed: { text: "No open thread", className: "bg-chip text-ink-body" },
+  settled: { text: "Nothing owed", className: "bg-chip text-ink-body" },
+  planned: { text: "Planned", className: "bg-info-tint text-info-ink" },
+  muted: { text: "Just a contact", className: "bg-chip text-ink-body" },
 };
 
 function BucketLabel({ bucket }: { bucket: Exclude<ListFilter, "all"> }) {
   const label = BUCKET_LABELS[bucket];
-  return <span className={label.className}>{label.text}</span>;
+  return (
+    // A block, not inline: an inline badge lines up with the cell's own line
+    // of text and sat 1.7px below the rest of the row; a block is centred by
+    // the cell itself.
+    <span className={`flex w-fit rounded-full px-2 py-0.5 text-xs font-semibold ${label.className}`}>
+      {label.text}
+    </span>
+  );
 }
 
 /**

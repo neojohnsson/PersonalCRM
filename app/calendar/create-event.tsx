@@ -189,7 +189,9 @@ export function CreateEvent({
 
 const PILL =
   "flex items-center gap-[7px] rounded-full bg-ink-deep px-4 py-[9px] text-sm font-semibold text-white transition hover:bg-ink/85";
-const LABEL = "text-2xs font-bold tracking-[0.07em] text-ink-meta uppercase";
+// A field's label: sentence case at 12px (UI quality pass, milestone 6), as
+// Profile's are -- 10px grey capitals were the hardest words on the page.
+const LABEL = "text-xs font-semibold text-ink-soft";
 const INPUT =
   "w-full rounded-lg border border-line-strong bg-white px-3 py-2 text-sm text-ink transition placeholder:text-ink-soft focus:border-ink-soft aria-invalid:border-accent";
 

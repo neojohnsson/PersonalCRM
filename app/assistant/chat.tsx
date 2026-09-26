@@ -440,7 +440,7 @@ function DoneRow({
 function Spark() {
   return (
     <span aria-hidden="true" className="mt-px flex size-[26px] shrink-0 items-center justify-center rounded-lg bg-ink-deep">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
         <path d="M12 3.2l1.7 4.6 4.6 1.7-4.6 1.7L12 15.8l-1.7-4.6L5.7 9.5l4.6-1.7z" />
       </svg>
     </span>

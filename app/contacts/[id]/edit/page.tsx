@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/app/back-link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/app/app-shell";
 import { SignOutButton } from "@/app/sign-out-button";
@@ -46,9 +46,7 @@ export default async function EditContactPage({ params }: PageProps<"/contacts/[
     <AppShell userEmail={user.email} headerRight={<SignOutButton />}>
       <main className="flex flex-1 flex-col gap-4 px-4 pt-2.5 pb-7 sm:px-[30px]">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-2">
-          <Link href={`/contacts/${id}`} className="text-sm font-normal text-ink-soft hover:text-ink">
-            ← {name}
-          </Link>
+          <BackLink href={`/contacts/${id}`}>{name}</BackLink>
           <h1 className="text-xl font-bold tracking-[-0.035em]">Edit contact</h1>
         </div>
 

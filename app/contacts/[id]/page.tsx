@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/app/back-link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/app/app-shell";
 import { RowLink } from "@/app/nav-pending";
@@ -264,15 +265,7 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
       }
     >
       <main className="flex flex-1 flex-col gap-5 px-4 pt-2.5 pb-7 sm:px-[30px]">
-        <Link
-          href="/contacts"
-          aria-label="Back to contacts"
-          className="flex size-[34px] items-center justify-center rounded-lg bg-white text-ink-body shadow-[0_1px_2px_rgba(20,20,25,.05)] transition-colors hover:text-ink"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" className="size-[17px]">
-            <path d="M19 12H5M11 6l-6 6 6 6" />
-          </svg>
-        </Link>
+        <BackLink href="/contacts">Contacts</BackLink>
 
         <div className="flex flex-wrap items-start gap-5">
           <span

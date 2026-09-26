@@ -115,11 +115,6 @@ export function DraftCard({
             <h2 className="text-base font-bold tracking-[-0.015em]">Draft reply</h2>
             <span className="rounded-full bg-info-tint px-2 py-0.5 text-2xs font-semibold text-info-ink">AI</span>
           </div>
-          {lastSaved?.saved_at && !draft && (
-            <span className="text-xs font-normal text-ink-soft">
-              Saved to Gmail drafts {timeAgo(lastSaved.saved_at)}
-            </span>
-          )}
         </div>
         <div className="flex flex-col items-end gap-1">
           {!draft && (
@@ -147,24 +142,29 @@ export function DraftCard({
         </p>
       )}
 
+      {/* What happened comes first, how it works second (UI quality pass,
+          milestone 6): the card said "Saved to Gmail drafts 7 days ago" right
+          above "Nothing reaches Gmail until you press Save", which read as a
+          contradiction, and the explanation sat where the draft should be. */}
+      {!draft && lastSaved?.saved_at && (
+        <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-xl bg-paper-tint px-4 py-3 text-sm text-ink-body">
+          <span>
+            Your last draft is in Gmail, saved {timeAgo(lastSaved.saved_at)}.
+          </span>
+          <a
+            href={gmailDraftsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-ink link-inline decoration-line-strong"
+          >
+            Open Gmail drafts
+          </a>
+        </p>
+      )}
       {!draft ? (
-        <p className="max-w-[640px] text-sm text-ink-soft">
-          The AI writes a reply to your latest thread with them, in the thread&rsquo;s language and your
-          tone from Profile. It appears here to read and edit. Nothing reaches Gmail until you press
-          Save to Gmail drafts, and you press send in Gmail yourself.
-          {lastSaved && (
-            <>
-              {" "}
-              <a
-                href={gmailDraftsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-ink-body link-inline decoration-line-strong"
-              >
-                Open Gmail drafts
-              </a>
-            </>
-          )}
+        <p className="max-w-[640px] text-xs text-ink-soft">
+          {lastSaved ? "A new draft appears here first, to read and edit." : "The AI writes a reply to your latest thread with them, in the thread’s language and your tone from Profile. It appears here first, to read and edit."}{" "}
+          Nothing reaches Gmail until you press Save to Gmail drafts, and you press send in Gmail yourself.
         </p>
       ) : (
         <div className="flex flex-col gap-3 rounded-xl bg-info-tint/60 px-4 py-3.5">
@@ -192,7 +192,7 @@ export function DraftCard({
                 value={body}
                 maxLength={MAX_BODY_CHARS}
                 onChange={(event) => setBody(event.currentTarget.value)}
-                className="w-full resize-y rounded-lg border border-line-strong bg-white px-3 py-2.5 text-base text-ink transition focus:border-ink-soft"
+                className="w-full min-h-40 resize-none field-sizing-content rounded-lg border border-line-strong bg-white px-3 py-2.5 text-base text-ink transition focus:border-ink-soft"
               />
               <div className="flex justify-end text-xs tabular-nums text-ink-soft" aria-live="polite">
                 {body.length.toLocaleString("en-GB")} / {MAX_BODY_CHARS.toLocaleString("en-GB")}

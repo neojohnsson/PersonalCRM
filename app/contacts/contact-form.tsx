@@ -89,7 +89,9 @@ export function ContactForm({
         ? form.current?.querySelector<HTMLElement>(`[name="${names[0]}"]`)
         : form.current?.querySelector<HTMLElement>('[role="alert"]');
     target?.scrollIntoView({ behavior: "smooth", block: "center" });
-    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) target.focus();
+    // The field, or the banner when the error is the whole form's: focus must
+    // land somewhere a keyboard can carry on from (UI quality pass, milestone 6).
+    target?.focus({ preventScroll: true });
   }, [state]);
 
   function setEmail(index: number, value: string) {
@@ -118,6 +120,7 @@ export function ContactForm({
       {errors.form && (
         <p
           role="alert"
+          tabIndex={-1}
           className="flex items-start gap-3 rounded-xl bg-accent-tint px-[18px] py-[15px] text-sm text-alert-ink"
         >
           {errors.form}
@@ -245,7 +248,11 @@ export function ContactForm({
   );
 }
 
-const LABEL = "text-2xs font-bold tracking-[0.07em] text-ink-meta uppercase";
+const NAME_FIELDS = new Set<TextField>(["first_name", "last_name", "company"]);
+
+// A field's label: sentence case at 12px (UI quality pass, milestone 6), as
+// Profile's are -- 10px grey capitals were the hardest words on the page.
+const LABEL = "text-xs font-semibold text-ink-soft";
 
 const INPUT =
   "w-full rounded-lg border border-line-strong bg-white px-3 py-2.5 text-base text-ink transition placeholder:text-ink-soft focus:border-ink-soft aria-invalid:border-accent";
@@ -290,6 +297,10 @@ function TextInput({
         defaultValue={values[name]}
         maxLength={LIMITS[name]}
         placeholder={placeholder}
+        // Names and company names are not dictionary words (UI quality pass,
+        // milestone 6): no spellcheck under them, and no browser autofill of
+        // your own details into somebody else's contact.
+        {...(NAME_FIELDS.has(name) ? { spellCheck: false, autoComplete: "off" } : {})}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${name}-error` : undefined}
         className={INPUT}
@@ -331,7 +342,9 @@ function TextArea({
         placeholder={placeholder}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${name}-error` : undefined}
-        className={`${INPUT} resize-y`}
+        className={`${INPUT} resize-none field-sizing-content`}
+        // Grows with its text; rows is ignored once it does, so it keeps a floor.
+        style={{ minHeight: `${rows * 24 + 22}px` }}
       />
       <FieldError id={`${name}-error`} message={error} />
     </div>

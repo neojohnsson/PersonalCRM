@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/app/back-link";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/app/app-shell";
 import { CARD } from "@/app/page-parts";
@@ -42,9 +43,7 @@ export default async function AssistantActivityPage() {
     <AppShell userEmail={user.email} active="assistant" headerRight={<SignOutButton />}>
       <main className="flex flex-1 flex-col gap-4 px-4 pt-2.5 pb-7 sm:px-[30px]">
         <div className="flex flex-col gap-2">
-          <Link href="/assistant" className="text-sm font-normal text-ink-soft hover:text-ink">
-            ← Assistant
-          </Link>
+          <BackLink href="/assistant">Assistant</BackLink>
           <h1 className="text-xl font-bold tracking-[-0.035em]">Everything it did</h1>
           <p className="max-w-[640px] text-sm text-ink-soft">
             What the Assistant did on its own, newest first. Undo puts back exactly what was there

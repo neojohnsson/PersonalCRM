@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/app/back-link";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/app/app-shell";
 import { CARD, EmptyCard } from "@/app/page-parts";
@@ -52,9 +53,7 @@ export default async function PromisesPage() {
     <AppShell userEmail={user.email} active="assistant" headerRight={<SignOutButton />}>
       <main className="flex flex-1 flex-col gap-[18px] px-4 pt-2 pb-[30px] sm:px-[30px]">
         <div className="flex flex-col gap-2">
-          <Link href="/assistant" className="text-sm font-normal text-ink-soft hover:text-ink">
-            ← Assistant
-          </Link>
+          <BackLink href="/assistant">Assistant</BackLink>
           <h1 className="text-xl font-bold tracking-[-0.035em]">Promises</h1>
           <p className="max-w-[640px] text-sm text-ink-soft">
             Where somebody said they would do something &mdash; you or them. Each one is read out

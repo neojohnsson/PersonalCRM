@@ -199,7 +199,10 @@ export default async function AssistantPage() {
   const cap = limitsOf(plan, "assistant", assistantMonthlyCapUsd()).capUsd;
   const meter = questions
     ? { label: allowanceLine(questions, "assistant"), share: questions.allowed > 0 ? questions.used / questions.allowed : 1 }
-    : { label: `$${spent.toFixed(2)} of $${cap.toFixed(0)} this month`, share: cap > 0 ? Math.min(1, spent / cap) : 1 };
+    : // Named for what it covers (UI quality pass, milestone 6): a contact's
+      // page shows the other budget, and two dollar lines with no names read
+      // as one number that changed.
+      { label: `Assistant budget: $${spent.toFixed(2)} of $${cap.toFixed(0)} this month`, share: cap > 0 ? Math.min(1, spent / cap) : 1 };
 
   return (
     <AppShell userEmail={user.email} active="assistant" headerRight={<SignOutButton />}>

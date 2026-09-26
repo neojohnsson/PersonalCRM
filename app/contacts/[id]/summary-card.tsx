@@ -156,7 +156,8 @@ export function SummaryCard({
             {whyNot ??
               (budget.summaries
                 ? allowanceLine(budget.summaries, "summary")
-                : `AI budget: $${budget.spentUsd.toFixed(2)} of $${budget.capUsd.toFixed(2)} this month`)}
+                : // Which budget: the Assistant has its own (UI quality pass, milestone 6).
+                  `Summaries and drafts: $${budget.spentUsd.toFixed(2)} of $${budget.capUsd.toFixed(2)} this month`)}
           </span>
         </div>
       </div>
@@ -319,7 +320,7 @@ function ApprovedSummary({
               maxLength={MAX_PART_CHARS}
               defaultValue={hasErrors && state ? state.values[part] : (summary[part] ?? "")}
               aria-invalid={errors[part] ? true : undefined}
-              className="w-full resize-y rounded-lg border border-line-strong bg-white px-3 py-2 text-base text-ink transition focus:border-ink-soft aria-invalid:border-accent"
+              className="w-full min-h-24 resize-none field-sizing-content rounded-lg border border-line-strong bg-white px-3 py-2 text-base text-ink transition focus:border-ink-soft aria-invalid:border-accent"
             />
             {errors[part] && (
               <p role="alert" className="text-xs font-normal text-accent">

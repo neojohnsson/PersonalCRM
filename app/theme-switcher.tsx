@@ -53,13 +53,31 @@ export function ThemeSwitcher() {
               role="menuitemradio"
               aria-checked={theme === option.value}
               onClick={() => choose(option.value)}
-              className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left transition-colors hover:bg-paper"
+              // The chosen theme: a tinted row and a tick (UI quality pass,
+              // milestone 6). A 4px dot at the far edge was easy to miss, and
+              // Paper, first and bold, looked chosen whichever one was.
+              className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition-colors ${
+                theme === option.value ? "bg-chip" : "hover:bg-paper"
+              }`}
             >
               <span className="flex flex-col gap-0.5">
                 <span className="text-sm font-semibold text-ink">{option.label}</span>
                 <span className="text-xs text-ink-soft">{option.description}</span>
               </span>
-              {theme === option.value && <span aria-hidden="true" className="size-2 rounded-full bg-accent" />}
+              {theme === option.value && (
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="size-4 shrink-0 text-accent"
+                >
+                  <path d="m5 12.5 4.5 4.5L19 7.5" />
+                </svg>
+              )}
             </button>
           ))}
         </div>

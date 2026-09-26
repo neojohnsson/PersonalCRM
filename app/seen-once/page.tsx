@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/app/back-link";
 import { AppShell } from "@/app/app-shell";
 import { EmptyCard } from "@/app/page-parts";
 import { SignOutButton } from "@/app/sign-out-button";
@@ -87,9 +88,9 @@ export default async function SeenOncePage({ searchParams }: PageProps<"/seen-on
       <main className="flex flex-1 flex-col gap-4 px-4 pt-2.5 pb-7 sm:px-[30px]">
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div className="flex flex-col gap-2">
-            <Link href="/contacts" className="text-sm font-normal text-ink-soft hover:text-ink sm:hidden">
-              ← Contacts
-            </Link>
+            <div className="sm:hidden">
+              <BackLink href="/contacts">Contacts</BackLink>
+            </div>
             <h1 className="text-xl font-bold tracking-[-0.035em]">Seen once</h1>
             <p className="max-w-[640px] text-sm text-ink-soft">
               {countOf(total, "person", "people")} wrote to you, or you wrote to them, but never

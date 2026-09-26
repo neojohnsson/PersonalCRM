@@ -131,7 +131,7 @@ export function ProfileForm({ initial, savedAt, email }: { initial: Profile; sav
           {label}
         </label>
         {options.rows ? (
-          <textarea {...common} rows={options.rows} className={`${INPUT} resize-y`} />
+          <textarea {...common} rows={options.rows} className={`${INPUT} min-h-24 resize-none field-sizing-content`} />
         ) : (
           <input
             {...common}

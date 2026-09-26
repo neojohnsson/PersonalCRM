@@ -371,6 +371,24 @@ body {
 }
 
 /*
+ * Asked for less motion (UI quality pass, milestone 6): 35 elements had
+ * transitions and none listened. Every transition and animation becomes
+ * instant -- they still end where they would have, so nothing is left half
+ * faded -- and smooth scrolling stops. Delays are kept: the steady pending
+ * bar still waits its 100ms before it shows.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
  * Tailwind v4 dropped the pointer cursor on buttons (it follows the browser
  * default, which is an arrow). Put it back everywhere, except on disabled
  * buttons, where an arrow is the honest signal that clicking does nothing.
@@ -463,6 +481,27 @@ body {
  * its ::after covers the row and draws the shared one, just inside the row so
  * a neighbour does not cover it. The row has to be `relative`.
  */
+/*
+ * A calendar event (app/calendar/page.tsx): below 40px tall -- a 30-minute
+ * meeting -- two lines do not fit and the time was cut in half, so it shows
+ * one line, "Title · 09:00 – 09:30" (UI quality pass, milestone 6). A size
+ * container, because what matters is each block's own height.
+ */
+.event-block {
+  container-type: size;
+}
+.event-block .event-one-line {
+  display: none;
+}
+@container (max-height: 40px) {
+  .event-block > span {
+    display: none;
+  }
+  .event-block > .event-one-line {
+    display: block;
+  }
+}
+
 /*
  * A list row you can open (it holds a RowLink): the same tint under the
  * pointer and when its link has keyboard focus, so the two states agree.

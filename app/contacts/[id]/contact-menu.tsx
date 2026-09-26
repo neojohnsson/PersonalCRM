@@ -99,6 +99,7 @@ export function ContactMenu({
             >
               <Link href={`/contacts/${contactId}/edit`} className={ITEM}>
                 <span className={LINE_INK}>Edit their details</span>
+                <span className={NOTE}>Name, company, role, email addresses and phone.</span>
               </Link>
 
               {threadId && (

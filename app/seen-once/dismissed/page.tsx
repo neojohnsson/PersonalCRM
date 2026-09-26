@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/app/back-link";
 import { AppShell } from "@/app/app-shell";
 import { SignOutButton } from "@/app/sign-out-button";
 import { APP_NAME } from "@/lib/app-config";
@@ -52,9 +52,7 @@ export default async function DismissedPage() {
     >
       <main className="flex flex-1 flex-col gap-4 px-4 pt-2.5 pb-7 sm:px-[30px]">
         <div className="flex flex-col gap-2">
-          <Link href="/seen-once" className="text-sm font-normal text-ink-soft hover:text-ink">
-            ← Seen once
-          </Link>
+          <BackLink href="/seen-once">Seen once</BackLink>
           <h1 className="text-xl font-bold tracking-[-0.035em]">Dismissed</h1>
           <p className="max-w-[640px] text-sm text-ink-soft">
             {countOf(dismissals.length, "address", "addresses")} whose mail is skipped. Undo, and the

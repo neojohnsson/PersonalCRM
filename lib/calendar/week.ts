@@ -151,6 +151,18 @@ export function buildWeek(
   };
 }
 
+/**
+ * Where now falls in the hour grid, as a percentage down it, or null outside
+ * the grid's hours (UI quality pass, milestone 6: the now line). The same
+ * formula as an event's top, so the line sits where an event starting now
+ * would.
+ */
+export function nowPercent(now: Date, timeZone = "Europe/Stockholm"): number | null {
+  const minutes = minutesIntoDay(now, timeZone);
+  if (minutes < FIRST_HOUR * 60 || minutes > LAST_HOUR * 60) return null;
+  return ((minutes - FIRST_HOUR * 60) / GRID_MINUTES) * 100;
+}
+
 /** "09:00" in the given zone. */
 export function clock(at: Date, timeZone = "Europe/Stockholm"): string {
   return new Intl.DateTimeFormat("en-GB", {
