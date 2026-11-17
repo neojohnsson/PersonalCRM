@@ -1,0 +1,6 @@
+# Third-party skill docs and Next.js starter SVGs: not part of the CRM.
+.claude/
+.agents/
+public/
+# 2.6 MB bundled export of the designs; the *.dc.html files are the source.
+design/personal-crm-screens.html

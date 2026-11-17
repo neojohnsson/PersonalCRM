@@ -70,3 +70,5 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+# graphify knowledge graph (regenerate with `graphify update .`)
+graphify-out/
